@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EventInsert } from "@/lib/supabase/types";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
+import { CONTRACT_ADDRESS, usdToWei } from '@/lib/wagmi/adminConfig';
+import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import { parseAbiItem, decodeEventLog } from 'viem';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export default function AdminPage() {
   const [newExperiment, setNewExperiment] = useState({
@@ -17,6 +23,75 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"create" | "manage">("create");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [contractExperimentId, setContractExperimentId] = useState<string | null>(null);
+  const [isCreatingContract, setIsCreatingContract] = useState(false);
+
+  // Wagmi hooks
+  const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const publicClient = usePublicClient();
+  const { 
+    writeContract, 
+    data: hash,
+    isPending: isWriting,
+    error: writeError,
+    reset: resetWrite
+  } = useWriteContract();
+
+  // Wait for transaction confirmation
+  const { 
+    isLoading: isConfirming, 
+    isSuccess: isConfirmed,
+    data: receipt 
+  } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  // Extract experiment ID from transaction receipt
+  useEffect(() => {
+    async function extractExperimentId() {
+      if (isConfirmed && receipt && publicClient) {
+        try {
+          // Find the ExperimentCreated event in the logs
+          const experimentCreatedEvent = receipt.logs.find(log => {
+            try {
+              const decoded = decodeEventLog({
+                abi: ExperimentFundingABI.abi,
+                data: log.data,
+                topics: log.topics,
+              });
+              return decoded.eventName === 'ExperimentCreated';
+            } catch {
+              return false;
+            }
+          });
+
+          if (experimentCreatedEvent) {
+            const decoded = decodeEventLog({
+              abi: ExperimentFundingABI.abi,
+              data: experimentCreatedEvent.data,
+              topics: experimentCreatedEvent.topics,
+            });
+            
+            // The experiment ID is the first indexed parameter
+            const expId = (decoded.args as any).experimentId;
+            setContractExperimentId(expId.toString());
+            setIsCreatingContract(false);
+            
+            // Show success message
+            setSubmitMessage({ 
+              type: 'success', 
+              text: `Experiment created on-chain! ID: ${expId.toString()}` 
+            });
+          }
+        } catch (error) {
+          console.error('Error extracting experiment ID:', error);
+        }
+      }
+    }
+
+    extractExperimentId();
+  }, [isConfirmed, receipt, publicClient]);
 
   // Mock existing experiments for management
   const existingExperiments = [
@@ -28,7 +103,52 @@ export default function AdminPage() {
     { id: 6, title: "The Mathematics of Perfect Pizza", raised: 3200, goal: 3000, status: "completed" }
   ];
 
-  const handleCreateExperiment = async (e: React.FormEvent) => {
+  const handleCreateContractExperiment = async () => {
+    // Validate inputs
+    if (!newExperiment.title || !newExperiment.cost) {
+      alert("Please enter a title and cost for the experiment");
+      return;
+    }
+
+    // Check if wallet is connected
+    if (!isConnected) {
+      alert("Please connect your wallet first");
+      return;
+    }
+
+    // Check if on the correct chain
+    if (chainId !== baseSepolia.id) {
+      alert(`Please switch to ${baseSepolia.name} network in your wallet`);
+      return;
+    }
+
+    setIsCreatingContract(true);
+    setContractExperimentId(null);
+    resetWrite();
+
+    try {
+      // Convert cost to Wei
+      const goalInWei = usdToWei(parseFloat(newExperiment.cost));
+      
+      // Send the transaction
+      await writeContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: ExperimentFundingABI.abi,
+        functionName: 'createExperiment',
+        args: [newExperiment.title, goalInWei],
+        chainId: baseSepolia.id,
+      });
+    } catch (error) {
+      console.error('Contract creation failed:', error);
+      setSubmitMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to create experiment on-chain' 
+      });
+      setIsCreatingContract(false);
+    }
+  };
+
+  const handleCreateDatabaseExperiment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitMessage(null);
@@ -121,9 +241,14 @@ export default function AdminPage() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#005577] mb-2">Admin Dashboard</h1>
-          <p className="text-[#0a3d4d]">Manage experiments and platform operations</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold text-[#005577] mb-2">Admin Dashboard</h1>
+            <p className="text-[#0a3d4d]">Manage experiments and platform operations</p>
+          </div>
+          <div className="mt-2">
+            <ConnectButton />
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -154,7 +279,7 @@ export default function AdminPage() {
           /* Create Experiment Form */
           <div className="experiment-card">
             <h2 className="text-2xl font-bold text-[#005577] mb-6">Create New Experiment</h2>
-            <form onSubmit={handleCreateExperiment} className="space-y-6">
+            <form onSubmit={handleCreateDatabaseExperiment} className="space-y-6">
               <div>
                 <label className="block text-[#005577] font-semibold mb-2">
                   Title *
@@ -238,13 +363,73 @@ export default function AdminPage() {
                 />
               </div>
 
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className={`w-full btn-primary ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isSubmitting ? 'Creating...' : 'Create Experiment'}
-              </button>
+              {/* Wallet connection */}
+              {!isConnected && (
+                <div className="flex justify-center mb-4">
+                  <ConnectButton />
+                </div>
+              )}
+
+              {/* Two buttons for contract and database creation */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button 
+                  type="button"
+                  onClick={handleCreateContractExperiment}
+                  disabled={!isConnected || isWriting || isConfirming || isCreatingContract}
+                  className={`btn-primary ${(!isConnected || isWriting || isConfirming || isCreatingContract) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isWriting 
+                    ? "Preparing..."
+                    : isConfirming 
+                    ? "Confirming..."
+                    : isCreatingContract
+                    ? "Creating on-chain..."
+                    : "Create Experiment (Contract)"}
+                </button>
+
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className={`btn-primary ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create Experiment (Database)'}
+                </button>
+              </div>
+
+              {/* Display contract experiment ID after successful creation */}
+              {contractExperimentId && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-300 rounded-lg">
+                  <label className="block text-sm font-semibold text-blue-900 mb-2">
+                    Contract Experiment ID:
+                  </label>
+                  <input
+                    type="text"
+                    value={contractExperimentId}
+                    readOnly
+                    className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-blue-900 font-mono"
+                  />
+                  <p className="text-xs text-blue-700 mt-2">
+                    Save this ID to link with your database record
+                  </p>
+                </div>
+              )}
+
+              {/* Wallet connection status */}
+              {isConnected && (
+                <div className="mt-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
+                  <div>Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</div>
+                  <div className="text-xs mt-1">
+                    Network: {chainId === baseSepolia.id ? 'Base Sepolia ✓' : `Wrong Network (Chain ID: ${chainId})`}
+                  </div>
+                </div>
+              )}
+
+              {/* Transaction error display */}
+              {writeError && (
+                <div className="mt-4 p-4 bg-red-100 text-red-700 border border-red-300 rounded-lg">
+                  Error: {writeError.message}
+                </div>
+              )}
 
               {submitMessage && (
                 <div className={`mt-4 p-4 rounded-lg ${

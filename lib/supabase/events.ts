@@ -46,14 +46,14 @@ export class EventsService {
   }
 
   /**
-   * Get a single event by ID
+   * Get a single event by experiment ID
    */
-  static async getEventById(id: string): Promise<{ data: Event | null; error: Error | null }> {
+  static async getEventByExperimentId(experimentId: number): Promise<{ data: Event | null; error: Error | null }> {
     try {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .eq('id', id)
+        .eq('experiment_id', experimentId)
         .single();
 
       if (error) {
@@ -70,12 +70,12 @@ export class EventsService {
   /**
    * Update an event
    */
-  static async updateEvent(id: string, updates: EventUpdate): Promise<{ data: Event | null; error: Error | null }> {
+  static async updateEvent(experimentId: number, updates: EventUpdate): Promise<{ data: Event | null; error: Error | null }> {
     try {
       const { data, error } = await supabase
         .from('events')
         .update(updates)
-        .eq('id', id)
+        .eq('experiment_id', experimentId)
         .select()
         .single();
 
@@ -93,12 +93,12 @@ export class EventsService {
   /**
    * Delete an event
    */
-  static async deleteEvent(id: string): Promise<{ error: Error | null }> {
+  static async deleteEvent(experimentId: number): Promise<{ error: Error | null }> {
     try {
       const { error } = await supabase
         .from('events')
         .delete()
-        .eq('id', id);
+        .eq('experiment_id', experimentId);
 
       if (error) {
         throw error;

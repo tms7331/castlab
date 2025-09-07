@@ -7,6 +7,11 @@
           "name": "_admin",
           "type": "address",
           "internalType": "address"
+        },
+        {
+          "name": "_token",
+          "type": "address",
+          "internalType": "address"
         }
       ],
       "stateMutability": "nonpayable"
@@ -60,7 +65,12 @@
           "internalType": "string"
         },
         {
-          "name": "goal",
+          "name": "costMin",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "costMax",
           "type": "uint256",
           "internalType": "uint256"
         }
@@ -82,10 +92,15 @@
           "name": "experimentId",
           "type": "uint256",
           "internalType": "uint256"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
       "outputs": [],
-      "stateMutability": "payable"
+      "stateMutability": "nonpayable"
     },
     {
       "type": "function",
@@ -128,7 +143,12 @@
           "internalType": "string"
         },
         {
-          "name": "goal",
+          "name": "costMin",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "costMax",
           "type": "uint256",
           "internalType": "uint256"
         },
@@ -138,7 +158,7 @@
           "internalType": "uint256"
         },
         {
-          "name": "goalReached",
+          "name": "costMinReached",
           "type": "bool",
           "internalType": "bool"
         },
@@ -186,7 +206,12 @@
           "internalType": "string"
         },
         {
-          "name": "goal",
+          "name": "costMin",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "costMax",
           "type": "uint256",
           "internalType": "uint256"
         },
@@ -196,7 +221,7 @@
           "internalType": "uint256"
         },
         {
-          "name": "goalReached",
+          "name": "costMinReached",
           "type": "bool",
           "internalType": "bool"
         },
@@ -234,6 +259,30 @@
     },
     {
       "type": "function",
+      "name": "getUserExperiments",
+      "inputs": [
+        {
+          "name": "user",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "experimentIds",
+          "type": "uint256[]",
+          "internalType": "uint256[]"
+        },
+        {
+          "name": "hasActiveDonation",
+          "type": "bool[]",
+          "internalType": "bool[]"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "nextExperimentId",
       "inputs": [],
       "outputs": [
@@ -241,6 +290,19 @@
           "name": "",
           "type": "uint256",
           "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "token",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "contract IERC20"
         }
       ],
       "stateMutability": "view"
@@ -257,6 +319,30 @@
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "userDonations",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
       "type": "event",
@@ -332,7 +418,13 @@
           "internalType": "string"
         },
         {
-          "name": "goal",
+          "name": "costMin",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "costMax",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"

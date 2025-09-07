@@ -1,15 +1,15 @@
 export interface Event {
-  id: string;
+  experiment_id: number;
   title: string;
-  one_liner: string | null;
-  why_study: string | null;
-  approach: string | null;
-  cost: number | null;
+  summary: string | null;
+  image_url: string | null;
+  cost_min: number | null;
+  cost_max: number | null;
   created_at: string;
   updated_at: string;
 }
 
-export type EventInsert = Omit<Event, 'id' | 'created_at' | 'updated_at'>;
+export type EventInsert = Omit<Event, 'created_at' | 'updated_at'>;
 
 export type EventUpdate = Partial<EventInsert>;
 

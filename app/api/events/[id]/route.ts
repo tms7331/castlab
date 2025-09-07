@@ -8,7 +8,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const { data, error } = await EventsService.getEventById(id);
+    const experimentId = parseInt(id, 10);
+    
+    if (isNaN(experimentId)) {
+      return NextResponse.json(
+        { error: 'Invalid experiment ID' },
+        { status: 400 }
+      );
+    }
+    
+    const { data, error } = await EventsService.getEventByExperimentId(experimentId);
 
     if (error) {
       return NextResponse.json(
@@ -39,9 +48,18 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const experimentId = parseInt(id, 10);
+    
+    if (isNaN(experimentId)) {
+      return NextResponse.json(
+        { error: 'Invalid experiment ID' },
+        { status: 400 }
+      );
+    }
+    
     const body: EventUpdate = await request.json();
 
-    const { data, error } = await EventsService.updateEvent(id, body);
+    const { data, error } = await EventsService.updateEvent(experimentId, body);
 
     if (error) {
       return NextResponse.json(
@@ -72,7 +90,16 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const { error } = await EventsService.deleteEvent(id);
+    const experimentId = parseInt(id, 10);
+    
+    if (isNaN(experimentId)) {
+      return NextResponse.json(
+        { error: 'Invalid experiment ID' },
+        { status: 400 }
+      );
+    }
+    
+    const { error } = await EventsService.deleteEvent(experimentId);
 
     if (error) {
       return NextResponse.json(

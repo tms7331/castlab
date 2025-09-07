@@ -13,9 +13,8 @@ export const config = createConfig({
   ],
 });
 
-// Contract configuration
-// TODO: Replace with your deployed contract address
-export const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
+// Contract configuration for Base Sepolia
+export const CONTRACT_ADDRESS = "0x4DA51C7364eA799bdAeDE846b6EEf1A697E90A43" as const;
 
 // We'll use Base Sepolia for testing
 export const DEFAULT_CHAIN = baseSepolia;
