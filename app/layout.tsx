@@ -3,6 +3,7 @@ import "./globals.css";
 import Link from "next/link";
 import { FarcasterProvider } from "./providers/FarcasterProvider";
 import LoginButton from "./components/LoginButton";
+import { WagmiProvider } from "@/lib/wagmi/WagmiProvider";
 
 export const metadata: Metadata = {
   title: "CastLab - Fund Weird Science",
@@ -18,7 +19,8 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <FarcasterProvider>
-          <header className="sticky top-0 z-50 bg-gradient-to-br from-[#005577] via-[#0077a3] to-[#0088bb] shadow-lg backdrop-blur-md">
+          <WagmiProvider>
+            <header className="sticky top-0 z-50 bg-gradient-to-br from-[#005577] via-[#0077a3] to-[#0088bb] shadow-lg backdrop-blur-md">
             <nav className="container mx-auto px-4 py-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
@@ -60,6 +62,7 @@ export default function RootLayout({
           <main className="min-h-screen bg-gradient-to-b from-[#e8f5f7] to-[#d0e7eb]">
             {children}
           </main>
+          </WagmiProvider>
         </FarcasterProvider>
       </body>
     </html>
