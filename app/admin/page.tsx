@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EventInsert } from "@/lib/supabase/types";
 
 export default function AdminPage() {
   const [newExperiment, setNewExperiment] = useState({
@@ -14,6 +15,8 @@ export default function AdminPage() {
 
   const [selectedExperiment, setSelectedExperiment] = useState("");
   const [activeTab, setActiveTab] = useState<"create" | "manage">("create");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // Mock existing experiments for management
   const existingExperiments = [
@@ -25,19 +28,58 @@ export default function AdminPage() {
     { id: 6, title: "The Mathematics of Perfect Pizza", raised: 3200, goal: 3000, status: "completed" }
   ];
 
-  const handleCreateExperiment = (e: React.FormEvent) => {
+  const handleCreateExperiment = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Creating experiment:", newExperiment);
-    alert("Experiment created successfully!");
-    // Reset form
-    setNewExperiment({
-      title: "",
-      oneLiner: "",
-      whyStudy: "",
-      approach: "",
-      cost: "",
-      imageUrl: ""
-    });
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+
+    try {
+      // Prepare the event data for the database
+      const eventData: EventInsert = {
+        title: newExperiment.title,
+        one_liner: newExperiment.oneLiner || null,
+        why_study: newExperiment.whyStudy || null,
+        approach: newExperiment.approach || null,
+        cost: newExperiment.cost ? parseFloat(newExperiment.cost) : null
+      };
+
+      // Send to the API
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(eventData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create event');
+      }
+
+      // Success! Reset form and show success message
+      setSubmitMessage({ type: 'success', text: 'Event created successfully!' });
+      setNewExperiment({
+        title: "",
+        oneLiner: "",
+        whyStudy: "",
+        approach: "",
+        cost: "",
+        imageUrl: ""
+      });
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSubmitMessage(null), 5000);
+    } catch (error) {
+      console.error('Error creating event:', error);
+      setSubmitMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to create event. Please try again.' 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCloseExperiment = () => {
@@ -196,9 +238,23 @@ export default function AdminPage() {
                 />
               </div>
 
-              <button type="submit" className="w-full btn-primary">
-                Create Experiment
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className={`w-full btn-primary ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isSubmitting ? 'Creating...' : 'Create Experiment'}
               </button>
+
+              {submitMessage && (
+                <div className={`mt-4 p-4 rounded-lg ${
+                  submitMessage.type === 'success' 
+                    ? 'bg-green-100 text-green-700 border border-green-300' 
+                    : 'bg-red-100 text-red-700 border border-red-300'
+                }`}>
+                  {submitMessage.text}
+                </div>
+              )}
             </form>
           </div>
         ) : (

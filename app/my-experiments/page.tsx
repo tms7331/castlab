@@ -1,49 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Event } from "@/lib/supabase/types";
 
 export default function MyExperimentsPage() {
-  // Mock data for user's funded experiments
-  const [myExperiments] = useState([
-    {
-      id: 1,
-      title: "What Rap Music Goes the Hardest, Objectively",
-      amountFunded: 50,
-      totalRaised: 325,
-      goal: 500,
-      status: "in_progress",
-      fundedDate: "2024-01-05",
-      hasResults: false
-    },
-    {
-      id: 3,
-      title: "Canine Classical Music Discrimination",
-      amountFunded: 25,
-      totalRaised: 156,
-      goal: 800,
-      status: "in_progress",
-      fundedDate: "2024-01-12",
-      hasResults: false
-    },
-    {
-      id: 6,
-      title: "The Mathematics of Perfect Pizza",
-      amountFunded: 100,
-      totalRaised: 3200,
-      goal: 3000,
-      status: "completed",
-      fundedDate: "2023-12-15",
-      hasResults: true
-    }
-  ]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // For demo purposes, we'll show a subset of experiments as "funded by user"
+  // In production, this would come from user-specific data
+  const [fundedIds] = useState(["1", "3", "6"]);
 
-  const handleWithdraw = (experimentId: number) => {
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const response = await fetch('/api/events');
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to fetch events');
+        }
+        
+        setAllEvents(result.data || []);
+      } catch (err) {
+        console.error('Error fetching events:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load experiments');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchEvents();
+  }, []);
+
+  // Filter to only show "user's" experiments and add mock funding data
+  const myExperiments = allEvents
+    .filter(event => {
+      // For demo, randomly select some experiments as "funded"
+      const eventIdLast = event.id.slice(-1);
+      return ["1", "3", "6"].includes(eventIdLast);
+    })
+    .map(event => ({
+      ...event,
+      amountFunded: Math.floor(Math.random() * 100) + 25,
+      totalRaised: Math.floor((event.cost || 0) * 0.65),
+      goal: event.cost || 0,
+      status: Math.random() > 0.3 ? "in_progress" : "completed",
+      fundedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      hasResults: Math.random() > 0.7
+    }));
+
+  const handleWithdraw = (experimentId: string) => {
     // Handle withdrawal logic
     alert(`Withdrawal requested for experiment ${experimentId}`);
   };
 
-  const handleViewResults = (experimentId: number) => {
+  const handleViewResults = (experimentId: string) => {
     // Handle view results logic
     alert(`Viewing results for experiment ${experimentId}`);
   };
@@ -51,6 +65,26 @@ export default function MyExperimentsPage() {
   const totalInvested = myExperiments.reduce((sum, exp) => sum + exp.amountFunded, 0);
   const activeInvestments = myExperiments.filter(exp => exp.status === "in_progress").length;
   const completedInvestments = myExperiments.filter(exp => exp.status === "completed").length;
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-[#0a3d4d]">Loading your experiments...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center">
+          <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-12">
