@@ -3,14 +3,46 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
+import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
+import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 
 export default function MyExperimentsPage() {
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userInvestments, setUserInvestments] = useState<Map<number, number>>(new Map());
   
-  // For demo purposes, we'll show a subset of experiments as "funded by user"
-  // In production, this would come from user-specific data
+  // Wagmi hooks
+  const { address, isConnected } = useAccount();
+  
+  // Get user's experiments from blockchain
+  const { data: userExperiments } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: ExperimentFundingABI.abi,
+    functionName: 'getUserExperiments',
+    args: address ? [address] : undefined,
+    chainId: baseSepolia.id,
+    enabled: !!address,
+  });
+
+  // Process user experiments data
+  useEffect(() => {
+    if (!userExperiments || !address) return;
+    
+    const [experimentIds, hasActiveDonation] = userExperiments as [bigint[], boolean[]];
+    const investments = new Map<number, number>();
+    
+    // Mark experiments that have active donations
+    for (let i = 0; i < experimentIds.length; i++) {
+      if (hasActiveDonation[i]) {
+        investments.set(Number(experimentIds[i]), 1); // Placeholder, actual amount fetched in ExperimentRow
+      }
+    }
+    
+    setUserInvestments(investments);
+  }, [userExperiments, address]);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -34,38 +66,21 @@ export default function MyExperimentsPage() {
     fetchEvents();
   }, []);
 
-  // Filter to only show "user's" experiments and add mock funding data
+  // Filter to only show user's funded experiments
   const myExperiments = allEvents
-    .filter(event => {
-      // For demo, randomly select some experiments as "funded"
-      return [1, 3, 6].includes(event.experiment_id % 10);
-    })
+    .filter(event => userInvestments.has(event.experiment_id))
     .map(event => {
-      const avgCost = ((event.cost_min || 0) + (event.cost_max || 0)) / 2;
       return {
         ...event,
-        amountFunded: Math.floor(Math.random() * 100) + 25,
-        totalRaised: Math.floor(avgCost * 0.65),
-        goal: event.cost_max || 0,
-        status: Math.random() > 0.3 ? "in_progress" : "completed",
-        fundedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        hasResults: Math.random() > 0.7
+        amountFunded: userInvestments.get(event.experiment_id) || 0,
+        status: "in_progress" as const,
+        hasResults: false
       };
     });
 
-  const handleWithdraw = (experimentId: string) => {
-    // Handle withdrawal logic
-    alert(`Withdrawal requested for experiment ${experimentId}`);
-  };
-
-  const handleViewResults = (experimentId: string) => {
-    // Handle view results logic
-    alert(`Viewing results for experiment ${experimentId}`);
-  };
-
   const totalInvested = myExperiments.reduce((sum, exp) => sum + exp.amountFunded, 0);
-  const activeInvestments = myExperiments.filter(exp => exp.status === "in_progress").length;
-  const completedInvestments = myExperiments.filter(exp => exp.status === "completed").length;
+  const activeInvestments = myExperiments.length;
+  const completedInvestments = 0; // TODO: Track completed experiments from contract
 
   if (loading) {
     return (
@@ -119,89 +134,7 @@ export default function MyExperimentsPage() {
             </div>
           ) : (
             myExperiments.map((exp) => (
-              <div key={exp.experiment_id} className="experiment-card">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex-grow">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-start gap-4">
-                        {exp.image_url && (
-                          <img 
-                            src={exp.image_url} 
-                            alt={exp.title}
-                            className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                          />
-                        )}
-                        <div>
-                          <Link href={`/experiments/${exp.experiment_id}`}>
-                            <h3 className="text-lg md:text-xl font-semibold text-[#005577] hover:text-[#0077a3] transition-colors cursor-pointer">
-                              {exp.title}
-                            </h3>
-                          </Link>
-                          <div className="flex flex-wrap gap-4 mt-2 text-sm text-[#0a3d4d]">
-                            <span>
-                              Your contribution: <span className="font-semibold text-[#00a8cc]">${exp.amountFunded}</span>
-                            </span>
-                            <span>
-                              Total raised: ${exp.totalRaised} / ${exp.goal}
-                            </span>
-                            <span>
-                              Funded on: {new Date(exp.fundedDate).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        exp.status === 'completed' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {exp.status === 'completed' ? 'Completed' : 'In Progress'}
-                      </span>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mb-4">
-                      <div className="progress-bar h-2">
-                        <div 
-                          className="progress-fill"
-                          style={{ width: `${Math.min((exp.totalRaised / exp.goal) * 100, 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-[#0077a3] mt-1">
-                        {Math.round((exp.totalRaised / exp.goal) * 100)}% funded
-                      </p>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3">
-                      {exp.hasResults ? (
-                        <button 
-                          onClick={() => handleViewResults(exp.experiment_id.toString())}
-                          className="px-4 py-2 bg-gradient-to-r from-[#00c9a7] to-[#00a8cc] text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-                        >
-                          View Results
-                        </button>
-                      ) : (
-                        <button 
-                          disabled
-                          className="px-4 py-2 bg-gray-200 text-gray-500 font-medium rounded-lg cursor-not-allowed"
-                        >
-                          Results Pending
-                        </button>
-                      )}
-                      
-                      {exp.status === 'in_progress' && (
-                        <button 
-                          onClick={() => handleWithdraw(exp.experiment_id.toString())}
-                          className="px-4 py-2 border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors"
-                        >
-                          Withdraw
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ExperimentRow key={exp.experiment_id} experiment={exp} userAddress={address} />
             ))
           )}
         </div>
@@ -213,6 +146,161 @@ export default function MyExperimentsPage() {
             Once an experiment is fully funded and research begins, contributions cannot be withdrawn. 
             Results will be available once the experiment is completed.
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Component to display individual experiment with fetched investment amount
+function ExperimentRow({ experiment, userAddress }: { experiment: any; userAddress?: string }) {
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  // Fetch user's deposit amount for this specific experiment
+  const { data: depositAmount } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: ExperimentFundingABI.abi,
+    functionName: 'getUserDeposit',
+    args: userAddress ? [BigInt(experiment.experiment_id), userAddress] : undefined,
+    chainId: baseSepolia.id,
+    enabled: !!userAddress,
+  });
+
+  // Fetch experiment info from contract
+  const { data: experimentInfo } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: ExperimentFundingABI.abi,
+    functionName: 'getExperimentInfo',
+    args: [BigInt(experiment.experiment_id)],
+    chainId: baseSepolia.id,
+  });
+
+  const amountInvested = depositAmount ? tokenAmountToUsd(depositAmount as bigint) : 0;
+  const totalRaised = experimentInfo ? tokenAmountToUsd((experimentInfo as any)[3]) : 0;
+  const goal = experiment.cost_max || 0;
+  const isClosed = experimentInfo ? (experimentInfo as any)[5] : false;
+  const status = isClosed ? 'completed' : 'in_progress';
+
+  // Withdrawal transaction hooks
+  const { 
+    writeContract: writeWithdraw, 
+    data: withdrawHash,
+    error: withdrawError,
+    reset: resetWithdraw
+  } = useWriteContract();
+
+  // Wait for withdrawal confirmation
+  const { isLoading: isWithdrawPending, isSuccess: isWithdrawConfirmed } = useWaitForTransactionReceipt({
+    hash: withdrawHash,
+  });
+
+  // Handle withdrawal confirmation
+  useEffect(() => {
+    if (isWithdrawConfirmed) {
+      setIsWithdrawing(false);
+      resetWithdraw();
+      // Refresh the page to update balances
+      window.location.reload();
+    }
+  }, [isWithdrawConfirmed, resetWithdraw]);
+
+  // Handle withdrawal error
+  useEffect(() => {
+    if (withdrawError) {
+      setIsWithdrawing(false);
+      alert(`Withdrawal failed: ${withdrawError.message}`);
+    }
+  }, [withdrawError]);
+
+  const handleWithdraw = async () => {
+    if (!userAddress || !depositAmount) return;
+    
+    try {
+      setIsWithdrawing(true);
+      
+      // Call undeposit function with experiment ID and amount to withdraw
+      await writeWithdraw({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: ExperimentFundingABI.abi,
+        functionName: 'undeposit',
+        args: [BigInt(experiment.experiment_id), depositAmount as bigint],
+        chainId: baseSepolia.id,
+      });
+    } catch (err) {
+      console.error('Withdrawal failed:', err);
+      setIsWithdrawing(false);
+    }
+  };
+
+  return (
+    <div className="experiment-card">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex-grow">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start gap-4">
+              {experiment.image_url && (
+                <img 
+                  src={experiment.image_url} 
+                  alt={experiment.title}
+                  className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                />
+              )}
+              <div>
+                <Link href={`/experiments/${experiment.experiment_id}`}>
+                  <h3 className="text-lg md:text-xl font-semibold text-[#005577] hover:text-[#0077a3] transition-colors cursor-pointer">
+                    {experiment.title}
+                  </h3>
+                </Link>
+                <div className="flex flex-wrap gap-4 mt-2 text-sm text-[#0a3d4d]">
+                  <span>
+                    Your contribution: <span className="font-semibold text-[#00a8cc]">${amountInvested}</span>
+                  </span>
+                  <span>
+                    Total raised: ${totalRaised} / ${goal}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+              status === 'completed' 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-blue-100 text-blue-700'
+            }`}>
+              {status === 'completed' ? 'Completed' : 'In Progress'}
+            </span>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <div className="progress-bar h-2">
+              <div 
+                className="progress-fill"
+                style={{ width: `${Math.min((totalRaised / goal) * 100, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-[#0077a3] mt-1">
+              {Math.round((totalRaised / goal) * 100)}% funded
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button 
+              disabled
+              className="px-4 py-2 bg-gray-200 text-gray-500 font-medium rounded-lg cursor-not-allowed"
+            >
+              Results Pending
+            </button>
+            
+            {status === 'in_progress' && depositAmount && Number(depositAmount) > 0 && (
+              <button 
+                onClick={handleWithdraw}
+                disabled={isWithdrawing || isWithdrawPending}
+                className="px-4 py-2 border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
