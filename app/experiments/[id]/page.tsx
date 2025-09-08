@@ -8,6 +8,7 @@ import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt,
 import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 export default function ExperimentDetailPage() {
   const params = useParams();
@@ -129,15 +130,32 @@ export default function ExperimentDetailPage() {
       refetchContractData();
       // Show success message
       alert("Thank you for funding this experiment! Your transaction has been confirmed.");
-      // Reset after a delay
-      setTimeout(() => {
-        setCurrentStep('idle');
-        resetApprove();
-        resetDeposit();
-      }, 3000);
+      // Don't reset the state automatically - let user dismiss it or cast about it
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDepositConfirmed, currentStep, refetchContractData]);
+
+  const handleCastAboutDonation = async () => {
+    try {
+      // Get the current URL for the app
+      const appUrl = window.location.origin;
+      
+      const result = await sdk.actions.composeCast({
+        text: "I donated to SCIENCE! 🧪🔬",
+        embeds: [appUrl]
+      });
+      
+      if (result?.cast) {
+        console.log('Cast successful:', result.cast.hash);
+        // Reset state after successful cast
+        setCurrentStep('idle');
+        resetApprove();
+        resetDeposit();
+      }
+    } catch (error) {
+      console.error('Failed to compose cast:', error);
+    }
+  };
 
   const handleFunding = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -380,9 +398,29 @@ export default function ExperimentDetailPage() {
               )}
 
               {currentStep === 'complete' && (
-                <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
-                  Transaction confirmed! Thank you for your support.
-                </div>
+                <>
+                  <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
+                    Transaction confirmed! Thank you for your support.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCastAboutDonation}
+                    className="w-full mt-2 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+                  >
+                    Cast about it! 📢
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentStep('idle');
+                      resetApprove();
+                      resetDeposit();
+                    }}
+                    className="w-full mt-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-8 rounded-lg transition-colors"
+                  >
+                    Done
+                  </button>
+                </>
               )}
               
               {currentStep === 'approving' && (
