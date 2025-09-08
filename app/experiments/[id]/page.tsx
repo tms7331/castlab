@@ -73,7 +73,9 @@ export default function ExperimentDetailPage() {
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: baseSepolia.id,
-    enabled: !!address,
+    query: {
+      enabled: !!address,
+    },
   });
 
   // Extract totalDeposited from contract data

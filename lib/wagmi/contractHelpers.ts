@@ -1,5 +1,5 @@
 import { parseAbi, encodeFunctionData } from 'viem';
-import { CONTRACT_ADDRESS, usdToWei } from './config';
+import { CONTRACT_ADDRESS, usdToTokenAmount } from './config';
 import ExperimentFundingABI from '../contracts/ExperimentFunding.json';
 
 // Parse the ABI for type safety
@@ -32,7 +32,7 @@ export function prepareDepositTransaction(experimentId: string, amountUSD: numbe
   const contractExperimentId = BigInt(experimentId.charCodeAt(0));
   
   // Convert USD to Wei
-  const valueInWei = usdToWei(amountUSD);
+  const valueInWei = usdToTokenAmount(amountUSD);
   
   // Encode the function call
   const data = encodeFunctionData({
@@ -52,7 +52,7 @@ export function prepareDepositTransaction(experimentId: string, amountUSD: numbe
  * Prepare create experiment transaction
  */
 export function prepareCreateExperimentTransaction(description: string, goalUSD: number) {
-  const goalInWei = usdToWei(goalUSD);
+  const goalInWei = usdToTokenAmount(goalUSD);
   
   const data = encodeFunctionData({
     abi: ExperimentFundingABI.abi,

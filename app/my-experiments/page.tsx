@@ -24,7 +24,9 @@ export default function MyExperimentsPage() {
     functionName: 'getUserExperiments',
     args: address ? [address] : undefined,
     chainId: baseSepolia.id,
-    enabled: !!address,
+    query: {
+      enabled: !!address,
+    },
   });
 
   // Process user experiments data
@@ -153,7 +155,32 @@ export default function MyExperimentsPage() {
 }
 
 // Component to display individual experiment with fetched investment amount
-function ExperimentRow({ experiment, userAddress }: { experiment: any; userAddress?: string }) {
+interface ExperimentInfo {
+  0: bigint; // experiment ID
+  1: string; // researcher address
+  2: bigint; // funding goal
+  3: bigint; // amount raised
+  4: bigint; // deadline
+  5: boolean; // is closed
+}
+
+interface Experiment {
+  experiment_id: number;
+  cost_max?: number | null;
+  name?: string;
+  title?: string;
+  summary?: string | null;
+  description?: string;
+  image_url?: string | null;
+  amountFunded?: number;
+  status?: string;
+  hasResults?: boolean;
+  cost_min?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+function ExperimentRow({ experiment, userAddress }: { experiment: Experiment; userAddress?: string }) {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   // Fetch user's deposit amount for this specific experiment
   const { data: depositAmount } = useReadContract({
@@ -162,7 +189,9 @@ function ExperimentRow({ experiment, userAddress }: { experiment: any; userAddre
     functionName: 'getUserDeposit',
     args: userAddress ? [BigInt(experiment.experiment_id), userAddress] : undefined,
     chainId: baseSepolia.id,
-    enabled: !!userAddress,
+    query: {
+      enabled: !!userAddress,
+    },
   });
 
   // Fetch experiment info from contract
@@ -175,9 +204,9 @@ function ExperimentRow({ experiment, userAddress }: { experiment: any; userAddre
   });
 
   const amountInvested = depositAmount ? tokenAmountToUsd(depositAmount as bigint) : 0;
-  const totalRaised = experimentInfo ? tokenAmountToUsd((experimentInfo as any)[3]) : 0;
+  const totalRaised = experimentInfo ? tokenAmountToUsd((experimentInfo as ExperimentInfo)[3]) : 0;
   const goal = experiment.cost_max || 0;
-  const isClosed = experimentInfo ? (experimentInfo as any)[5] : false;
+  const isClosed = experimentInfo ? (experimentInfo as ExperimentInfo)[5] : false;
   const status = isClosed ? 'completed' : 'in_progress';
 
   // Withdrawal transaction hooks
@@ -239,15 +268,15 @@ function ExperimentRow({ experiment, userAddress }: { experiment: any; userAddre
             <div className="flex items-start gap-4">
               {experiment.image_url && (
                 <img 
-                  src={experiment.image_url} 
-                  alt={experiment.title}
+                  src={experiment.image_url || ''} 
+                  alt={experiment.title || experiment.name || ''}
                   className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                 />
               )}
               <div>
                 <Link href={`/experiments/${experiment.experiment_id}`}>
                   <h3 className="text-lg md:text-xl font-semibold text-[#005577] hover:text-[#0077a3] transition-colors cursor-pointer">
-                    {experiment.title}
+                    {experiment.title || experiment.name || 'Untitled'}
                   </h3>
                 </Link>
                 <div className="flex flex-wrap gap-4 mt-2 text-sm text-[#0a3d4d]">
@@ -291,7 +320,7 @@ function ExperimentRow({ experiment, userAddress }: { experiment: any; userAddre
               Results Pending
             </button>
             
-            {status === 'in_progress' && depositAmount && Number(depositAmount) > 0 && (
+            {status === 'in_progress' && depositAmount && Number(depositAmount as bigint) > 0 ? (
               <button 
                 onClick={handleWithdraw}
                 disabled={isWithdrawing || isWithdrawPending}
@@ -299,7 +328,7 @@ function ExperimentRow({ experiment, userAddress }: { experiment: any; userAddre
               >
                 {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw'}
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

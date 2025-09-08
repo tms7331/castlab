@@ -34,7 +34,7 @@ export async function GET(
     }
 
     return NextResponse.json({ data });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -76,7 +76,7 @@ export async function PUT(
     }
 
     return NextResponse.json({ data });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -109,7 +109,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: 'Event deleted successfully' });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
