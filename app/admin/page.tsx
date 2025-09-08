@@ -6,7 +6,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId,
 import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, usdToWei } from '@/lib/wagmi/adminConfig';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
-import { parseAbiItem, decodeEventLog } from 'viem';
+import { decodeEventLog } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export default function AdminPage() {
@@ -73,7 +73,8 @@ export default function AdminPage() {
             });
             
             // The experiment ID is the first indexed parameter
-            const expId = (decoded.args as any).experimentId;
+            const args = decoded.args as unknown as { experimentId: bigint };
+            const expId = args.experimentId;
             setContractExperimentId(expId.toString());
             setIsCreatingContract(false);
             

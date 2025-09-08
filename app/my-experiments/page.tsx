@@ -11,7 +11,6 @@ export default function MyExperimentsPage() {
   
   // For demo purposes, we'll show a subset of experiments as "funded by user"
   // In production, this would come from user-specific data
-  const [fundedIds] = useState(["1", "3", "6"]);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -39,18 +38,20 @@ export default function MyExperimentsPage() {
   const myExperiments = allEvents
     .filter(event => {
       // For demo, randomly select some experiments as "funded"
-      const eventIdLast = event.id.slice(-1);
-      return ["1", "3", "6"].includes(eventIdLast);
+      return [1, 3, 6].includes(event.experiment_id % 10);
     })
-    .map(event => ({
-      ...event,
-      amountFunded: Math.floor(Math.random() * 100) + 25,
-      totalRaised: Math.floor((event.cost || 0) * 0.65),
-      goal: event.cost || 0,
-      status: Math.random() > 0.3 ? "in_progress" : "completed",
-      fundedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      hasResults: Math.random() > 0.7
-    }));
+    .map(event => {
+      const avgCost = ((event.cost_min || 0) + (event.cost_max || 0)) / 2;
+      return {
+        ...event,
+        amountFunded: Math.floor(Math.random() * 100) + 25,
+        totalRaised: Math.floor(avgCost * 0.65),
+        goal: event.cost_max || 0,
+        status: Math.random() > 0.3 ? "in_progress" : "completed",
+        fundedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        hasResults: Math.random() > 0.7
+      };
+    });
 
   const handleWithdraw = (experimentId: string) => {
     // Handle withdrawal logic
@@ -111,33 +112,42 @@ export default function MyExperimentsPage() {
         <div className="space-y-4">
           {myExperiments.length === 0 ? (
             <div className="experiment-card text-center py-12">
-              <p className="text-lg text-[#0a3d4d] mb-4">You haven't funded any experiments yet</p>
+              <p className="text-lg text-[#0a3d4d] mb-4">You haven&apos;t funded any experiments yet</p>
               <Link href="/" className="btn-primary">
                 Explore Experiments
               </Link>
             </div>
           ) : (
             myExperiments.map((exp) => (
-              <div key={exp.id} className="experiment-card">
+              <div key={exp.experiment_id} className="experiment-card">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex-grow">
                     <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <Link href={`/experiments/${exp.id}`}>
-                          <h3 className="text-lg md:text-xl font-semibold text-[#005577] hover:text-[#0077a3] transition-colors cursor-pointer">
-                            {exp.title}
-                          </h3>
-                        </Link>
-                        <div className="flex flex-wrap gap-4 mt-2 text-sm text-[#0a3d4d]">
-                          <span>
-                            Your contribution: <span className="font-semibold text-[#00a8cc]">${exp.amountFunded}</span>
-                          </span>
-                          <span>
-                            Total raised: ${exp.totalRaised} / ${exp.goal}
-                          </span>
-                          <span>
-                            Funded on: {new Date(exp.fundedDate).toLocaleDateString()}
-                          </span>
+                      <div className="flex items-start gap-4">
+                        {exp.image_url && (
+                          <img 
+                            src={exp.image_url} 
+                            alt={exp.title}
+                            className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                          />
+                        )}
+                        <div>
+                          <Link href={`/experiments/${exp.experiment_id}`}>
+                            <h3 className="text-lg md:text-xl font-semibold text-[#005577] hover:text-[#0077a3] transition-colors cursor-pointer">
+                              {exp.title}
+                            </h3>
+                          </Link>
+                          <div className="flex flex-wrap gap-4 mt-2 text-sm text-[#0a3d4d]">
+                            <span>
+                              Your contribution: <span className="font-semibold text-[#00a8cc]">${exp.amountFunded}</span>
+                            </span>
+                            <span>
+                              Total raised: ${exp.totalRaised} / ${exp.goal}
+                            </span>
+                            <span>
+                              Funded on: {new Date(exp.fundedDate).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${
@@ -166,7 +176,7 @@ export default function MyExperimentsPage() {
                     <div className="flex gap-3">
                       {exp.hasResults ? (
                         <button 
-                          onClick={() => handleViewResults(exp.id)}
+                          onClick={() => handleViewResults(exp.experiment_id.toString())}
                           className="px-4 py-2 bg-gradient-to-r from-[#00c9a7] to-[#00a8cc] text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
                         >
                           View Results
@@ -182,7 +192,7 @@ export default function MyExperimentsPage() {
                       
                       {exp.status === 'in_progress' && (
                         <button 
-                          onClick={() => handleWithdraw(exp.id)}
+                          onClick={() => handleWithdraw(exp.experiment_id.toString())}
                           className="px-4 py-2 border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors"
                         >
                           Withdraw

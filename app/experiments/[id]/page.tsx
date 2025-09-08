@@ -4,10 +4,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
-import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
+import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
-import { prepareDepositTransaction } from '@/lib/wagmi/contractHelpers';
-import { CONTRACT_ADDRESS } from '@/lib/wagmi/config';
+import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToWei, weiToUsd } from '@/lib/wagmi/config';
+import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 
 export default function ExperimentDetailPage() {
   const params = useParams();
@@ -17,22 +17,52 @@ export default function ExperimentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fundingAmount, setFundingAmount] = useState("");
+  const [currentStep, setCurrentStep] = useState<'idle' | 'approving' | 'approved' | 'depositing' | 'complete'>('idle');
 
   // Wagmi hooks
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const chainId = useChainId();
+  
+  // Approve transaction
   const { 
-    writeContract, 
-    data: hash,
-    isPending: isWriting,
-    error: writeError 
+    writeContract: writeApprove, 
+    data: approveHash,
+    error: approveError,
+    reset: resetApprove
   } = useWriteContract();
 
-  // Wait for transaction confirmation
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
+  // Deposit transaction  
+  const { 
+    writeContract: writeDeposit, 
+    data: depositHash,
+    error: depositError,
+    reset: resetDeposit
+  } = useWriteContract();
+
+  // Wait for approve confirmation
+  const { isLoading: isApprovePending, isSuccess: isApproved } = useWaitForTransactionReceipt({
+    hash: approveHash,
   });
+  
+  // Wait for deposit confirmation
+  const { isLoading: isDepositPending, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({
+    hash: depositHash,
+  });
+
+  // Read experiment data from smart contract
+  const { data: contractData, refetch: refetchContractData } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: ExperimentFundingABI.abi,
+    functionName: 'getExperimentInfo',
+    args: experiment ? [BigInt(experiment.experiment_id)] : undefined,
+    chainId: baseSepolia.id,
+  });
+
+  // Extract totalDeposited from contract data
+  type ExperimentInfo = readonly [string, bigint, bigint, bigint, boolean, boolean];
+  const totalDepositedWei = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
+  const totalDepositedUSD = weiToUsd(totalDepositedWei);
 
   useEffect(() => {
     async function fetchEvent() {
@@ -56,18 +86,39 @@ export default function ExperimentDetailPage() {
     fetchEvent();
   }, [id]);
 
-  // Reset form when transaction is confirmed
+  // Handle approve confirmation
   useEffect(() => {
-    if (isConfirmed) {
+    if (isApproved && currentStep === 'approving') {
+      setCurrentStep('approved');
+    }
+  }, [isApproved, currentStep]);
+
+  // Automatically proceed to deposit after approval
+  useEffect(() => {
+    if (currentStep === 'approved') {
+      handleDeposit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
+  // Handle deposit confirmation
+  useEffect(() => {
+    if (isDepositConfirmed && currentStep === 'depositing') {
+      setCurrentStep('complete');
       setFundingAmount("");
+      // Refetch contract data to show updated amount
+      refetchContractData();
       // Show success message
       alert("Thank you for funding this experiment! Your transaction has been confirmed.");
+      // Reset after a delay
+      setTimeout(() => {
+        setCurrentStep('idle');
+        resetApprove();
+        resetDeposit();
+      }, 3000);
     }
-  }, [isConfirmed]);
-
-  // Generate mock raised/backers data for display (until we add these to the database)
-  const raised = experiment ? Math.floor((experiment.cost || 0) * 0.65) : 0;
-  const backers = experiment ? Math.floor(Math.random() * 100) + 20 : 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDepositConfirmed, currentStep, refetchContractData]);
 
   const handleFunding = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,21 +141,54 @@ export default function ExperimentDetailPage() {
     }
 
     try {
-      // Prepare the transaction
-      const { to, value, data } = prepareDepositTransaction(id, Number(fundingAmount));
+      setCurrentStep('approving');
       
-      // Send the transaction with explicit chain ID
-      await writeContract({
-        address: to as `0x${string}`,
-        abi: (await import('@/lib/contracts/ExperimentFunding.json')).default.abi,
-        functionName: 'deposit',
-        args: [BigInt(id.charCodeAt(0))], // Simple ID mapping
-        value,
+      // Convert USD to token amount (assuming 18 decimals for the token)
+      // Using usdToWei for now, but you might need to adjust based on token decimals
+      const tokenAmount = usdToWei(Number(fundingAmount));
+      
+      // Step 1: Approve the contract to spend tokens
+      const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
+      
+      await writeApprove({
+        address: TOKEN_ADDRESS as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [CONTRACT_ADDRESS, tokenAmount],
         chainId: baseSepolia.id,
       });
     } catch (err) {
-      console.error('Transaction failed:', err);
-      alert('Transaction failed. Please try again.');
+      console.error('Approval failed:', err);
+      alert('Approval failed. Please try again.');
+      setCurrentStep('idle');
+    }
+  };
+
+  const handleDeposit = async () => {
+    if (!experiment || !fundingAmount) return;
+    
+    try {
+      setCurrentStep('depositing');
+      
+      const experimentId = experiment.experiment_id;
+      const tokenAmount = usdToWei(Number(fundingAmount));
+      
+      // Step 2: Deposit tokens to the experiment
+      const ExperimentFunding_ABI = (await import('@/lib/contracts/ExperimentFunding.json')).default.abi;
+      
+      await writeDeposit({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: ExperimentFunding_ABI,
+        functionName: 'deposit',
+        args: [BigInt(experimentId), tokenAmount],
+        chainId: baseSepolia.id,
+      });
+    } catch (err) {
+      console.error('Deposit failed:', err);
+      alert('Deposit failed. Please try again.');
+      setCurrentStep('idle');
+      resetApprove();
+      resetDeposit();
     }
   };
 
@@ -142,28 +226,24 @@ export default function ExperimentDetailPage() {
 
         <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-[#005577] mb-2">
+            <h1 className="text-3xl md:text-4xl font-bold text-[#005577] mb-6">
               {experiment.title}
             </h1>
-            <p className="text-lg text-[#0a3d4d] italic mb-6">
-              {experiment.one_liner || ""}
-            </p>
+            
+            {experiment.image_url && (
+              <img 
+                src={experiment.image_url} 
+                alt={experiment.title}
+                className="w-full h-64 object-cover rounded-xl mb-6"
+              />
+            )}
 
             <div className="space-y-6">
-              {experiment.why_study && (
+              {experiment.summary && (
                 <div className="bg-gradient-to-r from-[#00c9a7]/10 to-[#00a8cc]/10 p-6 rounded-xl border border-[#00a8cc]/20">
-                  <h2 className="text-xl font-bold text-[#005577] mb-3">Why Study This?</h2>
-                  <p className="text-[#0a3d4d] leading-relaxed">
-                    {experiment.why_study}
-                  </p>
-                </div>
-              )}
-
-              {experiment.approach && (
-                <div className="bg-gradient-to-r from-[#00a8cc]/10 to-[#00c9a7]/10 p-6 rounded-xl border border-[#00c9a7]/20">
-                  <h2 className="text-xl font-bold text-[#005577] mb-3">Experimental Approach</h2>
+                  <h2 className="text-xl font-bold text-[#005577] mb-3">About This Experiment</h2>
                   <p className="text-[#0a3d4d] leading-relaxed whitespace-pre-line">
-                    {experiment.approach}
+                    {experiment.summary}
                   </p>
                 </div>
               )}
@@ -180,10 +260,13 @@ export default function ExperimentDetailPage() {
           <div className="md:col-span-1">
             <div className="sticky top-4 experiment-card">
               <div className="text-3xl font-bold text-[#00a8cc]">
-                ${raised.toLocaleString()}
+                ${totalDepositedUSD.toLocaleString()}
               </div>
-              <div className="text-sm text-[#0a3d4d]">
-                raised of ${(experiment.cost || 0).toLocaleString()} goal
+              <div className="text-sm text-[#0a3d4d] mb-2">
+                <div>raised</div>
+              </div>
+              <div className="text-sm text-[#0a3d4d] mb-4">
+                <div>Target range: ${(experiment.cost_min || 0).toLocaleString()} - ${(experiment.cost_max || 0).toLocaleString()}</div>
               </div>
 
             <div className="progress-bar h-3 mb-6">
@@ -191,17 +274,16 @@ export default function ExperimentDetailPage() {
                 className="progress-fill h-full"
                 style={{
                   width: `${Math.min(
-                    (raised / (experiment.cost || 1)) * 100,
+                    (totalDepositedUSD / (experiment.cost_max || 1)) * 100,
                     100
                   )}%`,
                 }}
               />
             </div>
 
-            <div className="flex justify-between text-sm text-[#0a3d4d] mb-8">
-              <span>{backers} backers</span>
+            <div className="text-center text-sm text-[#0a3d4d] mb-8">
               <span>
-                {Math.round((raised / (experiment.cost || 1)) * 100)}%
+                {Math.round((totalDepositedUSD / (experiment.cost_max || 1)) * 100)}%
                 funded
               </span>
             </div>
@@ -234,7 +316,7 @@ export default function ExperimentDetailPage() {
                       placeholder="50"
                       min="1"
                       step="1"
-                      disabled={isWriting || isConfirming}
+                      disabled={currentStep !== 'idle'}
                     />
                   </div>
                 </div>
@@ -243,26 +325,42 @@ export default function ExperimentDetailPage() {
               <button 
                 type="submit" 
                 className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isWriting || isConfirming}
+                disabled={currentStep !== 'idle'}
               >
                 {!isConnected 
-                  ? "Connect Wallet to Fund" 
-                  : isWriting 
-                  ? "Preparing Transaction..." 
-                  : isConfirming 
-                  ? "Confirming..." 
-                  : "Fund This Science"}
+                  ? "Connect Wallet to Fund"
+                  : currentStep === 'approving' || isApprovePending
+                  ? "Approving Token..."
+                  : currentStep === 'approved'
+                  ? "Approved! Starting deposit..."
+                  : currentStep === 'depositing' || isDepositPending
+                  ? "Depositing..."
+                  : currentStep === 'complete'
+                  ? "Complete!"
+                  : "Fund Experiment"}
               </button>
 
-              {writeError && (
+              {(approveError || depositError) && (
                 <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm">
-                  Error: {writeError.message}
+                  Error: {(approveError || depositError)?.message}
                 </div>
               )}
 
-              {isConfirmed && (
+              {currentStep === 'complete' && (
                 <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
                   Transaction confirmed! Thank you for your support.
+                </div>
+              )}
+              
+              {currentStep === 'approving' && (
+                <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                  Step 1/2: Approving token transfer...
+                </div>
+              )}
+              
+              {currentStep === 'depositing' && (
+                <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                  Step 2/2: Depositing tokens to experiment...
                 </div>
               )}
 
@@ -271,7 +369,7 @@ export default function ExperimentDetailPage() {
                   type="button"
                   onClick={() => setFundingAmount("10")}
                   className="w-full py-2 text-[#00a8cc] hover:bg-[#00a8cc]/10 rounded-lg transition-colors"
-                  disabled={isWriting || isConfirming}
+                  disabled={currentStep !== 'idle'}
                 >
                   Quick fund: $10
                 </button>
@@ -279,7 +377,7 @@ export default function ExperimentDetailPage() {
                   type="button"
                   onClick={() => setFundingAmount("25")}
                   className="w-full py-2 text-[#00a8cc] hover:bg-[#00a8cc]/10 rounded-lg transition-colors"
-                  disabled={isWriting || isConfirming}
+                  disabled={currentStep !== 'idle'}
                 >
                   Quick fund: $25
                 </button>
@@ -287,7 +385,7 @@ export default function ExperimentDetailPage() {
                   type="button"
                   onClick={() => setFundingAmount("50")}
                   className="w-full py-2 text-[#00a8cc] hover:bg-[#00a8cc]/10 rounded-lg transition-colors"
-                  disabled={isWriting || isConfirming}
+                  disabled={currentStep !== 'idle'}
                 >
                   Quick fund: $50
                 </button>
@@ -295,11 +393,9 @@ export default function ExperimentDetailPage() {
             </form>
 
             {/* Contract Address Info */}
-            {CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && (
-              <div className="mt-4 p-2 bg-gray-100 rounded-lg text-xs text-gray-600">
-                Contract: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
-              </div>
-            )}
+            <div className="mt-4 p-2 bg-gray-100 rounded-lg text-xs text-gray-600">
+              Contract: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
+            </div>
           </div>
         </div>
       </div>

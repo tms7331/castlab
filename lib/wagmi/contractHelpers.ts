@@ -14,7 +14,9 @@ export const experimentFundingAbi = parseAbi(
       return `function ${item.name}(${inputs})${item.stateMutability === 'view' ? ' view' : ''}${item.stateMutability === 'payable' ? ' payable' : ''}${outputs}`;
     }
     if (item.type === 'event') {
-      const inputs = item.inputs.map(i => `${i.type}${i.indexed ? ' indexed' : ''} ${i.name}`).join(', ');
+      const inputs = item.inputs.map((i: { type: string; name: string; indexed?: boolean }) => 
+        `${i.type}${i.indexed ? ' indexed' : ''} ${i.name}`
+      ).join(', ');
       return `event ${item.name}(${inputs})`;
     }
     return '';

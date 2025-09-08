@@ -58,26 +58,36 @@ export default function ExperimentsPage() {
             </div>
           ) : (
             experiments.map((exp) => (
-              <Link key={exp.id} href={`/experiments/${exp.id}`}>
+              <Link key={exp.experiment_id} href={`/experiments/${exp.experiment_id}`}>
                 <div className="experiment-card hover:scale-[1.02] cursor-pointer">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <h3 className="text-lg md:text-xl font-semibold text-[#005577] flex-grow">
-                      {exp.title}
-                    </h3>
+                    <div className="flex items-center gap-4 flex-grow">
+                      {exp.image_url && (
+                        <img 
+                          src={exp.image_url} 
+                          alt={exp.title}
+                          className="w-16 h-16 rounded-lg object-cover"
+                        />
+                      )}
+                      <div>
+                        <h3 className="text-lg md:text-xl font-semibold text-[#005577]">
+                          {exp.title}
+                        </h3>
+                        {exp.summary && (
+                          <p className="text-sm text-[#0a3d4d]/70 line-clamp-1 mt-1">
+                            {exp.summary}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                     
                     <div className="flex items-center gap-6">
                       <div className="text-sm text-[#0a3d4d]">
                         <span className="font-semibold text-[#00a8cc]">
-                          ${exp.cost || 0}
+                          ${exp.cost_min || 0} - ${exp.cost_max || 0}
                         </span>
-                        <span className="text-[#0a3d4d]/60"> goal</span>
+                        <span className="text-[#0a3d4d]/60"> range</span>
                       </div>
-                      
-                      {exp.one_liner && (
-                        <div className="hidden md:block text-sm text-[#0a3d4d]/80 max-w-xs">
-                          {exp.one_liner}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

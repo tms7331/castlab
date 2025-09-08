@@ -8,10 +8,10 @@ export default function AboutPage() {
           <h2 className="text-2xl font-bold text-[#005577] mb-4">Our Mission</h2>
           <p className="text-[#0a3d4d] mb-4">
             FarSci is a decentralized crowdfunding platform designed to empower independent scientists and researchers. 
-            We believe that groundbreaking discoveries shouldn't be limited by traditional funding constraints.
+            We believe that groundbreaking discoveries shouldn&apos;t be limited by traditional funding constraints.
           </p>
           <p className="text-[#0a3d4d]">
-            By leveraging the power of the Farcaster community, we're creating a new paradigm where curious minds 
+            By leveraging the power of the Farcaster community, we&apos;re creating a new paradigm where curious minds 
             can directly support the scientific endeavors that excite them most.
           </p>
         </div>
@@ -72,7 +72,7 @@ export default function AboutPage() {
         <div className="experiment-card">
           <h2 className="text-2xl font-bold text-[#005577] mb-4">Why Farcaster?</h2>
           <p className="text-[#0a3d4d] mb-4">
-            Farcaster's decentralized social protocol provides the perfect foundation for transparent, 
+            Farcaster&apos;s decentralized social protocol provides the perfect foundation for transparent, 
             community-driven scientific funding. With built-in identity verification and social graphs, 
             we can ensure accountability while maintaining the open, collaborative spirit of science.
           </p>
