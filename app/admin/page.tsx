@@ -12,10 +12,9 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 export default function AdminPage() {
   const [newExperiment, setNewExperiment] = useState({
     title: "",
-    oneLiner: "",
-    whyStudy: "",
-    approach: "",
-    cost: "",
+    summary: "",
+    costMin: "",
+    costMax: "",
     imageUrl: ""
   });
 
@@ -105,8 +104,16 @@ export default function AdminPage() {
 
   const handleCreateContractExperiment = async () => {
     // Validate inputs
-    if (!newExperiment.title || !newExperiment.cost) {
-      alert("Please enter a title and cost for the experiment");
+    if (!newExperiment.title || !newExperiment.costMin || !newExperiment.costMax || !newExperiment.imageUrl) {
+      alert("Please enter a title, image URL, minimum cost, and maximum cost for the experiment");
+      return;
+    }
+    
+    // Validate cost range
+    const minCost = parseFloat(newExperiment.costMin);
+    const maxCost = parseFloat(newExperiment.costMax);
+    if (minCost > maxCost) {
+      alert("Minimum cost cannot be greater than maximum cost");
       return;
     }
 
@@ -127,15 +134,16 @@ export default function AdminPage() {
     resetWrite();
 
     try {
-      // Convert cost to Wei
-      const goalInWei = usdToWei(parseFloat(newExperiment.cost));
+      // Convert costs to Wei
+      const costMinWei = usdToWei(parseFloat(newExperiment.costMin));
+      const costMaxWei = usdToWei(parseFloat(newExperiment.costMax));
       
-      // Send the transaction
+      // Send the transaction with new parameters
       await writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: ExperimentFundingABI.abi,
         functionName: 'createExperiment',
-        args: [newExperiment.title, goalInWei],
+        args: [newExperiment.title, costMinWei, costMaxWei],
         chainId: baseSepolia.id,
       });
     } catch (error) {
@@ -154,13 +162,18 @@ export default function AdminPage() {
     setSubmitMessage(null);
 
     try {
+      // Generate a random experiment ID for database-only experiments
+      // In production, you might want to coordinate this with the contract
+      const experimentId = Math.floor(Math.random() * 1000000) + 1000;
+      
       // Prepare the event data for the database
       const eventData: EventInsert = {
+        experiment_id: experimentId,
         title: newExperiment.title,
-        one_liner: newExperiment.oneLiner || null,
-        why_study: newExperiment.whyStudy || null,
-        approach: newExperiment.approach || null,
-        cost: newExperiment.cost ? parseFloat(newExperiment.cost) : null
+        summary: newExperiment.summary || null,
+        image_url: newExperiment.imageUrl || null,
+        cost_min: newExperiment.costMin ? parseInt(newExperiment.costMin) : null,
+        cost_max: newExperiment.costMax ? parseInt(newExperiment.costMax) : null
       };
 
       // Send to the API
@@ -182,10 +195,9 @@ export default function AdminPage() {
       setSubmitMessage({ type: 'success', text: 'Event created successfully!' });
       setNewExperiment({
         title: "",
-        oneLiner: "",
-        whyStudy: "",
-        approach: "",
-        cost: "",
+        summary: "",
+        costMin: "",
+        costMax: "",
         imageUrl: ""
       });
 
@@ -296,66 +308,54 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-[#005577] font-semibold mb-2">
-                  One-Liner *
+                  Summary
+                </label>
+                <textarea
+                  value={newExperiment.summary}
+                  onChange={(e) => setNewExperiment({...newExperiment, summary: e.target.value})}
+                  rows={8}
+                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                  placeholder="Provide a brief summary of the experiment, including its purpose, approach, and expected outcomes..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[#005577] font-semibold mb-2">
+                    Minimum Cost (USD) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={newExperiment.costMin}
+                    onChange={(e) => setNewExperiment({...newExperiment, costMin: e.target.value})}
+                    className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                    placeholder="100"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-[#005577] font-semibold mb-2">
+                    Maximum Cost (USD) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={newExperiment.costMax}
+                    onChange={(e) => setNewExperiment({...newExperiment, costMax: e.target.value})}
+                    className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                    placeholder="500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[#005577] font-semibold mb-2">
+                  Image URL *
                 </label>
                 <input
                   type="text"
                   required
-                  value={newExperiment.oneLiner}
-                  onChange={(e) => setNewExperiment({...newExperiment, oneLiner: e.target.value})}
-                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
-                  placeholder="e.g., Kendrick vs Drake – which goes the hardest"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#005577] font-semibold mb-2">
-                  Why Study This? *
-                </label>
-                <textarea
-                  required
-                  value={newExperiment.whyStudy}
-                  onChange={(e) => setNewExperiment({...newExperiment, whyStudy: e.target.value})}
-                  rows={6}
-                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
-                  placeholder="Explain the scientific merit and importance of this study..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#005577] font-semibold mb-2">
-                  Experimental Approach *
-                </label>
-                <textarea
-                  required
-                  value={newExperiment.approach}
-                  onChange={(e) => setNewExperiment({...newExperiment, approach: e.target.value})}
-                  rows={6}
-                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
-                  placeholder="Describe the methodology, controls, and measurements..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#005577] font-semibold mb-2">
-                  Cost (USD) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={newExperiment.cost}
-                  onChange={(e) => setNewExperiment({...newExperiment, cost: e.target.value})}
-                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
-                  placeholder="500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#005577] font-semibold mb-2">
-                  Image URL (optional)
-                </label>
-                <input
-                  type="text"
                   value={newExperiment.imageUrl}
                   onChange={(e) => setNewExperiment({...newExperiment, imageUrl: e.target.value})}
                   className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
