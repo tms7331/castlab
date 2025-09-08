@@ -217,12 +217,12 @@ function ExperimentRow({ experiment, userAddress }: { experiment: any; userAddre
     try {
       setIsWithdrawing(true);
       
-      // Call undeposit function with experiment ID and amount to withdraw
+      // Call undeposit function with only experiment ID (it withdraws the full amount automatically)
       await writeWithdraw({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: ExperimentFundingABI.abi,
         functionName: 'undeposit',
-        args: [BigInt(experiment.experiment_id), depositAmount as bigint],
+        args: [BigInt(experiment.experiment_id)],
         chainId: baseSepolia.id,
       });
     } catch (err) {
