@@ -283,6 +283,21 @@ export default function ExperimentDetailPage() {
                   <p className="text-[#0a3d4d] leading-relaxed whitespace-pre-line">
                     {experiment.summary}
                   </p>
+                  {experiment.experiment_url && (
+                    <div className="mt-4 pt-4 border-t border-[#00a8cc]/20">
+                      <a 
+                        href={experiment.experiment_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-[#00a8cc] hover:text-[#0077a3] font-medium transition-colors"
+                      >
+                        <span>View Experiment Details</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -305,6 +320,9 @@ export default function ExperimentDetailPage() {
               </div>
               <div className="text-sm text-[#0a3d4d] mb-4">
                 <div>Target range: ${(experiment.cost_min || 0).toLocaleString()} - ${(experiment.cost_max || 0).toLocaleString()}</div>
+                {experiment.cost_tag && (
+                  <div className="mt-1 text-xs text-[#0077a3]">Category: {experiment.cost_tag}</div>
+                )}
               </div>
 
             <div className="progress-bar h-3 mb-6">

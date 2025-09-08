@@ -5,6 +5,9 @@ export interface Event {
   image_url: string | null;
   cost_min: number | null;
   cost_max: number | null;
+  cost_tag: string | null;
+  date_completed: string | null;
+  experiment_url: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -15,8 +15,13 @@ export default function AdminPage() {
     summary: "",
     costMin: "",
     costMax: "",
-    imageUrl: ""
+    costTag: "",
+    imageUrl: "",
+    experimentUrl: ""
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [selectedExperiment, setSelectedExperiment] = useState("");
   const [activeTab, setActiveTab] = useState<"create" | "manage">("create");
@@ -103,10 +108,67 @@ export default function AdminPage() {
     { id: 6, title: "The Mathematics of Perfect Pizza", raised: 3200, goal: 3000, status: "completed" }
   ];
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload an image file (JPEG, PNG, GIF, or WebP)');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('File too large. Maximum size is 5MB');
+        return;
+      }
+
+      setImageFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload image');
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      alert('Failed to upload image. Please try again.');
+      return null;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   const handleCreateContractExperiment = async () => {
     // Validate inputs
-    if (!newExperiment.title || !newExperiment.costMin || !newExperiment.costMax || !newExperiment.imageUrl) {
-      alert("Please enter a title, image URL, minimum cost, and maximum cost for the experiment");
+    if (!newExperiment.title || !newExperiment.costMin || !newExperiment.costMax) {
+      alert("Please enter a title, minimum cost, and maximum cost for the experiment");
       return;
     }
 
@@ -179,14 +241,30 @@ export default function AdminPage() {
         return;
       }
 
+      // Upload image if one is selected
+      let imageUrl = newExperiment.imageUrl; // fallback to manually entered URL
+      if (imageFile) {
+        const uploadedUrl = await uploadImage();
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        } else {
+          // Upload failed, stop submission
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Prepare the event data for the database
       const eventData: EventInsert = {
         experiment_id: experimentId,
         title: newExperiment.title,
         summary: newExperiment.summary || null,
-        image_url: newExperiment.imageUrl || null,
+        image_url: imageUrl || null,
         cost_min: newExperiment.costMin ? parseInt(newExperiment.costMin) : null,
-        cost_max: newExperiment.costMax ? parseInt(newExperiment.costMax) : null
+        cost_max: newExperiment.costMax ? parseInt(newExperiment.costMax) : null,
+        cost_tag: newExperiment.costTag || null,
+        date_completed: null, // Will be set when experiment is completed
+        experiment_url: newExperiment.experimentUrl || null
       };
 
       // Send to the API
@@ -211,8 +289,12 @@ export default function AdminPage() {
         summary: "",
         costMin: "",
         costMax: "",
-        imageUrl: ""
+        costTag: "",
+        imageUrl: "",
+        experimentUrl: ""
       });
+      setImageFile(null);
+      setImagePreview(null);
       setContractExperimentId(null);
 
       // Clear success message after 5 seconds
@@ -363,15 +445,94 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-[#005577] font-semibold mb-2">
-                  Image URL *
+                  Cost Tag
                 </label>
                 <input
                   type="text"
-                  required
-                  value={newExperiment.imageUrl}
-                  onChange={(e) => setNewExperiment({ ...newExperiment, imageUrl: e.target.value })}
+                  value={newExperiment.costTag}
+                  onChange={(e) => setNewExperiment({ ...newExperiment, costTag: e.target.value })}
                   className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
-                  placeholder="/image.png (place file in public folder)"
+                  placeholder="e.g., Equipment, Research, Analysis"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[#005577] font-semibold mb-2">
+                  Experiment Image
+                </label>
+                
+                {/* Image Upload */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-[#00a8cc]/30 border-dashed rounded-lg cursor-pointer bg-white/50 hover:bg-[#e8f5f7] transition-colors">
+                      {imagePreview ? (
+                        <div className="relative w-full h-full">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setImageFile(null);
+                              setImagePreview(null);
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <svg className="w-10 h-10 mb-3 text-[#00a8cc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <p className="mb-2 text-sm text-[#0a3d4d]">
+                            <span className="font-semibold">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-[#0a3d4d]">PNG, JPG, GIF or WebP (MAX. 5MB)</p>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                  </div>
+                  
+                  {/* Optional: Manual URL input as fallback */}
+                  <div>
+                    <label className="block text-sm text-[#005577] mb-1">
+                      Or enter image URL manually (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newExperiment.imageUrl}
+                      onChange={(e) => setNewExperiment({ ...newExperiment, imageUrl: e.target.value })}
+                      className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50 text-sm"
+                      placeholder="https://example.com/image.jpg"
+                      disabled={!!imageFile}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[#005577] font-semibold mb-2">
+                  Experiment URL
+                </label>
+                <input
+                  type="text"
+                  value={newExperiment.experimentUrl}
+                  onChange={(e) => setNewExperiment({ ...newExperiment, experimentUrl: e.target.value })}
+                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                  placeholder="https://example.com/experiment-details"
                 />
               </div>
 
@@ -401,10 +562,10 @@ export default function AdminPage() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className={`btn-primary ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isSubmitting || isUploadingImage}
+                  className={`btn-primary ${(isSubmitting || isUploadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Experiment (Database)'}
+                  {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Creating...' : 'Create Experiment (Database)'}
                 </button>
               </div>
 
