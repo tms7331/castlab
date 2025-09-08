@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { EventInsert } from "@/lib/supabase/types";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
-import { CONTRACT_ADDRESS, usdToWei } from '@/lib/wagmi/adminConfig';
+import { CONTRACT_ADDRESS, usdToTokenAmount } from '@/lib/wagmi/adminConfig';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import { decodeEventLog } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -29,8 +29,8 @@ export default function AdminPage() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const publicClient = usePublicClient();
-  const { 
-    writeContract, 
+  const {
+    writeContract,
     data: hash,
     isPending: isWriting,
     error: writeError,
@@ -38,10 +38,10 @@ export default function AdminPage() {
   } = useWriteContract();
 
   // Wait for transaction confirmation
-  const { 
-    isLoading: isConfirming, 
+  const {
+    isLoading: isConfirming,
     isSuccess: isConfirmed,
-    data: receipt 
+    data: receipt
   } = useWaitForTransactionReceipt({
     hash,
   });
@@ -71,17 +71,17 @@ export default function AdminPage() {
               data: experimentCreatedEvent.data,
               topics: experimentCreatedEvent.topics,
             });
-            
+
             // The experiment ID is the first indexed parameter
             const args = decoded.args as unknown as { experimentId: bigint };
             const expId = args.experimentId;
             setContractExperimentId(expId.toString());
             setIsCreatingContract(false);
-            
+
             // Show success message
-            setSubmitMessage({ 
-              type: 'success', 
-              text: `Experiment created on-chain! ID: ${expId.toString()}` 
+            setSubmitMessage({
+              type: 'success',
+              text: `Experiment created on-chain! ID: ${expId.toString()}`
             });
           }
         } catch (error) {
@@ -109,7 +109,7 @@ export default function AdminPage() {
       alert("Please enter a title, image URL, minimum cost, and maximum cost for the experiment");
       return;
     }
-    
+
     // Validate cost range
     const minCost = parseFloat(newExperiment.costMin);
     const maxCost = parseFloat(newExperiment.costMax);
@@ -136,9 +136,11 @@ export default function AdminPage() {
 
     try {
       // Convert costs to Wei
-      const costMinWei = usdToWei(parseFloat(newExperiment.costMin));
-      const costMaxWei = usdToWei(parseFloat(newExperiment.costMax));
-      
+      const costMinWei = usdToTokenAmount(parseFloat(newExperiment.costMin));
+      const costMaxWei = usdToTokenAmount(parseFloat(newExperiment.costMax));
+      console.log('costMinWei', costMinWei);
+      console.log('costMaxWei', costMaxWei);
+
       // Send the transaction with new parameters
       await writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -149,9 +151,9 @@ export default function AdminPage() {
       });
     } catch (error) {
       console.error('Contract creation failed:', error);
-      setSubmitMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to create experiment on-chain' 
+      setSubmitMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to create experiment on-chain'
       });
       setIsCreatingContract(false);
     }
@@ -163,10 +165,20 @@ export default function AdminPage() {
     setSubmitMessage(null);
 
     try {
-      // Generate a random experiment ID for database-only experiments
-      // In production, you might want to coordinate this with the contract
-      const experimentId = Math.floor(Math.random() * 1000000) + 1000;
-      
+      // Validate experiment ID
+      if (!contractExperimentId) {
+        alert("Please create an experiment on the blockchain first to get an Experiment ID");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const experimentId = parseInt(contractExperimentId);
+      if (isNaN(experimentId)) {
+        alert("Invalid Experiment ID");
+        setIsSubmitting(false);
+        return;
+      }
+
       // Prepare the event data for the database
       const eventData: EventInsert = {
         experiment_id: experimentId,
@@ -201,14 +213,15 @@ export default function AdminPage() {
         costMax: "",
         imageUrl: ""
       });
+      setContractExperimentId(null);
 
       // Clear success message after 5 seconds
       setTimeout(() => setSubmitMessage(null), 5000);
     } catch (error) {
       console.error('Error creating event:', error);
-      setSubmitMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to create event. Please try again.' 
+      setSubmitMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to create event. Please try again.'
       });
     } finally {
       setIsSubmitting(false);
@@ -268,21 +281,19 @@ export default function AdminPage() {
         <div className="flex gap-2 mb-8">
           <button
             onClick={() => setActiveTab("create")}
-            className={`px-6 py-2 rounded-lg font-medium transition-all ${
-              activeTab === "create"
-                ? "bg-gradient-to-r from-[#00c9a7] to-[#00a8cc] text-white"
-                : "bg-white text-[#005577] border border-[#00a8cc]/30"
-            }`}
+            className={`px-6 py-2 rounded-lg font-medium transition-all ${activeTab === "create"
+              ? "bg-gradient-to-r from-[#00c9a7] to-[#00a8cc] text-white"
+              : "bg-white text-[#005577] border border-[#00a8cc]/30"
+              }`}
           >
             Create Experiment
           </button>
           <button
             onClick={() => setActiveTab("manage")}
-            className={`px-6 py-2 rounded-lg font-medium transition-all ${
-              activeTab === "manage"
-                ? "bg-gradient-to-r from-[#00c9a7] to-[#00a8cc] text-white"
-                : "bg-white text-[#005577] border border-[#00a8cc]/30"
-            }`}
+            className={`px-6 py-2 rounded-lg font-medium transition-all ${activeTab === "manage"
+              ? "bg-gradient-to-r from-[#00c9a7] to-[#00a8cc] text-white"
+              : "bg-white text-[#005577] border border-[#00a8cc]/30"
+              }`}
           >
             Manage Experiments
           </button>
@@ -301,7 +312,7 @@ export default function AdminPage() {
                   type="text"
                   required
                   value={newExperiment.title}
-                  onChange={(e) => setNewExperiment({...newExperiment, title: e.target.value})}
+                  onChange={(e) => setNewExperiment({ ...newExperiment, title: e.target.value })}
                   className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
                   placeholder="e.g., What Rap Music Goes the Hardest, Objectively"
                 />
@@ -313,7 +324,7 @@ export default function AdminPage() {
                 </label>
                 <textarea
                   value={newExperiment.summary}
-                  onChange={(e) => setNewExperiment({...newExperiment, summary: e.target.value})}
+                  onChange={(e) => setNewExperiment({ ...newExperiment, summary: e.target.value })}
                   rows={8}
                   className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
                   placeholder="Provide a brief summary of the experiment, including its purpose, approach, and expected outcomes..."
@@ -329,12 +340,12 @@ export default function AdminPage() {
                     type="number"
                     required
                     value={newExperiment.costMin}
-                    onChange={(e) => setNewExperiment({...newExperiment, costMin: e.target.value})}
+                    onChange={(e) => setNewExperiment({ ...newExperiment, costMin: e.target.value })}
                     className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
                     placeholder="100"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-[#005577] font-semibold mb-2">
                     Maximum Cost (USD) *
@@ -343,7 +354,7 @@ export default function AdminPage() {
                     type="number"
                     required
                     value={newExperiment.costMax}
-                    onChange={(e) => setNewExperiment({...newExperiment, costMax: e.target.value})}
+                    onChange={(e) => setNewExperiment({ ...newExperiment, costMax: e.target.value })}
                     className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
                     placeholder="500"
                   />
@@ -358,7 +369,7 @@ export default function AdminPage() {
                   type="text"
                   required
                   value={newExperiment.imageUrl}
-                  onChange={(e) => setNewExperiment({...newExperiment, imageUrl: e.target.value})}
+                  onChange={(e) => setNewExperiment({ ...newExperiment, imageUrl: e.target.value })}
                   className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
                   placeholder="/image.png (place file in public folder)"
                 />
@@ -373,23 +384,23 @@ export default function AdminPage() {
 
               {/* Two buttons for contract and database creation */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button 
+                <button
                   type="button"
                   onClick={handleCreateContractExperiment}
                   disabled={!isConnected || isWriting || isConfirming || isCreatingContract}
                   className={`btn-primary ${(!isConnected || isWriting || isConfirming || isCreatingContract) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {isWriting 
+                  {isWriting
                     ? "Preparing..."
-                    : isConfirming 
-                    ? "Confirming..."
-                    : isCreatingContract
-                    ? "Creating on-chain..."
-                    : "Create Experiment (Contract)"}
+                    : isConfirming
+                      ? "Confirming..."
+                      : isCreatingContract
+                        ? "Creating on-chain..."
+                        : "Create Experiment (Contract)"}
                 </button>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isSubmitting}
                   className={`btn-primary ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
@@ -406,11 +417,11 @@ export default function AdminPage() {
                   <input
                     type="text"
                     value={contractExperimentId}
-                    readOnly
+                    onChange={(e) => setContractExperimentId(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-blue-900 font-mono"
                   />
                   <p className="text-xs text-blue-700 mt-2">
-                    Save this ID to link with your database record
+                    This ID will be used when saving to the database
                   </p>
                 </div>
               )}
@@ -433,11 +444,10 @@ export default function AdminPage() {
               )}
 
               {submitMessage && (
-                <div className={`mt-4 p-4 rounded-lg ${
-                  submitMessage.type === 'success' 
-                    ? 'bg-green-100 text-green-700 border border-green-300' 
-                    : 'bg-red-100 text-red-700 border border-red-300'
-                }`}>
+                <div className={`mt-4 p-4 rounded-lg ${submitMessage.type === 'success'
+                  ? 'bg-green-100 text-green-700 border border-green-300'
+                  : 'bg-red-100 text-red-700 border border-red-300'
+                  }`}>
                   {submitMessage.text}
                 </div>
               )}
@@ -448,7 +458,7 @@ export default function AdminPage() {
           <div className="space-y-6">
             <div className="experiment-card">
               <h2 className="text-2xl font-bold text-[#005577] mb-6">Manage Experiments</h2>
-              
+
               <div className="mb-6">
                 <label className="block text-[#005577] font-semibold mb-2">
                   Select Experiment
@@ -501,21 +511,21 @@ export default function AdminPage() {
                     >
                       Close Experiment
                     </button>
-                    
+
                     <button
                       onClick={handleWithdrawFunds}
                       className="px-6 py-3 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors"
                     >
                       Withdraw Funds
                     </button>
-                    
+
                     <button
                       onClick={handleRefundAll}
                       className="px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
                     >
                       Refund All Backers
                     </button>
-                    
+
                     <button
                       onClick={() => alert("Feature coming soon")}
                       className="px-6 py-3 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors"
@@ -551,7 +561,7 @@ export default function AdminPage() {
         {/* Security Notice */}
         <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800">
-            <strong>⚠️ Admin Access:</strong> This page should be protected with authentication in production. 
+            <strong>⚠️ Admin Access:</strong> This page should be protected with authentication in production.
             All actions are logged for security purposes.
           </p>
         </div>

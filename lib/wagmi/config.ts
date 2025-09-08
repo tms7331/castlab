@@ -20,20 +20,15 @@ export const TOKEN_ADDRESS = "0x43b9ed9a40c273E5C6e4dB0358103BD4DA613629" as con
 // We'll use Base Sepolia for testing
 export const DEFAULT_CHAIN = baseSepolia;
 
-// Convert USD to ETH (simplified - in production, use a price oracle)
-// Assuming 1 ETH = $2000 for demo purposes
-export const USD_TO_ETH_RATE = 0.0005; // 1 USD = 0.0005 ETH
-
-export function usdToWei(usdAmount: number): bigint {
-  // Convert USD to ETH, then to Wei (1 ETH = 10^18 Wei)
-  const ethAmount = usdAmount * USD_TO_ETH_RATE;
-  const weiAmount = BigInt(Math.floor(ethAmount * 1e18));
-  return weiAmount;
+// For ERC20 tokens: assuming 1 token = 1 USD with 18 decimals
+export function usdToTokenAmount(usdAmount: number, decimals: number = 18): bigint {
+  // Convert USD to token units (assuming 1:1 peg)
+  const tokenAmount = BigInt(Math.floor(usdAmount * Math.pow(10, decimals)));
+  return tokenAmount;
 }
 
-export function weiToUsd(weiAmount: bigint): number {
-  // Convert Wei to ETH, then to USD
-  const ethAmount = Number(weiAmount) / 1e18;
-  const usdAmount = ethAmount / USD_TO_ETH_RATE;
+export function tokenAmountToUsd(tokenAmount: bigint, decimals: number = 18): number {
+  // Convert token units to USD (assuming 1:1 peg)
+  const usdAmount = Number(tokenAmount) / Math.pow(10, decimals);
   return Math.round(usdAmount * 100) / 100; // Round to 2 decimal places
 }

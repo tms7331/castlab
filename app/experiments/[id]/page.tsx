@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
-import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToWei, weiToUsd } from '@/lib/wagmi/config';
+import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 
 export default function ExperimentDetailPage() {
@@ -59,10 +59,29 @@ export default function ExperimentDetailPage() {
     chainId: baseSepolia.id,
   });
 
+  // Read user's token balance
+  const { data: tokenBalance } = useReadContract({
+    address: TOKEN_ADDRESS as `0x${string}`,
+    abi: [{
+      inputs: [{ name: 'account', type: 'address' }],
+      name: 'balanceOf',
+      outputs: [{ name: '', type: 'uint256' }],
+      stateMutability: 'view',
+      type: 'function',
+    }],
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: baseSepolia.id,
+    enabled: !!address,
+  });
+
   // Extract totalDeposited from contract data
   type ExperimentInfo = readonly [string, bigint, bigint, bigint, boolean, boolean];
-  const totalDepositedWei = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
-  const totalDepositedUSD = weiToUsd(totalDepositedWei);
+  const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
+  const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
+  
+  // Convert token balance to USD
+  const userBalanceUSD = tokenBalance ? tokenAmountToUsd(tokenBalance as bigint) : 0;
 
   useEffect(() => {
     async function fetchEvent() {
@@ -144,8 +163,7 @@ export default function ExperimentDetailPage() {
       setCurrentStep('approving');
       
       // Convert USD to token amount (assuming 18 decimals for the token)
-      // Using usdToWei for now, but you might need to adjust based on token decimals
-      const tokenAmount = usdToWei(Number(fundingAmount));
+      const tokenAmount = usdToTokenAmount(Number(fundingAmount));
       
       // Step 1: Approve the contract to spend tokens
       const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
@@ -171,7 +189,7 @@ export default function ExperimentDetailPage() {
       setCurrentStep('depositing');
       
       const experimentId = experiment.experiment_id;
-      const tokenAmount = usdToWei(Number(fundingAmount));
+      const tokenAmount = usdToTokenAmount(Number(fundingAmount));
       
       // Step 2: Deposit tokens to the experiment
       const ExperimentFunding_ABI = (await import('@/lib/contracts/ExperimentFunding.json')).default.abi;
@@ -288,12 +306,27 @@ export default function ExperimentDetailPage() {
               </span>
             </div>
 
-            {/* Wallet Connection Status */}
+            {/* Wallet Connection Status and Balance */}
             {isConnected && (
-              <div className="mb-4 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
-                <div>Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</div>
-                <div className="text-xs mt-1">
-                  Network: {chainId === baseSepolia.id ? 'Base Sepolia ✓' : `Wrong Network (Chain ID: ${chainId})`}
+              <div className="mb-4 space-y-2">
+                <div className="p-2 bg-green-100 text-green-700 rounded-lg text-sm">
+                  <div>Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</div>
+                  <div className="text-xs mt-1">
+                    Network: {chainId === baseSepolia.id ? 'Base Sepolia ✓' : `Wrong Network (Chain ID: ${chainId})`}
+                  </div>
+                </div>
+                
+                {/* Token Balance Display */}
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-sm font-medium text-blue-900">
+                    Your Token Balance
+                  </div>
+                  <div className="text-lg font-bold text-blue-700">
+                    ${userBalanceUSD.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    Available for funding
+                  </div>
                 </div>
               </div>
             )}
@@ -363,33 +396,6 @@ export default function ExperimentDetailPage() {
                   Step 2/2: Depositing tokens to experiment...
                 </div>
               )}
-
-              <div className="space-y-2 pt-4 border-t border-[#00a8cc]/20">
-                <button
-                  type="button"
-                  onClick={() => setFundingAmount("10")}
-                  className="w-full py-2 text-[#00a8cc] hover:bg-[#00a8cc]/10 rounded-lg transition-colors"
-                  disabled={currentStep !== 'idle'}
-                >
-                  Quick fund: $10
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFundingAmount("25")}
-                  className="w-full py-2 text-[#00a8cc] hover:bg-[#00a8cc]/10 rounded-lg transition-colors"
-                  disabled={currentStep !== 'idle'}
-                >
-                  Quick fund: $25
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFundingAmount("50")}
-                  className="w-full py-2 text-[#00a8cc] hover:bg-[#00a8cc]/10 rounded-lg transition-colors"
-                  disabled={currentStep !== 'idle'}
-                >
-                  Quick fund: $50
-                </button>
-              </div>
             </form>
 
             {/* Contract Address Info */}

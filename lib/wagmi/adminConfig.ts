@@ -20,4 +20,4 @@ export const adminConfig = createConfig({
 });
 
 // Re-export common utilities
-export { CONTRACT_ADDRESS, USD_TO_ETH_RATE, usdToWei, weiToUsd } from './config';
+export { CONTRACT_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from './config';
