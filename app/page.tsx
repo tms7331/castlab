@@ -14,7 +14,7 @@ export default function ExperimentsPage() {
   const [error, setError] = useState<string | null>(null);
   
   // Wagmi hooks
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
 
   useEffect(() => {
     async function fetchEvents() {

@@ -15,7 +15,7 @@ export default function MyExperimentsPage() {
   const [userInvestments, setUserInvestments] = useState<Map<number, number>>(new Map());
   
   // Wagmi hooks
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
   
   // Get user's experiments from blockchain
   const { data: userExperiments } = useReadContract({

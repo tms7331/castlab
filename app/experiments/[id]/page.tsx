@@ -56,7 +56,6 @@ export default function ExperimentDetailPage() {
   const { 
     writeContract: writeWithdraw, 
     data: withdrawHash,
-    error: withdrawError,
     reset: resetWithdraw
   } = useWriteContract();
 
