@@ -50,11 +50,6 @@ export default function RootLayout({
                       Donors
                     </Link>
                   </li>
-                  <li>
-                    <Link href="/suggest" className="nav-link">
-                      Suggest
-                    </Link>
-                  </li>
                 </ul>
               </div>
             </nav>

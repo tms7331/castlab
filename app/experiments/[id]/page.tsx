@@ -19,6 +19,7 @@ export default function ExperimentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [fundingAmount, setFundingAmount] = useState("");
   const [currentStep, setCurrentStep] = useState<'idle' | 'approving' | 'approved' | 'depositing' | 'complete'>('idle');
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   // Wagmi hooks
   const { address, isConnected } = useAccount();
@@ -51,6 +52,19 @@ export default function ExperimentDetailPage() {
     hash: depositHash,
   });
 
+  // Withdrawal transaction hooks
+  const { 
+    writeContract: writeWithdraw, 
+    data: withdrawHash,
+    error: withdrawError,
+    reset: resetWithdraw
+  } = useWriteContract();
+
+  // Wait for withdrawal confirmation
+  const { isLoading: isWithdrawPending, isSuccess: isWithdrawConfirmed } = useWaitForTransactionReceipt({
+    hash: withdrawHash,
+  });
+
   // Read experiment data from smart contract
   const { data: contractData, refetch: refetchContractData } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -78,6 +92,18 @@ export default function ExperimentDetailPage() {
     },
   });
 
+  // Read user's deposit amount for this experiment
+  const { data: userDepositAmount, refetch: refetchUserDeposit } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: ExperimentFundingABI.abi,
+    functionName: 'getUserDeposit',
+    args: address && experiment ? [BigInt(experiment.experiment_id), address] : undefined,
+    chainId: baseSepolia.id,
+    query: {
+      enabled: !!address && !!experiment,
+    },
+  });
+
   // Extract totalDeposited from contract data
   type ExperimentInfo = readonly [string, bigint, bigint, bigint, boolean, boolean];
   const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
@@ -85,6 +111,9 @@ export default function ExperimentDetailPage() {
   
   // Convert token balance to USD
   const userBalanceUSD = tokenBalance ? tokenAmountToUsd(tokenBalance as bigint) : 0;
+  
+  // Convert user's deposit to USD
+  const userDepositUSD = userDepositAmount ? tokenAmountToUsd(userDepositAmount as bigint) : 0;
 
   useEffect(() => {
     async function fetchEvent() {
@@ -130,12 +159,26 @@ export default function ExperimentDetailPage() {
       setFundingAmount("");
       // Refetch contract data to show updated amount
       refetchContractData();
+      refetchUserDeposit();
       // Show success message
       alert("Thank you for funding this experiment! Your transaction has been confirmed.");
       // Don't reset the state automatically - let user dismiss it or cast about it
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDepositConfirmed, currentStep, refetchContractData]);
+
+  // Handle withdrawal confirmation
+  useEffect(() => {
+    if (isWithdrawConfirmed) {
+      setIsWithdrawing(false);
+      resetWithdraw();
+      // Refetch contract data and user deposit to show updated amounts
+      refetchContractData();
+      refetchUserDeposit();
+      alert("Your withdrawal has been completed successfully.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWithdrawConfirmed, resetWithdraw]);
 
   const handleCastAboutDonation = async () => {
     try {
@@ -199,6 +242,27 @@ export default function ExperimentDetailPage() {
       console.error('Approval failed:', err);
       alert('Approval failed. Please try again.');
       setCurrentStep('idle');
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!address || !userDepositAmount || !experiment) return;
+    
+    try {
+      setIsWithdrawing(true);
+      
+      // Call undeposit function with experiment ID
+      await writeWithdraw({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: ExperimentFundingABI.abi,
+        functionName: 'undeposit',
+        args: [BigInt(experiment.experiment_id)],
+        chainId: baseSepolia.id,
+      });
+    } catch (err) {
+      console.error('Withdrawal failed:', err);
+      setIsWithdrawing(false);
+      alert('Withdrawal failed. Please try again.');
     }
   };
 
@@ -366,6 +430,25 @@ export default function ExperimentDetailPage() {
                     Available for funding
                   </div>
                 </div>
+                
+                {/* User's Current Stake Display */}
+                {userDepositUSD > 0 && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="text-sm font-medium text-green-900">
+                      Your Current Stake
+                    </div>
+                    <div className="text-lg font-bold text-green-700">
+                      ${userDepositUSD.toLocaleString()}
+                    </div>
+                    <button
+                      onClick={handleWithdraw}
+                      disabled={isWithdrawing || isWithdrawPending}
+                      className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
