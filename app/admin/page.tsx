@@ -267,25 +267,39 @@ export default function AdminPage() {
     setSubmitMessage(null);
 
     try {
-      // Validate experiment ID
-      if (!contractExperimentId) {
-        alert("Please create an experiment on the blockchain first to get an Experiment ID");
-        setIsSubmitting(false);
-        return;
-      }
-
-      const experimentId = parseInt(contractExperimentId);
-      if (isNaN(experimentId)) {
-        alert("Invalid Experiment ID");
-        setIsSubmitting(false);
-        return;
-      }
-
+      let experimentId: number;
+      
       // Parse date completed if provided
       let dateCompleted: string | null = null;
       if (newExperiment.dateCompleted) {
         dateCompleted = parseDateString(newExperiment.dateCompleted);
         if (!dateCompleted) {
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // If date_completed is filled, generate a random experiment_id
+      // Otherwise, require blockchain experiment ID
+      if (dateCompleted) {
+        // Generate a random experiment ID for completed experiments
+        // Use a large number range to avoid conflicts with blockchain IDs
+        experimentId = Math.floor(Math.random() * 900000) + 100000;
+        setSubmitMessage({ 
+          type: 'success', 
+          text: `Creating completed experiment with ID: ${experimentId}` 
+        });
+      } else {
+        // For ongoing experiments, require blockchain ID
+        if (!contractExperimentId) {
+          alert("Please create an experiment on the blockchain first to get an Experiment ID (or mark as completed for offline experiments)");
+          setIsSubmitting(false);
+          return;
+        }
+
+        experimentId = parseInt(contractExperimentId);
+        if (isNaN(experimentId)) {
+          alert("Invalid Experiment ID");
           setIsSubmitting(false);
           return;
         }
@@ -599,7 +613,7 @@ export default function AdminPage() {
                   placeholder="MM/DD/YYYY (e.g., 03/15/2024)"
                 />
                 <p className="text-xs text-[#0a3d4d] mt-1">
-                  Leave blank if experiment is still in progress
+                  Leave blank for ongoing experiments. Fill in for completed experiments (no blockchain required).
                 </p>
               </div>
 
@@ -610,34 +624,59 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Two buttons for contract and database creation */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={handleCreateContractExperiment}
-                  disabled={!isConnected || isWriting || isConfirming || isCreatingContract}
-                  className={`btn-primary ${(!isConnected || isWriting || isConfirming || isCreatingContract) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {isWriting
-                    ? "Preparing..."
-                    : isConfirming
-                      ? "Confirming..."
-                      : isCreatingContract
-                        ? "Creating on-chain..."
-                        : "Create Experiment (Contract)"}
-                </button>
+              {/* Show different UI based on whether it's a completed experiment */}
+              {newExperiment.dateCompleted ? (
+                <div>
+                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-700">
+                      <strong>Completed Experiment Mode:</strong> This experiment will be created directly in the database with a random ID.
+                      No blockchain transaction required.
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || isUploadingImage}
+                    className={`w-full btn-primary ${(isSubmitting || isUploadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Creating Completed Experiment...' : 'Create Completed Experiment'}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      <strong>Ongoing Experiment Mode:</strong> First create on blockchain to get an ID, then save to database.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={handleCreateContractExperiment}
+                      disabled={!isConnected || isWriting || isConfirming || isCreatingContract}
+                      className={`btn-primary ${(!isConnected || isWriting || isConfirming || isCreatingContract) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {isWriting
+                        ? "Preparing..."
+                        : isConfirming
+                          ? "Confirming..."
+                          : isCreatingContract
+                            ? "Creating on-chain..."
+                            : "Step 1: Create on Blockchain"}
+                    </button>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting || isUploadingImage}
-                  className={`btn-primary ${(isSubmitting || isUploadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Creating...' : 'Create Experiment (Database)'}
-                </button>
-              </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || isUploadingImage || !contractExperimentId}
+                      className={`btn-primary ${(isSubmitting || isUploadingImage || !contractExperimentId) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Creating...' : 'Step 2: Save to Database'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              {/* Display contract experiment ID after successful creation */}
-              {contractExperimentId && (
+              {/* Display contract experiment ID after successful creation (only for ongoing experiments) */}
+              {contractExperimentId && !newExperiment.dateCompleted && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-300 rounded-lg">
                   <label className="block text-sm font-semibold text-blue-900 mb-2">
                     Contract Experiment ID:
