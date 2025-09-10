@@ -38,12 +38,11 @@ export function prepareDepositTransaction(experimentId: string, amountUSD: numbe
   const data = encodeFunctionData({
     abi: ExperimentFundingABI.abi,
     functionName: 'deposit',
-    args: [contractExperimentId],
+    args: [contractExperimentId, valueInWei],
   });
 
   return {
     to: CONTRACT_ADDRESS,
-    value: valueInWei,
     data,
   };
 }
@@ -51,13 +50,14 @@ export function prepareDepositTransaction(experimentId: string, amountUSD: numbe
 /**
  * Prepare create experiment transaction
  */
-export function prepareCreateExperimentTransaction(description: string, goalUSD: number) {
-  const goalInWei = usdToTokenAmount(goalUSD);
+export function prepareCreateExperimentTransaction(costMinUSD: number, costMaxUSD: number) {
+  const costMinWei = usdToTokenAmount(costMinUSD);
+  const costMaxWei = usdToTokenAmount(costMaxUSD);
   
   const data = encodeFunctionData({
     abi: ExperimentFundingABI.abi,
     functionName: 'createExperiment',
-    args: [description, goalInWei],
+    args: [costMinWei, costMaxWei],
   });
 
   return {

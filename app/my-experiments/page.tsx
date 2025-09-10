@@ -33,13 +33,13 @@ export default function MyExperimentsPage() {
   useEffect(() => {
     if (!userExperiments || !address) return;
     
-    const [experimentIds, hasActiveDonation] = userExperiments as [bigint[], boolean[]];
+    const [experimentIds, depositAmounts] = userExperiments as [bigint[], bigint[]];
     const investments = new Map<number, number>();
     
-    // Mark experiments that have active donations
+    // Mark experiments that have deposits
     for (let i = 0; i < experimentIds.length; i++) {
-      if (hasActiveDonation[i]) {
-        investments.set(Number(experimentIds[i]), 1); // Placeholder, actual amount fetched in ExperimentRow
+      if (depositAmounts[i] > BigInt(0)) {
+        investments.set(Number(experimentIds[i]), Number(depositAmounts[i]));
       }
     }
     
@@ -156,12 +156,10 @@ export default function MyExperimentsPage() {
 
 // Component to display individual experiment with fetched investment amount
 interface ExperimentInfo {
-  0: bigint; // experiment ID
-  1: string; // researcher address
-  2: bigint; // funding goal
-  3: bigint; // amount raised
-  4: bigint; // deadline
-  5: boolean; // is closed
+  0: bigint; // costMin
+  1: bigint; // costMax
+  2: bigint; // totalDeposited
+  3: boolean; // closed
 }
 
 interface Experiment {
@@ -204,9 +202,9 @@ function ExperimentRow({ experiment, userAddress }: { experiment: Experiment; us
   });
 
   const amountInvested = depositAmount ? tokenAmountToUsd(depositAmount as bigint) : 0;
-  const totalRaised = experimentInfo ? tokenAmountToUsd((experimentInfo as ExperimentInfo)[3]) : 0;
+  const totalRaised = experimentInfo ? tokenAmountToUsd((experimentInfo as ExperimentInfo)[2]) : 0;
   const goal = experiment.cost_max || 0;
-  const isClosed = experimentInfo ? (experimentInfo as ExperimentInfo)[5] : false;
+  const isClosed = experimentInfo ? (experimentInfo as ExperimentInfo)[3] : false;
   const status = isClosed ? 'completed' : 'in_progress';
 
   // Withdrawal transaction hooks

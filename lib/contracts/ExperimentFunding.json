@@ -9,6 +9,11 @@
           "internalType": "address"
         },
         {
+          "name": "_admin2",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
           "name": "_token",
           "type": "address",
           "internalType": "address"
@@ -31,12 +36,43 @@
     },
     {
       "type": "function",
+      "name": "admin2",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "adminClose",
+      "inputs": [
+        {
+          "name": "experimentId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "adminReturn",
       "inputs": [
         {
           "name": "experimentId",
           "type": "uint256",
           "internalType": "uint256"
+        },
+        {
+          "name": "depositors",
+          "type": "address[]",
+          "internalType": "address[]"
         }
       ],
       "outputs": [],
@@ -59,11 +95,6 @@
       "type": "function",
       "name": "createExperiment",
       "inputs": [
-        {
-          "name": "description",
-          "type": "string",
-          "internalType": "string"
-        },
         {
           "name": "costMin",
           "type": "uint256",
@@ -104,7 +135,7 @@
     },
     {
       "type": "function",
-      "name": "experimentDepositors",
+      "name": "deposits",
       "inputs": [
         {
           "name": "",
@@ -113,15 +144,15 @@
         },
         {
           "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
+          "type": "address",
+          "internalType": "address"
         }
       ],
       "outputs": [
         {
           "name": "",
-          "type": "address",
-          "internalType": "address"
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
       "stateMutability": "view"
@@ -138,11 +169,6 @@
       ],
       "outputs": [
         {
-          "name": "description",
-          "type": "string",
-          "internalType": "string"
-        },
-        {
           "name": "costMin",
           "type": "uint256",
           "internalType": "uint256"
@@ -158,33 +184,9 @@
           "internalType": "uint256"
         },
         {
-          "name": "costMinReached",
-          "type": "bool",
-          "internalType": "bool"
-        },
-        {
           "name": "closed",
           "type": "bool",
           "internalType": "bool"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "getDepositors",
-      "inputs": [
-        {
-          "name": "experimentId",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "address[]",
-          "internalType": "address[]"
         }
       ],
       "stateMutability": "view"
@@ -201,11 +203,6 @@
       ],
       "outputs": [
         {
-          "name": "description",
-          "type": "string",
-          "internalType": "string"
-        },
-        {
           "name": "costMin",
           "type": "uint256",
           "internalType": "uint256"
@@ -219,11 +216,6 @@
           "name": "totalDeposited",
           "type": "uint256",
           "internalType": "uint256"
-        },
-        {
-          "name": "costMinReached",
-          "type": "bool",
-          "internalType": "bool"
         },
         {
           "name": "closed",
@@ -274,9 +266,9 @@
           "internalType": "uint256[]"
         },
         {
-          "name": "hasActiveDonation",
-          "type": "bool[]",
-          "internalType": "bool[]"
+          "name": "depositAmounts",
+          "type": "uint256[]",
+          "internalType": "uint256[]"
         }
       ],
       "stateMutability": "view"
@@ -321,32 +313,8 @@
       "stateMutability": "nonpayable"
     },
     {
-      "type": "function",
-      "name": "userDonations",
-      "inputs": [
-        {
-          "name": "",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool",
-          "internalType": "bool"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
       "type": "event",
-      "name": "AdminReturn",
+      "name": "AdminClose",
       "inputs": [
         {
           "name": "experimentId",
@@ -410,12 +378,6 @@
           "type": "uint256",
           "indexed": true,
           "internalType": "uint256"
-        },
-        {
-          "name": "description",
-          "type": "string",
-          "indexed": false,
-          "internalType": "string"
         },
         {
           "name": "costMin",

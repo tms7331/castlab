@@ -105,8 +105,8 @@ export default function ExperimentDetailPage() {
   });
 
   // Extract totalDeposited from contract data
-  type ExperimentInfo = readonly [string, bigint, bigint, bigint, boolean, boolean];
-  const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
+  type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
+  const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
   
   // Convert token balance to USD

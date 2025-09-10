@@ -17,7 +17,8 @@ export default function AdminPage() {
     costMax: "",
     costTag: "",
     imageUrl: "",
-    experimentUrl: ""
+    experimentUrl: "",
+    dateCompleted: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -208,7 +209,7 @@ export default function AdminPage() {
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: ExperimentFundingABI.abi,
         functionName: 'createExperiment',
-        args: [newExperiment.title, costMinWei, costMaxWei],
+        args: [costMinWei, costMaxWei],
         chainId: baseSepolia.id,
       });
     } catch (error) {
@@ -219,6 +220,45 @@ export default function AdminPage() {
       });
       setIsCreatingContract(false);
     }
+  };
+
+  const parseDateString = (dateStr: string): string | null => {
+    if (!dateStr) return null;
+    
+    // Parse MM/DD/YYYY format
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) {
+      alert("Please enter date in MM/DD/YYYY format");
+      return null;
+    }
+    
+    const month = parseInt(parts[0]);
+    const day = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+    
+    if (isNaN(month) || isNaN(day) || isNaN(year)) {
+      alert("Invalid date format. Please use MM/DD/YYYY");
+      return null;
+    }
+    
+    if (month < 1 || month > 12) {
+      alert("Invalid month. Please enter a value between 1 and 12");
+      return null;
+    }
+    
+    if (day < 1 || day > 31) {
+      alert("Invalid day. Please enter a value between 1 and 31");
+      return null;
+    }
+    
+    if (year < 2020 || year > 2100) {
+      alert("Invalid year. Please enter a reasonable year");
+      return null;
+    }
+    
+    // Create a Date object and convert to ISO string
+    const date = new Date(year, month - 1, day);
+    return date.toISOString();
   };
 
   const handleCreateDatabaseExperiment = async (e: React.FormEvent) => {
@@ -239,6 +279,16 @@ export default function AdminPage() {
         alert("Invalid Experiment ID");
         setIsSubmitting(false);
         return;
+      }
+
+      // Parse date completed if provided
+      let dateCompleted: string | null = null;
+      if (newExperiment.dateCompleted) {
+        dateCompleted = parseDateString(newExperiment.dateCompleted);
+        if (!dateCompleted) {
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       // Upload image if one is selected
@@ -263,7 +313,7 @@ export default function AdminPage() {
         cost_min: newExperiment.costMin ? parseInt(newExperiment.costMin) : null,
         cost_max: newExperiment.costMax ? parseInt(newExperiment.costMax) : null,
         cost_tag: newExperiment.costTag || null,
-        date_completed: null, // Will be set when experiment is completed
+        date_completed: dateCompleted,
         experiment_url: newExperiment.experimentUrl || null
       };
 
@@ -291,7 +341,8 @@ export default function AdminPage() {
         costMax: "",
         costTag: "",
         imageUrl: "",
-        experimentUrl: ""
+        experimentUrl: "",
+        dateCompleted: ""
       });
       setImageFile(null);
       setImagePreview(null);
@@ -534,6 +585,22 @@ export default function AdminPage() {
                   className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
                   placeholder="https://example.com/experiment-details"
                 />
+              </div>
+
+              <div>
+                <label className="block text-[#005577] font-semibold mb-2">
+                  Date Completed (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newExperiment.dateCompleted}
+                  onChange={(e) => setNewExperiment({ ...newExperiment, dateCompleted: e.target.value })}
+                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                  placeholder="MM/DD/YYYY (e.g., 03/15/2024)"
+                />
+                <p className="text-xs text-[#0a3d4d] mt-1">
+                  Leave blank if experiment is still in progress
+                </p>
               </div>
 
               {/* Wallet connection */}
