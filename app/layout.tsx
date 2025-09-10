@@ -36,8 +36,8 @@ export default function RootLayout({
                     </Link>
                   </li>
                   <li>
-                    <Link href="/my-experiments" className="nav-link">
-                      My Experiments
+                    <Link href="/completed-experiments" className="nav-link">
+                      Completed Experiments
                     </Link>
                   </li>
                   <li>

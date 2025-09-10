@@ -354,7 +354,7 @@ export default function ExperimentDetailPage() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 text-[#00a8cc] hover:text-[#0077a3] font-medium transition-colors"
                       >
-                        <span>View Experiment Details</span>
+                        <span>More details</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
@@ -375,6 +375,20 @@ export default function ExperimentDetailPage() {
 
           <div className="md:col-span-1">
             <div className="sticky top-4 experiment-card">
+              {/* Show completion status if completed */}
+              {experiment.date_completed && (
+                <div className="mb-4 p-3 bg-green-100 border border-green-200 rounded-lg">
+                  <div className="text-sm font-medium text-green-900">✓ Experiment Completed</div>
+                  <div className="text-xs text-green-700 mt-1">
+                    {new Date(experiment.date_completed).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </div>
+                </div>
+              )}
+              
               <div className="text-3xl font-bold text-[#00a8cc]">
                 ${totalDepositedUSD.toLocaleString()}
               </div>
@@ -451,6 +465,8 @@ export default function ExperimentDetailPage() {
               </div>
             )}
 
+            {/* Only show funding form if experiment is not completed */}
+            {!experiment.date_completed && (
             <form onSubmit={handleFunding} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#005577] mb-2">
@@ -537,6 +553,7 @@ export default function ExperimentDetailPage() {
                 </div>
               )}
             </form>
+            )}
 
             {/* Contract Address Info */}
             <div className="mt-4 p-2 bg-gray-100 rounded-lg text-xs text-gray-600">

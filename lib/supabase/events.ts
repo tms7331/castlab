@@ -32,6 +32,7 @@ export class EventsService {
       const { data, error } = await supabase
         .from('events')
         .select('*')
+        .is('date_completed', null)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -41,6 +42,28 @@ export class EventsService {
       return { data, error: null };
     } catch (error) {
       console.error('Error fetching events:', error);
+      return { data: null, error: error as Error };
+    }
+  }
+
+  /**
+   * Get completed events
+   */
+  static async getCompletedEvents(): Promise<{ data: Event[] | null; error: Error | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .not('date_completed', 'is', null)
+        .order('date_completed', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error fetching completed events:', error);
       return { data: null, error: error as Error };
     }
   }
