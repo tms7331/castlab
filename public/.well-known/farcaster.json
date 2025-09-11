@@ -1,0 +1,30 @@
+{
+  "frame": {
+    "name": "CastLab",
+    "version": "1",
+    "iconUrl": "https://castlab.vercel.app/icon.png",
+    "homeUrl": "https://castlab.vercel.app",
+    "imageUrl": "https://castlab.vercel.app/castlab1200.png",
+    "buttonTitle": "CastLab!",
+    "splashImageUrl": "https://castlab.vercel.app/castlab200.png",
+    "splashBackgroundColor": "#18065b",
+    "webhookUrl": "https://castlab.vercel.app/api/webhook",
+    "ogImageUrl": "https://castlab.vercel.app/castlab1200.png",
+    "primaryCategory": "education",
+    "subtitle": "Read science, real results, really fun.",
+    "description": "Fund science experiments on your own terms.  Have a fun time.  Be free!",
+    "tags": [
+      "science",
+      "desci",
+      "social"
+    ],
+    "tagline": "Fund SCIENCE!",
+    "ogTitle": "CastLab - Farcaster DeSci Hub!",
+    "ogDescription": "Fund experiments!"
+  },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjg3MTI4OCwidHlwZSI6ImF1dGgiLCJrZXkiOiIweGJlNzI5OUUwNTQzRWYyRTYxNzdmNEY3QzRENTdGZjYxYWRhNTVlYjkifQ",
+    "payload": "eyJkb21haW4iOiJjYXN0bGFiLnZlcmNlbC5hcHAifQ",
+    "signature": "9cnzwuH8FECTK0oObIdM4vabK1g+p9YQd0KGRxTaOkYk2DYvYReW9JjVqyFV6EIG9oC1bKuwYj2XLynRhq9cOhw="
+  }
+}
