@@ -11,7 +11,7 @@
     "webhookUrl": "https://castlab.vercel.app/api/webhook",
     "ogImageUrl": "https://castlab.vercel.app/castlab1200.png",
     "primaryCategory": "education",
-    "subtitle": "Read science, real results, really fun.",
+    "subtitle": "Read science, real fun.",
     "description": "Fund science experiments on your own terms.  Have a fun time.  Be free!",
     "tags": [
       "science",
