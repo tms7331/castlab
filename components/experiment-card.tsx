@@ -10,9 +10,10 @@ import { Event } from "@/lib/supabase/types";
 interface ExperimentCardProps {
   experiment: Event;
   userContribution?: number;
+  hideRanges?: boolean;
 }
 
-export function ExperimentCard({ experiment, userContribution = 0 }: ExperimentCardProps) {
+export function ExperimentCard({ experiment, userContribution = 0, hideRanges = false }: ExperimentCardProps) {
   const currentFunding = experiment.current_funding || 0;
   const fundingGoal = experiment.cost_max || 1;
   const fundingProgress = (currentFunding / fundingGoal) * 100;
@@ -65,20 +66,29 @@ export function ExperimentCard({ experiment, userContribution = 0 }: ExperimentC
         </div>
 
         {/* Funding Range & User Contribution */}
-        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-          <div>
-            <p className="text-xs text-muted-foreground">Funding Range</p>
-            <p className="font-semibold text-primary">
-              ${experiment.cost_min || 0} - ${experiment.cost_max || 0}
-            </p>
+        {!hideRanges ? (
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div>
+              <p className="text-xs text-muted-foreground">Funding Range</p>
+              <p className="font-semibold text-primary">
+                ${experiment.cost_min || 0} - ${experiment.cost_max || 0}
+              </p>
+            </div>
+            {userContribution > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">You contributed</p>
+                <p className="font-semibold text-secondary">${userContribution}</p>
+              </div>
+            )}
           </div>
-          {userContribution > 0 && (
-            <div className="text-right">
+        ) : (
+          userContribution > 0 && (
+            <div className="p-3 bg-muted/50 rounded-lg text-center">
               <p className="text-xs text-muted-foreground">You contributed</p>
               <p className="font-semibold text-secondary">${userContribution}</p>
             </div>
-          )}
-        </div>
+          )
+        )}
       </CardContent>
 
       <CardFooter className="flex gap-2 pt-0">

@@ -68,7 +68,7 @@ export default function CompletedExperimentsPage() {
             </div>
           ) : (
             experiments.map((exp) => (
-              <ExperimentCard key={exp.experiment_id} experiment={exp} />
+              <ExperimentCard key={exp.experiment_id} experiment={exp} hideRanges={true} />
             ))
           )}
         </div>
