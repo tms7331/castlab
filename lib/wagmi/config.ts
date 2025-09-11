@@ -14,8 +14,8 @@ export const config = createConfig({
 });
 
 // Contract configuration for Base Sepolia
-export const CONTRACT_ADDRESS = "0x862734FAd5D5E2d98b4Bbb9D40a7f8984E71da41" as const;
-export const TOKEN_ADDRESS = "0xFA8174F53F1b1e3865Eba638Ac6d86fE779E09FA" as const;
+export const CONTRACT_ADDRESS = "0xa14D8785ce52783025c1B5fc3C055884c6a1C067" as const;
+export const TOKEN_ADDRESS = "0x64ba98e25d98C6327E21036E6E68d21cd08c8E1f" as const;
 
 // We'll use Base Sepolia for testing
 export const DEFAULT_CHAIN = baseSepolia;
