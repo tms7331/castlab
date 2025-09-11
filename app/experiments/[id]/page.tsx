@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, ExternalLink, ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
 
 export default function ExperimentDetailPage() {
   const params = useParams();
@@ -324,68 +324,66 @@ export default function ExperimentDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-4xl mx-auto">
-        <Link href="/" className="text-[#00a8cc] hover:underline mb-6 inline-block">
-          ← Back to all experiments
+    <div className="min-h-screen bg-background">
+      <main className="px-4 py-6 max-w-2xl mx-auto">
+        <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Back to all experiments
         </Link>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className={experiment.date_completed ? "md:col-span-3" : "md:col-span-2"}>
-            <h1 className="text-3xl md:text-4xl font-bold text-[#005577] mb-6">
-              {experiment.title}
-            </h1>
-            
-            {experiment.image_url && (
-              <img 
-                src={experiment.image_url} 
-                alt={experiment.title}
-                className="w-full h-64 object-cover rounded-xl mb-6"
-              />
-            )}
+        <h1 className="text-3xl font-bold text-foreground mb-6">{experiment.title}</h1>
 
-            <div className="space-y-6">
-              {/* Show completion status for completed experiments */}
-              {experiment.date_completed && (
-                <div className="text-sm text-green-600 font-medium">
-                  ✓ Experiment Completed - {new Date(experiment.date_completed).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </div>
-              )}
-              
-              {experiment.summary && (
-                <div className="bg-gradient-to-r from-[#00c9a7]/10 to-[#00a8cc]/10 p-6 rounded-xl border border-[#00a8cc]/20">
-                  <h2 className="text-xl font-bold text-[#005577] mb-3">About This Experiment</h2>
-                  <p className="text-[#0a3d4d] leading-relaxed whitespace-pre-line">
-                    {experiment.summary}
-                  </p>
-                  {experiment.experiment_url && (
-                    <div className="mt-4 pt-4 border-t border-[#00a8cc]/20">
-                      <a 
-                        href={experiment.experiment_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-[#00a8cc] hover:text-[#0077a3] font-medium transition-colors"
-                      >
-                        <span>More details</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+        {experiment.image_url && (
+          <div className="relative mb-6 rounded-lg overflow-hidden">
+            <img
+              src={experiment.image_url}
+              alt={experiment.title}
+              className="w-full h-64 object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
           </div>
+        )}
 
-          {/* Only show funding sidebar if experiment is not completed */}
-          {!experiment.date_completed && (
-          <div className="md:col-span-1">
-            <Card className="sticky top-4 p-4 bg-card border-border">
+        {/* Show completion status for completed experiments */}
+        {experiment.date_completed && (
+          <div className="text-sm text-green-600 font-medium mb-6">
+            ✓ Experiment Completed - {new Date(experiment.date_completed).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </div>
+        )}
+
+        {experiment.summary && (
+          <Card className="p-6 mb-6 bg-card/50 backdrop-blur-sm border-border/50">
+            <h2 className="text-xl font-semibold text-foreground mb-3">About This Experiment</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              {experiment.summary}
+            </p>
+          </Card>
+        )}
+
+        {experiment.experiment_url && (
+          <Card className="p-6 mb-6 bg-muted/50 border-border/50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-foreground">It's time for a data-driven experiment.</h3>
+              <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80" asChild>
+                <a 
+                  href={experiment.experiment_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  More details <ExternalLink className="w-4 h-4 ml-1" />
+                </a>
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Only show funding card if experiment is not completed */}
+        {!experiment.date_completed && (
+          <Card className="p-4 mb-6 bg-card border-border">
               <div className="text-center mb-3">
                 <div className="text-3xl font-bold text-primary mb-1">
                   ${totalDepositedUSD.toLocaleString()}
@@ -548,11 +546,9 @@ export default function ExperimentDetailPage() {
                 Contract: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
               </div>
             </div>
-            </Card>
-          </div>
-          )}
-        </div>
-      </div>
+          </Card>
+        )}
+      </main>
     </div>
   );
 }
