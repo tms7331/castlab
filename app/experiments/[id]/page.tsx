@@ -363,13 +363,6 @@ export default function ExperimentDetailPage() {
                   )}
                 </div>
               )}
-
-              <div className="bg-[#f0fbfd] p-6 rounded-xl border border-[#00a8cc]/20">
-                <h2 className="text-xl font-bold text-[#005577] mb-3">Updates</h2>
-                <p className="text-[#0a3d4d] italic">
-                  No updates yet. Check back soon!
-                </p>
-              </div>
             </div>
           </div>
 
@@ -510,8 +503,13 @@ export default function ExperimentDetailPage() {
               </button>
 
               {(approveError || depositError) && (
-                <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm">
-                  Error: {(approveError || depositError)?.message}
+                <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
+                  <div className="font-semibold">Transaction Error</div>
+                  <div className="mt-1 text-xs break-all">
+                    {((approveError || depositError)?.message || '').includes('User rejected') 
+                      ? 'Transaction was cancelled by user'
+                      : 'Transaction failed. Please try again.'}
+                  </div>
                 </div>
               )}
 
