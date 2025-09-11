@@ -32,7 +32,7 @@ export default function RootLayout({
         <FarcasterProvider>
           <WagmiProvider>
             <Header />
-            <main className="min-h-screen">
+            <main>
               {children}
             </main>
           </WagmiProvider>

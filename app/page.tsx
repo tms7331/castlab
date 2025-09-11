@@ -40,11 +40,10 @@ export default function ExperimentsPage() {
   }, []);
 
   return (
-    <>
+    <div className="min-h-screen bg-white">
       <HeroSection />
-
-      <section className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <section className="px-4 pb-8">
+        <div className="max-w-sm mx-auto space-y-4">
           {loading ? (
             <div className="text-center py-8">
               <p className="text-[#0a3d4d]">Loading experiments...</p>
@@ -64,7 +63,7 @@ export default function ExperimentsPage() {
           )}
         </div>
       </section>
-    </>
+    </div>
   );
 }
 
