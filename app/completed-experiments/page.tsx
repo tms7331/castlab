@@ -3,18 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Event } from "@/lib/supabase/types";
-import { useAccount, useReadContract } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
-import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
-import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 
 export default function CompletedExperimentsPage() {
   const [experiments, setExperiments] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Wagmi hooks
-  const { address } = useAccount();
 
   useEffect(() => {
     async function fetchCompletedEvents() {
@@ -65,7 +58,7 @@ export default function CompletedExperimentsPage() {
             </div>
           ) : (
             experiments.map((exp) => (
-              <CompletedExperimentCard key={exp.experiment_id} experiment={exp} userAddress={address} />
+              <CompletedExperimentCard key={exp.experiment_id} experiment={exp} />
             ))
           )}
         </div>
@@ -74,22 +67,8 @@ export default function CompletedExperimentsPage() {
   );
 }
 
-// Component to display completed experiment with user's contribution
-function CompletedExperimentCard({ experiment, userAddress }: { experiment: Event; userAddress?: string }) {
-  // Fetch user's deposit amount for this specific experiment
-  const { data: depositAmount } = useReadContract({
-    address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: ExperimentFundingABI.abi,
-    functionName: 'getUserDeposit',
-    args: userAddress ? [BigInt(experiment.experiment_id), userAddress] : undefined,
-    chainId: baseSepolia.id,
-    query: {
-      enabled: !!userAddress,
-    },
-  });
-
-  const userContribution = depositAmount ? tokenAmountToUsd(depositAmount as bigint) : 0;
-
+// Component to display completed experiment
+function CompletedExperimentCard({ experiment }: { experiment: Event }) {
   return (
     <Link href={`/experiments/${experiment.experiment_id}`}>
       <div className="experiment-card hover:scale-[1.02] cursor-pointer bg-green-50 border-green-200">
@@ -107,7 +86,7 @@ function CompletedExperimentCard({ experiment, userAddress }: { experiment: Even
                 {experiment.title}
               </h3>
               {experiment.summary && (
-                <p className="text-sm text-[#0a3d4d]/70 line-clamp-1 mt-1">
+                <p className="text-sm text-[#0a3d4d]/70 line-clamp-2 mt-1">
                   {experiment.summary}
                 </p>
               )}
@@ -119,21 +98,15 @@ function CompletedExperimentCard({ experiment, userAddress }: { experiment: Even
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <div className="text-sm text-[#0a3d4d]">
               <span className="font-semibold text-green-600">
-                ✓ Funded
+                ✓ Completed
               </span>
             </div>
-            
-            {/* Display user's contribution if they have contributed */}
-            {userContribution > 0 && (
-              <div className="text-sm">
-                <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
-                  You contributed: ${userContribution}
-                </div>
-              </div>
-            )}
+            <div className="text-sm text-[#00a8cc] font-medium">
+              View Details →
+            </div>
           </div>
         </div>
       </div>

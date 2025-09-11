@@ -45,11 +45,6 @@ export default function RootLayout({
                       About
                     </Link>
                   </li>
-                  <li>
-                    <Link href="/donors" className="nav-link">
-                      Donors
-                    </Link>
-                  </li>
                 </ul>
               </div>
             </nav>

@@ -326,7 +326,7 @@ export default function ExperimentDetailPage() {
         </Link>
 
         <div className="grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2">
+          <div className={experiment.date_completed ? "md:col-span-3" : "md:col-span-2"}>
             <h1 className="text-3xl md:text-4xl font-bold text-[#005577] mb-6">
               {experiment.title}
             </h1>
@@ -340,6 +340,17 @@ export default function ExperimentDetailPage() {
             )}
 
             <div className="space-y-6">
+              {/* Show completion status for completed experiments */}
+              {experiment.date_completed && (
+                <div className="text-sm text-green-600 font-medium">
+                  ✓ Experiment Completed - {new Date(experiment.date_completed).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </div>
+              )}
+              
               {experiment.summary && (
                 <div className="bg-gradient-to-r from-[#00c9a7]/10 to-[#00a8cc]/10 p-6 rounded-xl border border-[#00a8cc]/20">
                   <h2 className="text-xl font-bold text-[#005577] mb-3">About This Experiment</h2>
@@ -366,22 +377,10 @@ export default function ExperimentDetailPage() {
             </div>
           </div>
 
+          {/* Only show funding sidebar if experiment is not completed */}
+          {!experiment.date_completed && (
           <div className="md:col-span-1">
             <div className="sticky top-4 experiment-card">
-              {/* Show completion status if completed */}
-              {experiment.date_completed && (
-                <div className="mb-4 p-3 bg-green-100 border border-green-200 rounded-lg">
-                  <div className="text-sm font-medium text-green-900">✓ Experiment Completed</div>
-                  <div className="text-xs text-green-700 mt-1">
-                    {new Date(experiment.date_completed).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </div>
-                </div>
-              )}
-              
               <div className="text-3xl font-bold text-[#00a8cc]">
                 ${totalDepositedUSD.toLocaleString()}
               </div>
@@ -459,7 +458,6 @@ export default function ExperimentDetailPage() {
             )}
 
             {/* Only show funding form if experiment is not completed */}
-            {!experiment.date_completed && (
             <form onSubmit={handleFunding} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#005577] mb-2">
@@ -551,16 +549,16 @@ export default function ExperimentDetailPage() {
                 </div>
               )}
             </form>
-            )}
 
             {/* Contract Address Info */}
             <div className="mt-4 p-2 bg-gray-100 rounded-lg text-xs text-gray-600">
               Contract: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
             </div>
           </div>
+          </div>
+          )}
         </div>
       </div>
-    </div>
     </div>
   );
 }
