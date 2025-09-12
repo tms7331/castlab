@@ -110,6 +110,18 @@ export default function ExperimentDetailPage() {
     },
   });
 
+  // Mint testnet tokens transaction
+  const {
+    writeContract: writeMint,
+    data: mintHash,
+    error: mintError,
+  } = useWriteContract();
+
+  // Wait for mint confirmation
+  const { isLoading: isMintPending, isSuccess: isMintConfirmed } = useWaitForTransactionReceipt({
+    hash: mintHash,
+  });
+
   // Extract totalDeposited from contract data
   type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
   const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
@@ -203,6 +215,19 @@ export default function ExperimentDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawConfirmed, resetWithdraw]);
+
+  // Handle mint confirmation
+  useEffect(() => {
+    if (isMintConfirmed) {
+      // Refetch balance after minting
+      setTimeout(async () => {
+        await refetchTokenBalance();
+      }, 1000);
+      
+      alert("Testnet tokens minted successfully!");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMintConfirmed]);
 
   const handleCastAboutDonation = async () => {
     try {
@@ -299,6 +324,25 @@ export default function ExperimentDetailPage() {
     }
   };
 
+  const handleMintTestTokens = async () => {
+    if (!address) return;
+
+    try {
+      const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
+      
+      await writeMint({
+        address: TOKEN_ADDRESS as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'mint',
+        args: [],
+        chainId: baseSepolia.id,
+      });
+    } catch (err) {
+      console.error('Minting failed:', err);
+      alert('Minting failed. Please try again.');
+    }
+  };
+
   const handleDeposit = async () => {
     if (!experiment || !fundingAmount) return;
 
@@ -354,16 +398,16 @@ export default function ExperimentDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="px-4 py-6 max-w-2xl mx-auto">
-        <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-6">
+      <main className="px-3 py-4 max-w-2xl mx-auto">
+        <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-4">
           <ArrowLeft className="w-4 h-4" />
           Back to all experiments
         </Link>
 
-        <h1 className="text-3xl font-bold text-foreground mb-6">{experiment.title}</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4">{experiment.title}</h1>
 
         {experiment.image_url && (
-          <div className="relative mb-6 rounded-lg overflow-hidden h-64">
+          <div className="relative mb-4 rounded-lg overflow-hidden h-64">
             <Image
               src={experiment.image_url}
               alt={experiment.title}
@@ -378,7 +422,7 @@ export default function ExperimentDetailPage() {
 
         {/* Show completion status for completed experiments */}
         {experiment.date_completed && (
-          <div className="text-sm text-green-600 font-medium mb-6">
+          <div className="text-sm text-green-600 font-medium mb-4">
             ✓ Experiment Completed - {new Date(experiment.date_completed).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -388,8 +432,8 @@ export default function ExperimentDetailPage() {
         )}
 
         {experiment.summary && (
-          <Card className="p-6 mb-6 bg-card/50 backdrop-blur-sm border-border/50">
-            <h2 className="text-xl font-semibold text-foreground mb-3">About This Experiment</h2>
+          <Card className="p-4 mb-4 bg-card/50 backdrop-blur-sm border-border/50">
+            <h2 className="text-xl font-semibold text-foreground mb-2">About This Experiment</h2>
             <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {experiment.summary}
             </p>
@@ -397,7 +441,7 @@ export default function ExperimentDetailPage() {
         )}
 
         {experiment.experiment_url && (
-          <Card className="p-6 mb-6 bg-muted/50 border-border/50">
+          <Card className="p-4 mb-4 bg-muted/50 border-border/50">
             <div className="flex justify-center">
               <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80" asChild>
                 <a
@@ -414,7 +458,7 @@ export default function ExperimentDetailPage() {
 
         {/* Only show funding card if experiment is not completed */}
         {!experiment.date_completed && (
-          <Card className="p-4 mb-6 bg-card border-border">
+          <Card className="p-4 mb-4 bg-card border-border">
             <div className="text-center mb-3">
               <div className="text-3xl font-bold text-primary mb-1">
                 ${totalDepositedUSD.toLocaleString()}
@@ -456,9 +500,20 @@ export default function ExperimentDetailPage() {
                 {/* Token Balance Display - only show if not in complete state */}
                 {currentStep !== 'complete' && (
                   <Card className="p-3 mb-4 bg-secondary/10 border-secondary/20">
-                    <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
-                    <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
-                    <div className="text-xs text-muted-foreground">Available for funding</div>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
+                        <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">Available for funding</div>
+                      </div>
+                      <button
+                        onClick={handleMintTestTokens}
+                        disabled={isMintPending}
+                        className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
+                      </button>
+                    </div>
                   </Card>
                 )}
 
@@ -492,9 +547,20 @@ export default function ExperimentDetailPage() {
                 
                 {/* Show updated balance after deposit */}
                 <Card className="p-3 bg-secondary/10 border-secondary/20">
-                  <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
-                  <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">Available for funding</div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
+                      <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">Available for funding</div>
+                    </div>
+                    <button
+                      onClick={handleMintTestTokens}
+                      disabled={isMintPending}
+                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
+                    </button>
+                  </div>
                 </Card>
                 
                 {/* Show updated stake after deposit */}
