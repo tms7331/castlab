@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import Head from "next/head";
 import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
@@ -395,110 +396,183 @@ export default function ExperimentDetailPage() {
     );
   }
 
+  const appUrl = getAppUrl();
+  const embedData = experiment ? {
+    version: "1",
+    imageUrl: experiment.image_url || `${appUrl}/og-image.png`,
+    button: {
+      title: "Fund Experiment",
+      action: {
+        type: "launch_frame",
+        name: experiment.title,
+        url: `${appUrl}/experiments/${experiment.experiment_id}`,
+        iconUrl: `${appUrl}/icon.png`,
+        description: experiment.summary?.slice(0, 100) || "Fund this scientific experiment",
+        aboutUrl: `${appUrl}/experiments/${experiment.experiment_id}`
+      }
+    }
+  } : null;
+
   return (
-    <div className="min-h-screen bg-background">
-      <main className="px-3 py-4 max-w-2xl mx-auto">
-        <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-4">
-          <ArrowLeft className="w-4 h-4" />
-          Back to all experiments
-        </Link>
+    <>
+      {experiment && embedData && (
+        <Head>
+          <meta name="fc:miniapp" content={JSON.stringify(embedData)} />
+          <meta name="fc:frame" content={JSON.stringify(embedData)} />
+          <title>{experiment.title} - CastLab</title>
+          <meta name="description" content={experiment.summary?.slice(0, 100) || "Fund fun science experiments on CastLab"} />
+        </Head>
+      )}
+      <div className="min-h-screen bg-background">
+        <main className="px-3 py-4 max-w-2xl mx-auto">
+          <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-4">
+            <ArrowLeft className="w-4 h-4" />
+            Back to all experiments
+          </Link>
 
-        <h1 className="text-3xl font-bold text-foreground mb-4">{experiment.title}</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-4">{experiment.title}</h1>
 
-        {experiment.image_url && (
-          <div className="relative mb-4 rounded-lg overflow-hidden h-64">
-            <Image
-              src={experiment.image_url}
-              alt={experiment.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 672px"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          </div>
-        )}
-
-        {/* Show completion status for completed experiments */}
-        {experiment.date_completed && (
-          <div className="text-sm text-green-600 font-medium mb-4">
-            ✓ Experiment Completed - {new Date(experiment.date_completed).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </div>
-        )}
-
-        {experiment.summary && (
-          <Card className="p-4 mb-4 bg-card/50 backdrop-blur-sm border-border/50">
-            <h2 className="text-xl font-semibold text-foreground mb-2">About This Experiment</h2>
-            <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-              {experiment.summary}
-            </p>
-          </Card>
-        )}
-
-        {experiment.experiment_url && (
-          <Card className="p-4 mb-4 bg-muted/50 border-border/50">
-            <div className="flex justify-center">
-              <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80" asChild>
-                <a
-                  href={experiment.experiment_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Read full details <ExternalLink className="w-4 h-4 ml-1" />
-                </a>
-              </Button>
+          {experiment.image_url && (
+            <div className="relative mb-4 rounded-lg overflow-hidden h-64">
+              <Image
+                src={experiment.image_url}
+                alt={experiment.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 672px"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             </div>
-          </Card>
-        )}
+          )}
 
-        {/* Only show funding card if experiment is not completed */}
-        {!experiment.date_completed && (
-          <Card className="p-4 mb-4 bg-card border-border">
-            <div className="text-center mb-3">
-              <div className="text-3xl font-bold text-primary mb-1">
-                ${totalDepositedUSD.toLocaleString()}
-              </div>
-              <div className="text-muted-foreground text-sm">raised</div>
+          {/* Show completion status for completed experiments */}
+          {experiment.date_completed && (
+            <div className="text-sm text-green-600 font-medium mb-4">
+              ✓ Experiment Completed - {new Date(experiment.date_completed).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
             </div>
+          )}
 
-            <div className="mb-3">
-              <div className="text-sm text-muted-foreground mb-1">
-                Target range: ${(experiment.cost_min || 0).toLocaleString()} - ${(experiment.cost_max || 0).toLocaleString()}
+          {experiment.summary && (
+            <Card className="p-4 mb-4 bg-card/50 backdrop-blur-sm border-border/50">
+              <h2 className="text-xl font-semibold text-foreground mb-2">About This Experiment</h2>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {experiment.summary}
+              </p>
+            </Card>
+          )}
+
+          {experiment.experiment_url && (
+            <Card className="p-4 mb-4 bg-muted/50 border-border/50">
+              <div className="flex justify-center">
+                <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80" asChild>
+                  <a
+                    href={experiment.experiment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Read full details <ExternalLink className="w-4 h-4 ml-1" />
+                  </a>
+                </Button>
               </div>
-              {experiment.cost_tag && (
-                <div className="text-sm text-primary mb-3">
-                  {experiment.cost_tag}
+            </Card>
+          )}
+
+          {/* Only show funding card if experiment is not completed */}
+          {!experiment.date_completed && (
+            <Card className="p-4 mb-4 bg-card border-border">
+              <div className="text-center mb-3">
+                <div className="text-3xl font-bold text-primary mb-1">
+                  ${totalDepositedUSD.toLocaleString()}
                 </div>
+                <div className="text-muted-foreground text-sm">raised</div>
+              </div>
+
+              <div className="mb-3">
+                <div className="text-sm text-muted-foreground mb-1">
+                  Target range: ${(experiment.cost_min || 0).toLocaleString()} - ${(experiment.cost_max || 0).toLocaleString()}
+                </div>
+                {experiment.cost_tag && (
+                  <div className="text-sm text-primary mb-3">
+                    {experiment.cost_tag}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <Progress value={Math.min((totalDepositedUSD / (experiment.cost_max || 1)) * 100, 100)} className="h-2 mb-2" />
+                <div className="text-center text-sm text-muted-foreground">
+                  {Math.round((totalDepositedUSD / (experiment.cost_max || 1)) * 100)}% funded
+                </div>
+              </div>
+
+              {/* Wallet Connection Status and Balance */}
+              {isConnected && (
+                <>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="font-medium text-sm">Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
+                    </div>
+                    <div className="text-xs text-green-600 mt-1">
+                      Network: {chainId === baseSepolia.id ? 'Base Sepolia ✓' : `Wrong Network (Chain ID: ${chainId})`}
+                    </div>
+                  </div>
+
+                  {/* Token Balance Display - only show if not in complete state */}
+                  {currentStep !== 'complete' && (
+                    <Card className="p-3 mb-4 bg-secondary/10 border-secondary/20">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
+                          <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Available for funding</div>
+                        </div>
+                        <button
+                          onClick={handleMintTestTokens}
+                          disabled={isMintPending}
+                          className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
+                        </button>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* User's Current Stake Display - only show if not in complete state */}
+                  {userDepositUSD > 0 && currentStep !== 'complete' && (
+                    <Card className="p-3 mb-4 bg-green-50 border-green-200">
+                      <div className="text-sm font-medium text-green-900">
+                        Your Current Stake
+                      </div>
+                      <div className="text-lg font-bold text-green-700">
+                        ${userDepositUSD.toLocaleString()}
+                      </div>
+                      <button
+                        onClick={handleWithdraw}
+                        disabled={isWithdrawing || isWithdrawPending}
+                        className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
+                      </button>
+                    </Card>
+                  )}
+                </>
               )}
-            </div>
 
-            <div className="mb-4">
-              <Progress value={Math.min((totalDepositedUSD / (experiment.cost_max || 1)) * 100, 100)} className="h-2 mb-2" />
-              <div className="text-center text-sm text-muted-foreground">
-                {Math.round((totalDepositedUSD / (experiment.cost_max || 1)) * 100)}% funded
-              </div>
-            </div>
-
-            {/* Wallet Connection Status and Balance */}
-            {isConnected && (
-              <>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                  <div className="flex items-center gap-2 text-green-700">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="font-medium text-sm">Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
+              {/* Show Cast button when deposit is complete */}
+              {currentStep === 'complete' ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
+                    ✅ Thank you for funding this experiment!
                   </div>
-                  <div className="text-xs text-green-600 mt-1">
-                    Network: {chainId === baseSepolia.id ? 'Base Sepolia ✓' : `Wrong Network (Chain ID: ${chainId})`}
-                  </div>
-                </div>
 
-                {/* Token Balance Display - only show if not in complete state */}
-                {currentStep !== 'complete' && (
-                  <Card className="p-3 mb-4 bg-secondary/10 border-secondary/20">
+                  {/* Show updated balance after deposit */}
+                  <Card className="p-3 bg-secondary/10 border-secondary/20">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
@@ -514,154 +588,108 @@ export default function ExperimentDetailPage() {
                       </button>
                     </div>
                   </Card>
-                )}
 
-                {/* User's Current Stake Display - only show if not in complete state */}
-                {userDepositUSD > 0 && currentStep !== 'complete' && (
-                  <Card className="p-3 mb-4 bg-green-50 border-green-200">
-                    <div className="text-sm font-medium text-green-900">
-                      Your Current Stake
-                    </div>
-                    <div className="text-lg font-bold text-green-700">
-                      ${userDepositUSD.toLocaleString()}
-                    </div>
-                    <button
-                      onClick={handleWithdraw}
-                      disabled={isWithdrawing || isWithdrawPending}
-                      className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
-                    </button>
-                  </Card>
-                )}
-              </>
-            )}
+                  {/* Show updated stake after deposit */}
+                  {userDepositUSD > 0 && (
+                    <Card className="p-3 bg-green-50 border-green-200">
+                      <div className="text-sm font-medium text-green-900">
+                        Your Current Stake
+                      </div>
+                      <div className="text-lg font-bold text-green-700">
+                        ${userDepositUSD.toLocaleString()}
+                      </div>
+                      <button
+                        onClick={handleWithdraw}
+                        disabled={isWithdrawing || isWithdrawPending}
+                        className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
+                      </button>
+                    </Card>
+                  )}
 
-            {/* Show Cast button when deposit is complete */}
-            {currentStep === 'complete' ? (
-              <div className="space-y-3">
-                <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
-                  ✅ Thank you for funding this experiment!
+                  <Button
+                    onClick={handleCastAboutDonation}
+                    className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
+                    size="lg"
+                  >
+                    Cast about it! 📢
+                  </Button>
                 </div>
-
-                {/* Show updated balance after deposit */}
-                <Card className="p-3 bg-secondary/10 border-secondary/20">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
-                      <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
-                      <div className="text-xs text-muted-foreground">Available for funding</div>
+              ) : (
+                /* Show funding form when not complete */
+                <form onSubmit={handleFunding} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Fund this experiment (USD)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                      <Input
+                        type="number"
+                        placeholder="50"
+                        className="pl-8"
+                        value={fundingAmount}
+                        onChange={(e) => setFundingAmount(e.target.value)}
+                        min="1"
+                        step="1"
+                        disabled={currentStep !== 'idle'}
+                      />
                     </div>
-                    <button
-                      onClick={handleMintTestTokens}
-                      disabled={isMintPending}
-                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
-                    </button>
                   </div>
-                </Card>
 
-                {/* Show updated stake after deposit */}
-                {userDepositUSD > 0 && (
-                  <Card className="p-3 bg-green-50 border-green-200">
-                    <div className="text-sm font-medium text-green-900">
-                      Your Current Stake
-                    </div>
-                    <div className="text-lg font-bold text-green-700">
-                      ${userDepositUSD.toLocaleString()}
-                    </div>
-                    <button
-                      onClick={handleWithdraw}
-                      disabled={isWithdrawing || isWithdrawPending}
-                      className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
-                    </button>
-                  </Card>
-                )}
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
+                    size="lg"
+                    disabled={currentStep !== 'idle'}
+                  >
+                    {!isConnected
+                      ? "Connect Wallet to Fund"
+                      : currentStep === 'approving' || isApprovePending
+                        ? "Approving Token..."
+                        : currentStep === 'approved'
+                          ? "Approved! Starting deposit..."
+                          : currentStep === 'depositing' || isDepositPending
+                            ? "Depositing..."
+                            : "Fund Experiment"}
+                  </Button>
 
-                <Button
-                  onClick={handleCastAboutDonation}
-                  className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
-                  size="lg"
-                >
-                  Cast about it! 📢
-                </Button>
-              </div>
-            ) : (
-              /* Show funding form when not complete */
-              <form onSubmit={handleFunding} className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Fund this experiment (USD)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      type="number"
-                      placeholder="50"
-                      className="pl-8"
-                      value={fundingAmount}
-                      onChange={(e) => setFundingAmount(e.target.value)}
-                      min="1"
-                      step="1"
-                      disabled={currentStep !== 'idle'}
-                    />
-                  </div>
+                  {(approveError || depositError) && (
+                    <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
+                      <div className="font-semibold">Transaction Error</div>
+                      <div className="mt-1 text-xs break-all">
+                        {((approveError || depositError)?.message || '').includes('User rejected')
+                          ? 'Transaction was cancelled by user'
+                          : 'Transaction failed. Please try again.'}
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 'approving' && (
+                    <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                      Step 1/2: Approving token transfer...
+                    </div>
+                  )}
+
+                  {currentStep === 'depositing' && (
+                    <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                      Step 2/2: Depositing tokens to experiment...
+                    </div>
+                  )}
+                </form>
+              )}
+
+              {/* Contract Address Info */}
+              <div className="mt-4 pt-3 border-t border-border">
+                <div className="text-xs text-muted-foreground">
+                  Contract: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
                 </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
-                  size="lg"
-                  disabled={currentStep !== 'idle'}
-                >
-                  {!isConnected
-                    ? "Connect Wallet to Fund"
-                    : currentStep === 'approving' || isApprovePending
-                      ? "Approving Token..."
-                      : currentStep === 'approved'
-                        ? "Approved! Starting deposit..."
-                        : currentStep === 'depositing' || isDepositPending
-                          ? "Depositing..."
-                          : "Fund Experiment"}
-                </Button>
-
-                {(approveError || depositError) && (
-                  <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
-                    <div className="font-semibold">Transaction Error</div>
-                    <div className="mt-1 text-xs break-all">
-                      {((approveError || depositError)?.message || '').includes('User rejected')
-                        ? 'Transaction was cancelled by user'
-                        : 'Transaction failed. Please try again.'}
-                    </div>
-                  </div>
-                )}
-
-                {currentStep === 'approving' && (
-                  <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                    Step 1/2: Approving token transfer...
-                  </div>
-                )}
-
-                {currentStep === 'depositing' && (
-                  <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                    Step 2/2: Depositing tokens to experiment...
-                  </div>
-                )}
-              </form>
-            )}
-
-            {/* Contract Address Info */}
-            <div className="mt-4 pt-3 border-t border-border">
-              <div className="text-xs text-muted-foreground">
-                Contract: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
               </div>
-            </div>
-          </Card>
-        )}
-      </main>
-    </div>
+            </Card>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
