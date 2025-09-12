@@ -15,7 +15,7 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
       const appUrl = window.location.origin;
       
       const result = await sdk.actions.composeCast({
-        text: "I have a crazy science experiment idea! 🧪🔬",
+        text: "@motherlizard I have a great experiment idea: ",
         embeds: [appUrl]
       });
       
@@ -42,16 +42,6 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
             <p className="text-lg text-muted-foreground text-balance">Real experiments. Real results. Real fun.</p>
           </div>
 
-          {/* Cast Button */}
-          <div className="pt-2">
-            <Button 
-              onClick={handleCastExperimentIdea}
-              className="w-full max-w-xs bg-[#8b5cf6] hover:bg-[#7c3aed] text-white"
-            >
-              Cast an Experiment Idea
-            </Button>
-          </div>
-
           {/* Stats */}
           <div className="flex justify-center gap-6 pt-2 text-sm text-muted-foreground">
             <div className="text-center">
@@ -64,6 +54,16 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
               </div>
               <div>Funded</div>
             </div>
+          </div>
+
+          {/* Cast Button */}
+          <div className="pt-2">
+            <Button 
+              onClick={handleCastExperimentIdea}
+              className="w-full max-w-xs bg-[#8b5cf6] hover:bg-[#7c3aed] text-white"
+            >
+              Cast an Experiment Idea
+            </Button>
           </div>
         </div>
       </div>
