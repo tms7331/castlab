@@ -2,10 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Event } from "@/lib/supabase/types";
+import { useReadContract } from 'wagmi';
+import { baseSepolia } from 'wagmi/chains';
+import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
+import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 
 interface ExperimentCardProps {
   experiment: Event;
@@ -14,9 +18,22 @@ interface ExperimentCardProps {
 }
 
 export function ExperimentCard({ experiment, userContribution = 0, hideRanges = false }: ExperimentCardProps) {
-  const currentFunding = experiment.current_funding || 0;
+  // Read experiment data from smart contract
+  const { data: contractData } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: ExperimentFundingABI.abi,
+    functionName: 'getExperimentInfo',
+    args: [BigInt(experiment.experiment_id)],
+    chainId: baseSepolia.id,
+  });
+
+  // Extract totalDeposited from contract data
+  type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
+  const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
+  const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
   const fundingGoal = experiment.cost_max || 1;
-  const fundingProgress = (currentFunding / fundingGoal) * 100;
+  const fundingProgress = Math.min((totalDepositedUSD / fundingGoal) * 100, 100);
+  const isClosed = contractData ? (contractData as ExperimentInfo)[3] : false;
 
   return (
     <Card className="hover-lift border-border/50 bg-card/95 backdrop-blur-sm transition-all hover:shadow-lg">
@@ -34,9 +51,14 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             </div>
           )}
           <div className="flex-1 min-w-0">
-            {experiment.status === 'active' && (
+            {!isClosed && totalDepositedUSD > 0 && (
               <Badge variant="secondary" className="mb-2 text-xs">
                 🔬 Active
+              </Badge>
+            )}
+            {isClosed && (
+              <Badge variant="outline" className="mb-2 text-xs">
+                ✅ Completed
               </Badge>
             )}
             <h3 className="font-semibold text-base text-balance leading-tight text-foreground">
@@ -60,7 +82,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
           </div>
           <Progress value={fundingProgress} className="h-2 bg-muted" />
           <div className="flex justify-between items-center text-xs text-muted-foreground">
-            <span>${currentFunding.toLocaleString()} raised</span>
+            <span>${totalDepositedUSD.toLocaleString()} raised</span>
             <span>${fundingGoal.toLocaleString()} goal</span>
           </div>
         </div>
