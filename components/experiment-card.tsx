@@ -12,6 +12,7 @@ import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import { sdk } from '@farcaster/miniapp-sdk';
+import { getAppUrl } from '@/lib/utils/app-url';
 
 interface ExperimentCardProps {
   experiment: Event;
@@ -39,7 +40,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
 
   const handleCastAboutThis = async () => {
     try {
-      const appUrl = window.location.origin;
+      const appUrl = `${getAppUrl()}/experiments/${experiment.experiment_id}`;
       
       const result = await sdk.actions.composeCast({
         text: `Check out this experiment: "${experiment.title}" 🧪🔬`,
@@ -57,16 +58,16 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   return (
     <Card className="hover-lift border-border/50 bg-card/95 backdrop-blur-sm transition-all hover:shadow-lg">
       <CardHeader className="pb-3">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4">
           {experiment.image_url && (
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
+            <div className="w-[45%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
               <div className="relative w-full h-full rounded-lg bg-card overflow-hidden">
                 <Image 
                   src={experiment.image_url} 
                   alt={experiment.title}
                   fill
                   className="object-cover"
-                  sizes="48px"
+                  sizes="(max-width: 768px) 45vw, 200px"
                 />
               </div>
             </div>
@@ -83,7 +84,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
               </h3>
             </Link>
             {experiment.summary && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              <p className="text-xs text-muted-foreground mt-2 line-clamp-3">
                 {experiment.summary}
               </p>
             )}

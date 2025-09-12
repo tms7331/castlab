@@ -3,6 +3,7 @@
 import { NavigationPills } from "@/components/navigation-pills";
 import { Button } from "@/components/ui/button";
 import { sdk } from '@farcaster/miniapp-sdk';
+import { getAppUrl } from '@/lib/utils/app-url';
 
 interface HeroSectionProps {
   activeCount: number;
@@ -12,7 +13,7 @@ interface HeroSectionProps {
 export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
   const handleCastExperimentIdea = async () => {
     try {
-      const appUrl = window.location.origin;
+      const appUrl = getAppUrl();
       
       const result = await sdk.actions.composeCast({
         text: "@motherlizard I have a great experiment idea: ",
