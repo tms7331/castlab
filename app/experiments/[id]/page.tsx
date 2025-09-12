@@ -358,7 +358,7 @@ export default function ExperimentDetailPage() {
         {experiment.summary && (
           <Card className="p-6 mb-6 bg-card/50 backdrop-blur-sm border-border/50">
             <h2 className="text-xl font-semibold text-foreground mb-3">About This Experiment</h2>
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {experiment.summary}
             </p>
           </Card>
