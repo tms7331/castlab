@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { EventInsert } from "@/lib/supabase/types";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
@@ -532,10 +533,12 @@ export default function AdminPage() {
                     <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-[#00a8cc]/30 border-dashed rounded-lg cursor-pointer bg-white/50 hover:bg-[#e8f5f7] transition-colors">
                       {imagePreview ? (
                         <div className="relative w-full h-full">
-                          <img
+                          <Image
                             src={imagePreview}
                             alt="Preview"
-                            className="w-full h-full object-cover rounded-lg"
+                            fill
+                            className="object-cover rounded-lg"
+                            sizes="(max-width: 768px) 100vw, 50vw"
                           />
                           <button
                             type="button"

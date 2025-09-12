@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
@@ -14,7 +14,7 @@ export default function ExperimentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fundingMap, setFundingMap] = useState<Map<number, number>>(new Map());
-  
+
   // Wagmi hooks
   const { address } = useAccount();
 
@@ -23,11 +23,11 @@ export default function ExperimentsPage() {
       try {
         const response = await fetch('/api/events');
         const result = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(result.error || 'Failed to fetch events');
         }
-        
+
         setExperiments(result.data || []);
       } catch (err) {
         console.error('Error fetching events:', err);
@@ -69,9 +69,9 @@ export default function ExperimentsPage() {
             </div>
           ) : (
             experiments.map((exp) => (
-              <ExperimentCardWithContribution 
-                key={exp.experiment_id} 
-                experiment={exp} 
+              <ExperimentCardWithContribution
+                key={exp.experiment_id}
+                experiment={exp}
                 userAddress={address}
                 onFundingData={handleFundingData}
               />
@@ -84,12 +84,12 @@ export default function ExperimentsPage() {
 }
 
 // Component wrapper to fetch and display experiment with user's contribution
-function ExperimentCardWithContribution({ 
-  experiment, 
+function ExperimentCardWithContribution({
+  experiment,
   userAddress,
   onFundingData
-}: { 
-  experiment: Event; 
+}: {
+  experiment: Event;
   userAddress?: string;
   onFundingData?: (experimentId: number, amount: number) => void;
 }) {
@@ -127,8 +127,8 @@ function ExperimentCardWithContribution({
   const userContribution = depositAmount ? tokenAmountToUsd(depositAmount as bigint) : 0;
 
   return (
-    <ExperimentCard 
-      experiment={experiment} 
+    <ExperimentCard
+      experiment={experiment}
       userContribution={userContribution}
     />
   );

@@ -60,7 +60,7 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
           <div className="pt-2">
             <Button 
               onClick={handleCastExperimentIdea}
-              className="w-full max-w-xs bg-[#8b5cf6] hover:bg-[#7c3aed] text-white"
+              className="w-full max-w-xs"
             >
               Cast an Experiment Idea
             </Button>

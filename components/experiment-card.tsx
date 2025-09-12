@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import Image from "next/image";
 import { Event } from "@/lib/supabase/types";
 import { useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
@@ -59,21 +60,18 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
         <div className="flex items-start gap-3">
           {experiment.image_url && (
             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
-              <div className="w-full h-full rounded-lg bg-card flex items-center justify-center overflow-hidden">
-                <img 
+              <div className="relative w-full h-full rounded-lg bg-card overflow-hidden">
+                <Image 
                   src={experiment.image_url} 
                   alt={experiment.title}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="48px"
                 />
               </div>
             </div>
           )}
           <div className="flex-1 min-w-0">
-            {!isClosed && totalDepositedUSD > 0 && (
-              <Badge variant="secondary" className="mb-2 text-xs">
-                🔬 Active
-              </Badge>
-            )}
             {isClosed && (
               <Badge variant="outline" className="mb-2 text-xs">
                 ✅ Completed

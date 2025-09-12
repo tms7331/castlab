@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
@@ -159,6 +160,8 @@ export default function ExperimentDetailPage() {
   // Handle deposit confirmation
   useEffect(() => {
     if (isDepositConfirmed && currentStep === 'depositing') {
+      // Haptic feedback for successful deposit
+      sdk.haptics.impactOccurred('medium');
       setCurrentStep('complete');
       setFundingAmount("");
       // Refetch contract data to show updated amount
@@ -334,11 +337,14 @@ export default function ExperimentDetailPage() {
         <h1 className="text-3xl font-bold text-foreground mb-6">{experiment.title}</h1>
 
         {experiment.image_url && (
-          <div className="relative mb-6 rounded-lg overflow-hidden">
-            <img
+          <div className="relative mb-6 rounded-lg overflow-hidden h-64">
+            <Image
               src={experiment.image_url}
               alt={experiment.title}
-              className="w-full h-64 object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 672px"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
           </div>
