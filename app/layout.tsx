@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   other: {
     "fc:miniapp": JSON.stringify({
       version: "1",
-      imageUrl: `${appUrl}/og-image.png`,
+      imageUrl: `${appUrl}/castlab1200.png`,
       button: {
         title: "Launch CastLab",
         action: {
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     }),
     "fc:frame": JSON.stringify({
       version: "1",
-      imageUrl: `${appUrl}/og-image.png`,
+      imageUrl: `${appUrl}/castlab1200.png`,
       button: {
         title: "Launch CastLab",
         action: {

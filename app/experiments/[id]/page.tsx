@@ -399,7 +399,7 @@ export default function ExperimentDetailPage() {
   const appUrl = getAppUrl();
   const embedData = experiment ? {
     version: "1",
-    imageUrl: experiment.image_url || `${appUrl}/og-image.png`,
+    imageUrl: experiment.image_url || `${appUrl}/castlab1200.png`,
     button: {
       title: "Fund Experiment",
       action: {
