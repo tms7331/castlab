@@ -1,6 +1,11 @@
 import { NavigationPills } from "@/components/navigation-pills";
 
-export function HeroSection() {
+interface HeroSectionProps {
+  activeCount: number;
+  totalFunded: number;
+}
+
+export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden">
       <div className="relative px-4 py-2">
@@ -19,11 +24,13 @@ export function HeroSection() {
           {/* Stats */}
           <div className="flex justify-center gap-6 pt-2 text-sm text-muted-foreground">
             <div className="text-center">
-              <div className="font-semibold text-foreground">127</div>
+              <div className="font-semibold text-foreground">{activeCount}</div>
               <div>Active</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-foreground">$89k</div>
+              <div className="font-semibold text-foreground">
+                ${totalFunded >= 1000 ? `${(totalFunded / 1000).toFixed(0)}k` : totalFunded.toFixed(0)}
+              </div>
               <div>Funded</div>
             </div>
           </div>

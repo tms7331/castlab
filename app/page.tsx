@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
@@ -41,7 +41,7 @@ export default function ExperimentsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <HeroSection />
+      <ExperimentsWithStats experiments={experiments} />
       <section className="px-4 pb-8">
         <div className="max-w-sm mx-auto space-y-4">
           {loading ? (
@@ -58,7 +58,11 @@ export default function ExperimentsPage() {
             </div>
           ) : (
             experiments.map((exp) => (
-              <ExperimentCardWithContribution key={exp.experiment_id} experiment={exp} userAddress={address} />
+              <ExperimentCardWithContribution 
+                key={exp.experiment_id} 
+                experiment={exp} 
+                userAddress={address}
+              />
             ))
           )}
         </div>
@@ -67,8 +71,79 @@ export default function ExperimentsPage() {
   );
 }
 
+// Component to calculate total funding and show hero section
+function ExperimentsWithStats({ experiments }: { experiments: Event[] }) {
+  const [fundingData, setFundingData] = useState<Record<number, number>>({});
+
+  // Calculate total from all experiments
+  const totalFunded = Object.values(fundingData).reduce((sum, amount) => sum + amount, 0);
+
+  // Callback to store funding data per experiment
+  const handleFundingData = useCallback((experimentId: number, funded: number) => {
+    setFundingData(prev => ({
+      ...prev,
+      [experimentId]: funded
+    }));
+  }, []);
+
+  // Reset when experiments change
+  useEffect(() => {
+    setFundingData({});
+  }, [experiments.length]);
+
+  return (
+    <>
+      <HeroSection activeCount={experiments.length} totalFunded={totalFunded} />
+      {/* Hidden components to fetch funding data */}
+      <div style={{ display: 'none' }}>
+        {experiments.map(exp => (
+          <FundingFetcher 
+            key={exp.experiment_id} 
+            experimentId={exp.experiment_id}
+            onFundingData={handleFundingData}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+// Component to fetch funding for a single experiment
+function FundingFetcher({ 
+  experimentId,
+  onFundingData 
+}: { 
+  experimentId: number;
+  onFundingData: (id: number, funded: number) => void;
+}) {
+  const { data: contractData } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: ExperimentFundingABI.abi,
+    functionName: 'getExperimentInfo',
+    args: [BigInt(experimentId)],
+    chainId: baseSepolia.id,
+  });
+
+  useEffect(() => {
+    if (contractData) {
+      type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
+      const totalDepositedTokens = (contractData as ExperimentInfo)[2];
+      const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
+      onFundingData(experimentId, totalDepositedUSD);
+    }
+  }, [contractData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
+}
+
 // Component wrapper to fetch and display experiment with user's contribution
-function ExperimentCardWithContribution({ experiment, userAddress }: { experiment: Event; userAddress?: string }) {
+function ExperimentCardWithContribution({ 
+  experiment, 
+  userAddress
+}: { 
+  experiment: Event; 
+  userAddress?: string;
+}) {
   // Fetch user's deposit amount for this specific experiment
   const { data: depositAmount } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
