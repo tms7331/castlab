@@ -9,7 +9,7 @@ import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import { sdk } from '@farcaster/miniapp-sdk';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -367,7 +367,7 @@ export default function ExperimentDetailPage() {
         {experiment.experiment_url && (
           <Card className="p-6 mb-6 bg-muted/50 border-border/50">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-foreground">It's time for a data-driven experiment.</h3>
+              <h3 className="text-lg font-medium text-foreground">It&apos;s time for a data-driven experiment.</h3>
               <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80" asChild>
                 <a 
                   href={experiment.experiment_url} 

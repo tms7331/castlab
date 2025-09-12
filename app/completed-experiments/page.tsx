@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Event } from "@/lib/supabase/types";
 import { NavigationPills } from "@/components/navigation-pills";
