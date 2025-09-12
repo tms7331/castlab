@@ -114,7 +114,6 @@ export default function ExperimentDetailPage() {
   const {
     writeContract: writeMint,
     data: mintHash,
-    error: mintError,
   } = useWriteContract();
 
   // Wait for mint confirmation
@@ -177,7 +176,7 @@ export default function ExperimentDetailPage() {
       sdk.haptics.impactOccurred('medium');
       setCurrentStep('complete');
       setFundingAmount("");
-      
+
       // Add a small delay to ensure blockchain state is updated
       setTimeout(async () => {
         // Refetch all data to show updated amounts
@@ -187,7 +186,7 @@ export default function ExperimentDetailPage() {
           refetchTokenBalance()
         ]);
       }, 1000);
-      
+
       // Show success message
       alert("Thank you for funding this experiment! Your transaction has been confirmed.");
       // Don't reset the state automatically - let user dismiss it or cast about it
@@ -200,7 +199,7 @@ export default function ExperimentDetailPage() {
     if (isWithdrawConfirmed) {
       setIsWithdrawing(false);
       resetWithdraw();
-      
+
       // Add a small delay to ensure blockchain state is updated
       setTimeout(async () => {
         // Refetch all data to show updated amounts
@@ -210,7 +209,7 @@ export default function ExperimentDetailPage() {
           refetchTokenBalance()
         ]);
       }, 1000);
-      
+
       alert("Your withdrawal has been completed successfully.");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -223,7 +222,7 @@ export default function ExperimentDetailPage() {
       setTimeout(async () => {
         await refetchTokenBalance();
       }, 1000);
-      
+
       alert("Testnet tokens minted successfully!");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -245,7 +244,7 @@ export default function ExperimentDetailPage() {
         setCurrentStep('idle');
         resetApprove();
         resetDeposit();
-        
+
         // Refetch data to ensure amounts stay current
         setTimeout(async () => {
           await Promise.all([
@@ -329,7 +328,7 @@ export default function ExperimentDetailPage() {
 
     try {
       const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
-      
+
       await writeMint({
         address: TOKEN_ADDRESS as `0x${string}`,
         abi: ERC20_ABI,
@@ -544,7 +543,7 @@ export default function ExperimentDetailPage() {
                 <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
                   ✅ Thank you for funding this experiment!
                 </div>
-                
+
                 {/* Show updated balance after deposit */}
                 <Card className="p-3 bg-secondary/10 border-secondary/20">
                   <div className="flex justify-between items-start">
@@ -562,7 +561,7 @@ export default function ExperimentDetailPage() {
                     </button>
                   </div>
                 </Card>
-                
+
                 {/* Show updated stake after deposit */}
                 {userDepositUSD > 0 && (
                   <Card className="p-3 bg-green-50 border-green-200">
@@ -581,7 +580,7 @@ export default function ExperimentDetailPage() {
                     </button>
                   </Card>
                 )}
-                
+
                 <Button
                   onClick={handleCastAboutDonation}
                   className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
