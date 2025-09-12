@@ -13,6 +13,7 @@ export default function ExperimentsPage() {
   const [experiments, setExperiments] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fundingMap, setFundingMap] = useState<Map<number, number>>(new Map());
   
   // Wagmi hooks
   const { address } = useAccount();
@@ -39,9 +40,19 @@ export default function ExperimentsPage() {
     fetchEvents();
   }, []);
 
+  const handleFundingData = (id: number, amount: number) => {
+    setFundingMap(prev => {
+      const newMap = new Map(prev);
+      newMap.set(id, amount);
+      return newMap;
+    });
+  };
+
+  const totalFunded = Array.from(fundingMap.values()).reduce((sum, amount) => sum + amount, 0);
+
   return (
     <div className="min-h-screen bg-white">
-      <ExperimentsWithStats experiments={experiments} />
+      <HeroSection activeCount={experiments.length} totalFunded={totalFunded} />
       <section className="px-4 pb-8">
         <div className="max-w-sm mx-auto space-y-4">
           {loading ? (
@@ -62,6 +73,7 @@ export default function ExperimentsPage() {
                 key={exp.experiment_id} 
                 experiment={exp} 
                 userAddress={address}
+                onFundingData={handleFundingData}
               />
             ))
           )}
@@ -71,79 +83,35 @@ export default function ExperimentsPage() {
   );
 }
 
-// Component to calculate total funding and show hero section
-function ExperimentsWithStats({ experiments }: { experiments: Event[] }) {
-  const [fundingData, setFundingData] = useState<Record<number, number>>({});
-
-  // Calculate total from all experiments
-  const totalFunded = Object.values(fundingData).reduce((sum, amount) => sum + amount, 0);
-
-  // Callback to store funding data per experiment
-  const handleFundingData = useCallback((experimentId: number, funded: number) => {
-    setFundingData(prev => ({
-      ...prev,
-      [experimentId]: funded
-    }));
-  }, []);
-
-  // Reset when experiments change
-  useEffect(() => {
-    setFundingData({});
-  }, [experiments.length]);
-
-  return (
-    <>
-      <HeroSection activeCount={experiments.length} totalFunded={totalFunded} />
-      {/* Hidden components to fetch funding data */}
-      <div style={{ display: 'none' }}>
-        {experiments.map(exp => (
-          <FundingFetcher 
-            key={exp.experiment_id} 
-            experimentId={exp.experiment_id}
-            onFundingData={handleFundingData}
-          />
-        ))}
-      </div>
-    </>
-  );
-}
-
-// Component to fetch funding for a single experiment
-function FundingFetcher({ 
-  experimentId,
-  onFundingData 
+// Component wrapper to fetch and display experiment with user's contribution
+function ExperimentCardWithContribution({ 
+  experiment, 
+  userAddress,
+  onFundingData
 }: { 
-  experimentId: number;
-  onFundingData: (id: number, funded: number) => void;
+  experiment: Event; 
+  userAddress?: string;
+  onFundingData?: (experimentId: number, amount: number) => void;
 }) {
+  // Fetch experiment's total funding
   const { data: contractData } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: ExperimentFundingABI.abi,
     functionName: 'getExperimentInfo',
-    args: [BigInt(experimentId)],
+    args: [BigInt(experiment.experiment_id)],
     chainId: baseSepolia.id,
   });
 
+  // Report funding amount to parent
   useEffect(() => {
-    if (contractData) {
+    if (contractData && onFundingData) {
       type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
       const totalDepositedTokens = (contractData as ExperimentInfo)[2];
       const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
-      onFundingData(experimentId, totalDepositedUSD);
+      onFundingData(experiment.experiment_id, totalDepositedUSD);
     }
   }, [contractData]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return null;
-}
-
-// Component wrapper to fetch and display experiment with user's contribution
-function ExperimentCardWithContribution({ 
-  experiment, 
-  userAddress
-}: { 
-  experiment: Event; 
-  userAddress?: string;
-}) {
   // Fetch user's deposit amount for this specific experiment
   const { data: depositAmount } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,

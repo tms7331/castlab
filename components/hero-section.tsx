@@ -1,4 +1,8 @@
+"use client";
+
 import { NavigationPills } from "@/components/navigation-pills";
+import { Button } from "@/components/ui/button";
+import { sdk } from '@farcaster/miniapp-sdk';
 
 interface HeroSectionProps {
   activeCount: number;
@@ -6,6 +10,23 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
+  const handleCastExperimentIdea = async () => {
+    try {
+      const appUrl = window.location.origin;
+      
+      const result = await sdk.actions.composeCast({
+        text: "I have a crazy science experiment idea! 🧪🔬",
+        embeds: [appUrl]
+      });
+      
+      if (result?.cast) {
+        console.log('Cast successful:', result.cast.hash);
+      }
+    } catch (error) {
+      console.error('Failed to compose cast:', error);
+    }
+  };
+
   return (
     <section className="relative overflow-hidden">
       <div className="relative px-4 py-2">
@@ -19,6 +40,16 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
               Fund <span className="text-primary">SCIENCE!</span>
             </h1>
             <p className="text-lg text-muted-foreground text-balance">Real experiments. Real results. Real fun.</p>
+          </div>
+
+          {/* Cast Button */}
+          <div className="pt-2">
+            <Button 
+              onClick={handleCastExperimentIdea}
+              className="w-full max-w-xs bg-[#8b5cf6] hover:bg-[#7c3aed] text-white"
+            >
+              Cast an Experiment Idea
+            </Button>
           </div>
 
           {/* Stats */}

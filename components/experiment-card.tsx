@@ -10,6 +10,7 @@ import { useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 interface ExperimentCardProps {
   experiment: Event;
@@ -34,6 +35,23 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   const fundingGoal = experiment.cost_max || 1;
   const fundingProgress = Math.min((totalDepositedUSD / fundingGoal) * 100, 100);
   const isClosed = contractData ? (contractData as ExperimentInfo)[3] : false;
+
+  const handleCastAboutThis = async () => {
+    try {
+      const appUrl = window.location.origin;
+      
+      const result = await sdk.actions.composeCast({
+        text: `Check out this experiment: "${experiment.title}" 🧪🔬`,
+        embeds: [appUrl]
+      });
+      
+      if (result?.cast) {
+        console.log('Cast successful:', result.cast.hash);
+      }
+    } catch (error) {
+      console.error('Failed to compose cast:', error);
+    }
+  };
 
   return (
     <Card className="hover-lift border-border/50 bg-card/95 backdrop-blur-sm transition-all hover:shadow-lg">
@@ -61,9 +79,11 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
                 ✅ Completed
               </Badge>
             )}
-            <h3 className="font-semibold text-base text-balance leading-tight text-foreground">
-              {experiment.title}
-            </h3>
+            <Link href={`/experiments/${experiment.experiment_id}`}>
+              <h3 className="font-semibold text-base text-balance leading-tight text-foreground hover:text-primary transition-colors cursor-pointer">
+                {experiment.title}
+              </h3>
+            </Link>
             {experiment.summary && (
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {experiment.summary}
@@ -73,45 +93,49 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Funding Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium text-foreground">{fundingProgress.toFixed(1)}%</span>
-          </div>
-          <Progress value={fundingProgress} className="h-2 bg-muted" />
-          <div className="flex justify-between items-center text-xs text-muted-foreground">
-            <span>${totalDepositedUSD.toLocaleString()} raised</span>
-            <span>${fundingGoal.toLocaleString()} goal</span>
-          </div>
-        </div>
-
-        {/* Funding Range & User Contribution */}
-        {!hideRanges ? (
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-            <div>
-              <p className="text-xs text-muted-foreground">Funding Range</p>
-              <p className="font-semibold text-primary">
-                ${experiment.cost_min || 0} - ${experiment.cost_max || 0}
-              </p>
+      {(!hideRanges || userContribution > 0) && (
+        <CardContent className="space-y-4">
+          {/* Funding Progress - only show if not hiding ranges */}
+          {!hideRanges && (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-medium text-foreground">{fundingProgress.toFixed(1)}%</span>
+              </div>
+              <Progress value={fundingProgress} className="h-2 bg-muted" />
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <span>${totalDepositedUSD.toLocaleString()} raised</span>
+                <span>${fundingGoal.toLocaleString()} goal</span>
+              </div>
             </div>
-            {userContribution > 0 && (
-              <div className="text-right">
+          )}
+
+          {/* Funding Range & User Contribution */}
+          {!hideRanges ? (
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div>
+                <p className="text-xs text-muted-foreground">Funding Range</p>
+                <p className="font-semibold text-primary">
+                  ${experiment.cost_min || 0} - ${experiment.cost_max || 0}
+                </p>
+              </div>
+              {userContribution > 0 && (
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">You contributed</p>
+                  <p className="font-semibold text-secondary">${userContribution}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            userContribution > 0 && (
+              <div className="p-3 bg-muted/50 rounded-lg text-center">
                 <p className="text-xs text-muted-foreground">You contributed</p>
                 <p className="font-semibold text-secondary">${userContribution}</p>
               </div>
-            )}
-          </div>
-        ) : (
-          userContribution > 0 && (
-            <div className="p-3 bg-muted/50 rounded-lg text-center">
-              <p className="text-xs text-muted-foreground">You contributed</p>
-              <p className="font-semibold text-secondary">${userContribution}</p>
-            </div>
-          )
-        )}
-      </CardContent>
+            )
+          )}
+        </CardContent>
+      )}
 
       <CardFooter className="flex gap-2 pt-0">
         <Button asChild size="sm" className="flex-1">
@@ -119,7 +143,12 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             View Details
           </Link>
         </Button>
-        <Button variant="outline" size="sm" className="flex-1">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex-1"
+          onClick={handleCastAboutThis}
+        >
           Cast About This
         </Button>
       </CardFooter>
