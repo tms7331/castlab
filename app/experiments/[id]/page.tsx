@@ -162,6 +162,16 @@ export default function ExperimentDetailPage() {
     }
   }, [isApproved, currentStep]);
 
+  // Handle approve error - reset to idle state for retry
+  useEffect(() => {
+    if (approveError && currentStep === 'approving') {
+      console.error('Approve transaction failed:', approveError);
+      setCurrentStep('idle');
+      // Reset approve state to allow retry
+      resetApprove();
+    }
+  }, [approveError, currentStep, resetApprove]);
+
   // Automatically proceed to deposit after approval
   useEffect(() => {
     if (currentStep === 'approved') {
@@ -194,6 +204,34 @@ export default function ExperimentDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDepositConfirmed, currentStep, refetchContractData]);
+
+  // Handle deposit error - reset to approved state for retry
+  useEffect(() => {
+    if (depositError && currentStep === 'depositing') {
+      console.error('Deposit transaction failed:', depositError);
+      
+      // Check if user rejected the transaction
+      const userRejected = depositError.message?.includes('User rejected');
+      
+      if (userRejected) {
+        // If user rejected, go back to idle and reset everything
+        setCurrentStep('idle');
+        resetApprove();
+        resetDeposit();
+      } else {
+        // For other errors, keep approval and allow retry of just deposit
+        setCurrentStep('approved');
+        resetDeposit();
+        
+        // Only auto-retry for non-user-rejection errors
+        // Use a ref or just call handleDeposit after state update
+        setTimeout(() => {
+          handleDeposit();
+        }, 2000);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [depositError, currentStep, resetDeposit, resetApprove]);
 
   // Handle withdrawal confirmation
   useEffect(() => {
@@ -280,27 +318,26 @@ export default function ExperimentDetailPage() {
       return;
     }
 
-    try {
-      setCurrentStep('approving');
+    // Clear any previous errors before starting
+    resetApprove();
+    resetDeposit();
+    
+    setCurrentStep('approving');
 
-      // Convert USD to token amount (assuming 18 decimals for the token)
-      const tokenAmount = usdToTokenAmount(Number(fundingAmount));
+    // Convert USD to token amount (assuming 18 decimals for the token)
+    const tokenAmount = usdToTokenAmount(Number(fundingAmount));
 
-      // Step 1: Approve the contract to spend tokens
-      const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
+    // Step 1: Approve the contract to spend tokens
+    const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
 
-      await writeApprove({
-        address: TOKEN_ADDRESS as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [CONTRACT_ADDRESS, tokenAmount],
-        chainId: baseSepolia.id,
-      });
-    } catch (err) {
-      console.error('Approval failed:', err);
-      alert('Approval failed. Please try again.');
-      setCurrentStep('idle');
-    }
+    writeApprove({
+      address: TOKEN_ADDRESS as `0x${string}`,
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [CONTRACT_ADDRESS, tokenAmount],
+      chainId: baseSepolia.id,
+    });
+    // Error handling is now done in the useEffect hook for approveError
   };
 
   const handleWithdraw = async () => {
@@ -310,7 +347,7 @@ export default function ExperimentDetailPage() {
       setIsWithdrawing(true);
 
       // Call undeposit function with experiment ID
-      await writeWithdraw({
+      writeWithdraw({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: ExperimentFundingABI.abi,
         functionName: 'undeposit',
@@ -330,7 +367,7 @@ export default function ExperimentDetailPage() {
     try {
       const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
 
-      await writeMint({
+      writeMint({
         address: TOKEN_ADDRESS as `0x${string}`,
         abi: ERC20_ABI,
         functionName: 'mint',
@@ -346,29 +383,22 @@ export default function ExperimentDetailPage() {
   const handleDeposit = async () => {
     if (!experiment || !fundingAmount) return;
 
-    try {
-      setCurrentStep('depositing');
+    setCurrentStep('depositing');
 
-      const experimentId = experiment.experiment_id;
-      const tokenAmount = usdToTokenAmount(Number(fundingAmount));
+    const experimentId = experiment.experiment_id;
+    const tokenAmount = usdToTokenAmount(Number(fundingAmount));
 
-      // Step 2: Deposit tokens to the experiment
-      const ExperimentFunding_ABI = (await import('@/lib/contracts/ExperimentFunding.json')).default.abi;
+    // Step 2: Deposit tokens to the experiment
+    const ExperimentFunding_ABI = (await import('@/lib/contracts/ExperimentFunding.json')).default.abi;
 
-      await writeDeposit({
-        address: CONTRACT_ADDRESS as `0x${string}`,
-        abi: ExperimentFunding_ABI,
-        functionName: 'deposit',
-        args: [BigInt(experimentId), tokenAmount],
-        chainId: baseSepolia.id,
-      });
-    } catch (err) {
-      console.error('Deposit failed:', err);
-      alert('Deposit failed. Please try again.');
-      setCurrentStep('idle');
-      resetApprove();
-      resetDeposit();
-    }
+    writeDeposit({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: ExperimentFunding_ABI,
+      functionName: 'deposit',
+      args: [BigInt(experimentId), tokenAmount],
+      chainId: baseSepolia.id,
+    });
+    // Error handling is now done in the useEffect hook for depositError
   };
 
   if (loading) {
@@ -661,8 +691,30 @@ export default function ExperimentDetailPage() {
                       <div className="mt-1 text-xs break-all">
                         {((approveError || depositError)?.message || '').includes('User rejected')
                           ? 'Transaction was cancelled by user'
-                          : 'Transaction failed. Please try again.'}
+                          : approveError 
+                            ? 'Token approval failed. You can try again.'
+                            : depositError && !depositError.message?.includes('User rejected')
+                              ? 'Deposit failed. Retrying automatically...'
+                              : 'Deposit cancelled. Please try again.'}
                       </div>
+                      {approveError && currentStep === 'idle' && (
+                        <Button
+                          onClick={() => handleFunding({ preventDefault: () => {} } as React.FormEvent)}
+                          className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1"
+                          size="sm"
+                        >
+                          Retry Approval
+                        </Button>
+                      )}
+                      {depositError && depositError.message?.includes('User rejected') && currentStep === 'idle' && (
+                        <Button
+                          onClick={() => handleFunding({ preventDefault: () => {} } as React.FormEvent)}
+                          className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
+                          size="sm"
+                        >
+                          Try Again
+                        </Button>
+                      )}
                     </div>
                   )}
 
