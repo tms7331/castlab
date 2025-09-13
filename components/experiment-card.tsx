@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Event } from "@/lib/supabase/types";
+import Image from "next/image";
 import { useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
@@ -60,9 +61,11 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
           {experiment.image_url && (
             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
               <div className="w-full h-full rounded-lg bg-card flex items-center justify-center overflow-hidden">
-                <img
+                <Image
                   src={experiment.image_url}
                   alt={experiment.title}
+                  width={48}
+                  height={48}
                   className="w-full h-full object-cover"
                 />
               </div>
