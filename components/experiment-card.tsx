@@ -3,9 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Event } from "@/lib/supabase/types";
 import Image from "next/image";
+import Link from "next/link";
 import { useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
@@ -35,14 +35,13 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
   const fundingGoal = experiment.cost_max || 1;
   const fundingProgress = Math.min((totalDepositedUSD / fundingGoal) * 100, 100);
-  const isClosed = contractData ? (contractData as ExperimentInfo)[3] : false;
 
   const handleCastAboutThis = async () => {
     try {
       const appUrl = `${getAppUrl()}/experiments/${experiment?.experiment_id}`;
 
       const result = await sdk.actions.composeCast({
-        text: `Check out this experiment: "${experiment.title}" 🧪🔬`,
+        text: `Check out this experiment: "${experiment.title} ${appUrl}" 🧪🔬`,
         embeds: [appUrl]
       });
 
@@ -59,37 +58,24 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
           {experiment.image_url && (
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
-              <div className="w-full h-full rounded-lg bg-card flex items-center justify-center overflow-hidden">
+            <div className="w-[45%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
+              <div className="relative w-full h-full rounded-lg bg-card overflow-hidden">
                 <Image
                   src={experiment.image_url}
                   alt={experiment.title}
-                  width={48}
-                  height={48}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 45vw, 200px"
                 />
               </div>
             </div>
           )}
           <div className="flex-1 min-w-0">
-            {!isClosed && totalDepositedUSD > 0 && (
-              <Badge variant="secondary" className="mb-2 text-xs">
-                🔬 Active
-              </Badge>
-            )}
-            {isClosed && (
-              <Badge variant="outline" className="mb-2 text-xs">
-                ✅ Completed
-              </Badge>
-            )}
-            <h3
-              className="font-semibold text-base text-balance leading-tight text-foreground hover:text-primary transition-colors cursor-pointer"
-              onClick={async () => {
-                await sdk.actions.openUrl(`${window.location.origin}/experiments/${experiment.experiment_id}`);
-              }}
-            >
-              {experiment.title}
-            </h3>
+            <Link href={`/experiments/${experiment.experiment_id}`}>
+              <h3 className="font-semibold text-base text-balance leading-tight text-foreground hover:text-primary transition-colors cursor-pointer">
+                {experiment.title}
+              </h3>
+            </Link>
             {experiment.summary && (
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {experiment.summary}
@@ -147,11 +133,11 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
         <Button
           size="sm"
           className="flex-1"
-          onClick={async () => {
-            await sdk.actions.openUrl(`${window.location.origin}/experiments/${experiment.experiment_id}`);
-          }}
+          asChild
         >
-          View Details
+          <Link href={`/experiments/${experiment.experiment_id}`}>
+            View Details
+          </Link>
         </Button>
         <Button
           variant="outline"

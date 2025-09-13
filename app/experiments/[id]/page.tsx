@@ -198,8 +198,6 @@ export default function ExperimentDetailPage() {
         ]);
       }, 1000);
 
-      // Show success message
-      alert("Thank you for funding this experiment! Your transaction has been confirmed.");
       // Don't reset the state automatically - let user dismiss it or cast about it
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,10 +207,10 @@ export default function ExperimentDetailPage() {
   useEffect(() => {
     if (depositError && currentStep === 'depositing') {
       console.error('Deposit transaction failed:', depositError);
-      
+
       // Check if user rejected the transaction
       const userRejected = depositError.message?.includes('User rejected');
-      
+
       if (userRejected) {
         // If user rejected, go back to idle and reset everything
         setCurrentStep('idle');
@@ -222,7 +220,7 @@ export default function ExperimentDetailPage() {
         // For other errors, keep approval and allow retry of just deposit
         setCurrentStep('approved');
         resetDeposit();
-        
+
         // Only auto-retry for non-user-rejection errors
         // Use a ref or just call handleDeposit after state update
         setTimeout(() => {
@@ -321,7 +319,7 @@ export default function ExperimentDetailPage() {
     // Clear any previous errors before starting
     resetApprove();
     resetDeposit();
-    
+
     setCurrentStep('approving');
 
     // Convert USD to token amount (assuming 18 decimals for the token)
@@ -691,7 +689,7 @@ export default function ExperimentDetailPage() {
                       <div className="mt-1 text-xs break-all">
                         {((approveError || depositError)?.message || '').includes('User rejected')
                           ? 'Transaction was cancelled by user'
-                          : approveError 
+                          : approveError
                             ? 'Token approval failed. You can try again.'
                             : depositError && !depositError.message?.includes('User rejected')
                               ? 'Deposit failed. Retrying automatically...'
@@ -699,7 +697,7 @@ export default function ExperimentDetailPage() {
                       </div>
                       {approveError && currentStep === 'idle' && (
                         <Button
-                          onClick={() => handleFunding({ preventDefault: () => {} } as React.FormEvent)}
+                          onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
                           className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1"
                           size="sm"
                         >
@@ -708,7 +706,7 @@ export default function ExperimentDetailPage() {
                       )}
                       {depositError && depositError.message?.includes('User rejected') && currentStep === 'idle' && (
                         <Button
-                          onClick={() => handleFunding({ preventDefault: () => {} } as React.FormEvent)}
+                          onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
                           className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
                           size="sm"
                         >

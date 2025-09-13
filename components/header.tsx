@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import LoginButton from "@/app/components/LoginButton";
+import LoginButton from "@/components/LoginButton";
 
 export function Header() {
   return (
@@ -10,9 +10,9 @@ export function Header() {
         {/* Logo */}
         <div className="flex items-center gap-3">
           <div className="relative w-8 h-8">
-            <Image 
-              src="/icon.png" 
-              alt="CastLab Logo" 
+            <Image
+              src="/icon.png"
+              alt="CastLab Logo"
               fill
               className="rounded-lg object-cover"
               sizes="32px"

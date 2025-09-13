@@ -1,6 +1,6 @@
 'use client';
 
-import { useFarcaster } from '../providers/FarcasterProvider';
+import { useFarcaster } from '@/app/providers/FarcasterProvider';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -19,9 +19,9 @@ export default function LoginButton() {
     return (
       <div className="flex items-center gap-2">
         <Avatar className="w-8 h-8">
-          <AvatarImage 
-            src={user.pfpUrl || "/scientist-profile.png"} 
-            alt={user.displayName || user.username || 'Profile'} 
+          <AvatarImage
+            src={user.pfpUrl || "/scientist-profile.png"}
+            alt={user.displayName || user.username || 'Profile'}
           />
           <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
             {(user.displayName || user.username || 'U')[0].toUpperCase()}
@@ -35,9 +35,9 @@ export default function LoginButton() {
   }
 
   return (
-    <Button 
+    <Button
       onClick={login}
-      variant="secondary" 
+      variant="secondary"
       size="sm"
     >
       Login with Farcaster
