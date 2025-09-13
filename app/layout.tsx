@@ -5,6 +5,7 @@ import { FarcasterProvider } from "./providers/FarcasterProvider";
 import { WagmiProvider } from "@/lib/wagmi/WagmiProvider";
 import { Header } from "@/components/header";
 import { getAppUrl } from "@/lib/utils/app-url";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -20,8 +21,8 @@ const geistMono = localFont({
 const appUrl = getAppUrl();
 
 export const metadata: Metadata = {
-  title: "CastLab - Fund Weird Science",
-  description: "Crowdfunding platform for unconventional scientific experiments",
+  title: "CastLab - Fund Fun Science",
+  description: "Crowdfunding platform for fun science experiments",
   other: {
     "fc:miniapp": JSON.stringify({
       version: "1",
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
           name: "CastLab",
           url: appUrl,
           iconUrl: `${appUrl}/icon.png`,
-          description: "Fund weird science experiments",
+          description: "Fund fun science experiments",
           aboutUrl: `${appUrl}/about`
         }
       }
@@ -48,7 +49,7 @@ export const metadata: Metadata = {
           name: "CastLab",
           url: appUrl,
           iconUrl: `${appUrl}/icon.png`,
-          description: "Fund weird science experiments",
+          description: "Fund fun science experiments",
           aboutUrl: `${appUrl}/about`
         }
       }
@@ -72,6 +73,7 @@ export default function RootLayout({
             </main>
           </WagmiProvider>
         </FarcasterProvider>
+        <Analytics />
       </body>
     </html>
   );

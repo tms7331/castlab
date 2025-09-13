@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
-import Image from "next/image";
 import { Event } from "@/lib/supabase/types";
 import { useReadContract } from 'wagmi';
 import { baseSepolia } from 'wagmi/chains';
@@ -40,13 +38,13 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
 
   const handleCastAboutThis = async () => {
     try {
-      const appUrl = `${getAppUrl()}/experiments/${experiment.experiment_id}`;
-      
+      const appUrl = `${getAppUrl()}/experiments/${experiment?.experiment_id}`;
+
       const result = await sdk.actions.composeCast({
         text: `Check out this experiment: "${experiment.title}" 🧪🔬`,
         embeds: [appUrl]
       });
-      
+
       if (result?.cast) {
         console.log('Cast successful:', result.cast.hash);
       }
@@ -58,33 +56,39 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   return (
     <Card className="hover-lift border-border/50 bg-card/95 backdrop-blur-sm transition-all hover:shadow-lg">
       <CardHeader className="pb-3">
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-3">
           {experiment.image_url && (
-            <div className="w-[45%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
-              <div className="relative w-full h-full rounded-lg bg-card overflow-hidden">
-                <Image 
-                  src={experiment.image_url} 
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
+              <div className="w-full h-full rounded-lg bg-card flex items-center justify-center overflow-hidden">
+                <img
+                  src={experiment.image_url}
                   alt={experiment.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 45vw, 200px"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
           )}
           <div className="flex-1 min-w-0">
+            {!isClosed && totalDepositedUSD > 0 && (
+              <Badge variant="secondary" className="mb-2 text-xs">
+                🔬 Active
+              </Badge>
+            )}
             {isClosed && (
               <Badge variant="outline" className="mb-2 text-xs">
                 ✅ Completed
               </Badge>
             )}
-            <Link href={`/experiments/${experiment.experiment_id}`}>
-              <h3 className="font-semibold text-base text-balance leading-tight text-foreground hover:text-primary transition-colors cursor-pointer">
-                {experiment.title}
-              </h3>
-            </Link>
+            <h3
+              className="font-semibold text-base text-balance leading-tight text-foreground hover:text-primary transition-colors cursor-pointer"
+              onClick={async () => {
+                await sdk.actions.openUrl(`${window.location.origin}/experiments/${experiment.experiment_id}`);
+              }}
+            >
+              {experiment.title}
+            </h3>
             {experiment.summary && (
-              <p className="text-xs text-muted-foreground mt-2 line-clamp-3">
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {experiment.summary}
               </p>
             )}
@@ -137,14 +141,18 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
       )}
 
       <CardFooter className="flex gap-2 pt-0">
-        <Button asChild size="sm" className="flex-1">
-          <Link href={`/experiments/${experiment.experiment_id}`}>
-            View Details
-          </Link>
+        <Button
+          size="sm"
+          className="flex-1"
+          onClick={async () => {
+            await sdk.actions.openUrl(`${window.location.origin}/experiments/${experiment.experiment_id}`);
+          }}
+        >
+          View Details
         </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           className="flex-1"
           onClick={handleCastAboutThis}
         >
