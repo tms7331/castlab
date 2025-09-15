@@ -299,14 +299,17 @@ export default function ExperimentDetailPage() {
   const handleFunding = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!fundingAmount || Number(fundingAmount) <= 0) {
-      alert("Please enter a valid amount");
+    // Connect wallet if not connected
+    if (!isConnected) {
+      // Simply connect with the Farcaster connector (the only one available)
+      if (connectors[0]) {
+        await connect({ connector: connectors[0] });
+      }
       return;
     }
 
-    // Connect wallet if not connected
-    if (!isConnected) {
-      connect({ connector: connectors[0] });
+    if (!fundingAmount || Number(fundingAmount) <= 0) {
+      alert("Please enter a valid amount");
       return;
     }
 
@@ -667,7 +670,8 @@ export default function ExperimentDetailPage() {
                   </div>
 
                   <Button
-                    type="submit"
+                    type={isConnected ? "submit" : "button"}
+                    onClick={!isConnected ? () => connect({ connector: connectors[0] }) : undefined}
                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
                     size="lg"
                     disabled={currentStep !== 'idle'}
