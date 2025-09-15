@@ -4,6 +4,7 @@ import "./globals.css";
 import { FarcasterProvider } from "./providers/FarcasterProvider";
 import { WagmiProvider } from "@/lib/wagmi/WagmiProvider";
 import { Header } from "@/components/header";
+import { AddToFarcasterPrompt } from "@/components/AddToFarcasterPrompt";
 import { getAppUrl } from "@/lib/utils/app-url";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -68,6 +69,7 @@ export default function RootLayout({
         <FarcasterProvider>
           <WagmiProvider>
             <Header />
+            <AddToFarcasterPrompt />
             <main>
               {children}
             </main>

@@ -218,7 +218,6 @@ export default function ExperimentDetailPage() {
       setCurrentStep('approved');
       resetDeposit();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [depositError, currentStep, resetDeposit]);
 
   // Reset approval if amount changes after approval
