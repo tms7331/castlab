@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import LoginButton from "@/components/LoginButton";
 
 export function Header() {
@@ -8,7 +9,7 @@ export function Header() {
     <header className="sticky top-0 z-50 bg-background border-b border-border/50">
       <div className="flex items-center justify-between px-4 py-3">
         {/* Logo */}
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="relative w-8 h-8">
             <Image
               src="/icon.png"
@@ -20,7 +21,7 @@ export function Header() {
             />
           </div>
           <h1 className="text-xl font-bold text-foreground">CastLab</h1>
-        </div>
+        </Link>
 
         {/* User Profile & Actions - using LoginButton instead */}
         <div className="flex items-center gap-3">

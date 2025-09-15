@@ -28,6 +28,8 @@ export default function ExperimentDetailPage() {
   const [fundingAmount, setFundingAmount] = useState("");
   const [currentStep, setCurrentStep] = useState<'idle' | 'approving' | 'approved' | 'depositing' | 'complete'>('idle');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [approvedAmount, setApprovedAmount] = useState<string | null>(null);
+  const [hasAttemptedDeposit, setHasAttemptedDeposit] = useState(false);
 
   // Wagmi hooks
   const { address, isConnected } = useAccount();
@@ -159,8 +161,9 @@ export default function ExperimentDetailPage() {
   useEffect(() => {
     if (isApproved && currentStep === 'approving') {
       setCurrentStep('approved');
+      setApprovedAmount(fundingAmount); // Track the amount that was approved
     }
-  }, [isApproved, currentStep]);
+  }, [isApproved, currentStep, fundingAmount]);
 
   // Handle approve error - reset to idle state for retry
   useEffect(() => {
@@ -172,13 +175,14 @@ export default function ExperimentDetailPage() {
     }
   }, [approveError, currentStep, resetApprove]);
 
-  // Automatically proceed to deposit after approval
+  // Automatically proceed to deposit after approval (only first time)
   useEffect(() => {
-    if (currentStep === 'approved') {
+    if (currentStep === 'approved' && !hasAttemptedDeposit) {
+      setHasAttemptedDeposit(true);
       handleDeposit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep]);
+  }, [currentStep, hasAttemptedDeposit]);
 
   // Handle deposit confirmation
   useEffect(() => {
@@ -187,6 +191,7 @@ export default function ExperimentDetailPage() {
       sdk.haptics.impactOccurred('medium');
       setCurrentStep('complete');
       setFundingAmount("");
+      setApprovedAmount(null); // Clear approved amount after successful deposit
 
       // Add a small delay to ensure blockchain state is updated
       setTimeout(async () => {
@@ -203,33 +208,30 @@ export default function ExperimentDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDepositConfirmed, currentStep, refetchContractData]);
 
-  // Handle deposit error - reset to approved state for retry
+  // Handle deposit error - keep approval and allow manual retry
   useEffect(() => {
     if (depositError && currentStep === 'depositing') {
       console.error('Deposit transaction failed:', depositError);
 
-      // Check if user rejected the transaction
-      const userRejected = depositError.message?.includes('User rejected');
-
-      if (userRejected) {
-        // If user rejected, go back to idle and reset everything
-        setCurrentStep('idle');
-        resetApprove();
-        resetDeposit();
-      } else {
-        // For other errors, keep approval and allow retry of just deposit
-        setCurrentStep('approved');
-        resetDeposit();
-
-        // Only auto-retry for non-user-rejection errors
-        // Use a ref or just call handleDeposit after state update
-        setTimeout(() => {
-          handleDeposit();
-        }, 2000);
-      }
+      // Always go back to approved state so user can retry just the deposit
+      // This preserves the approval transaction
+      setCurrentStep('approved');
+      resetDeposit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [depositError, currentStep, resetDeposit, resetApprove]);
+  }, [depositError, currentStep, resetDeposit]);
+
+  // Reset approval if amount changes after approval
+  useEffect(() => {
+    if (currentStep === 'approved' && approvedAmount && fundingAmount !== approvedAmount) {
+      // Amount changed, need new approval
+      setCurrentStep('idle');
+      setApprovedAmount(null);
+      setHasAttemptedDeposit(false);
+      resetApprove();
+      resetDeposit();
+    }
+  }, [fundingAmount, approvedAmount, currentStep, resetApprove, resetDeposit]);
 
   // Handle withdrawal confirmation
   useEffect(() => {
@@ -279,6 +281,8 @@ export default function ExperimentDetailPage() {
         console.log('Cast successful:', result.cast.hash);
         // Reset state after successful cast
         setCurrentStep('idle');
+        setApprovedAmount(null);
+        setHasAttemptedDeposit(false);
         resetApprove();
         resetDeposit();
 
@@ -322,6 +326,7 @@ export default function ExperimentDetailPage() {
     // Clear any previous errors before starting
     resetApprove();
     resetDeposit();
+    setHasAttemptedDeposit(false);
 
     setCurrentStep('approving');
 
@@ -664,24 +669,24 @@ export default function ExperimentDetailPage() {
                         onChange={(e) => setFundingAmount(e.target.value)}
                         min="1"
                         step="1"
-                        disabled={currentStep !== 'idle'}
+                        disabled={currentStep === 'approving' || currentStep === 'depositing'}
                       />
                     </div>
                   </div>
 
                   <Button
                     type={isConnected ? "submit" : "button"}
-                    onClick={!isConnected ? () => connect({ connector: connectors[0] }) : undefined}
+                    onClick={!isConnected ? () => connect({ connector: connectors[0] }) : currentStep === 'approved' ? handleDeposit : undefined}
                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
                     size="lg"
-                    disabled={currentStep !== 'idle'}
+                    disabled={currentStep === 'approving' || currentStep === 'depositing'}
                   >
                     {!isConnected
                       ? "Connect Wallet to Fund"
                       : currentStep === 'approving' || isApprovePending
                         ? "Approving Token..."
                         : currentStep === 'approved'
-                          ? "Approved! Starting deposit..."
+                          ? depositError ? "Retry Deposit" : "Click to Deposit"
                           : currentStep === 'depositing' || isDepositPending
                             ? "Depositing..."
                             : "Fund Experiment"}
@@ -695,9 +700,7 @@ export default function ExperimentDetailPage() {
                           ? 'Transaction was cancelled by user'
                           : approveError
                             ? 'Token approval failed. You can try again.'
-                            : depositError && !depositError.message?.includes('User rejected')
-                              ? 'Deposit failed. Retrying automatically...'
-                              : 'Deposit cancelled. Please try again.'}
+                            : 'Deposit failed. You can retry the deposit.'}
                       </div>
                       {approveError && currentStep === 'idle' && (
                         <Button
@@ -708,13 +711,13 @@ export default function ExperimentDetailPage() {
                           Retry Approval
                         </Button>
                       )}
-                      {depositError && depositError.message?.includes('User rejected') && currentStep === 'idle' && (
+                      {depositError && currentStep === 'approved' && (
                         <Button
-                          onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
+                          onClick={handleDeposit}
                           className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
                           size="sm"
                         >
-                          Try Again
+                          Retry Deposit
                         </Button>
                       )}
                     </div>
@@ -723,6 +726,12 @@ export default function ExperimentDetailPage() {
                   {currentStep === 'approving' && (
                     <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
                       Step 1/2: Approving token transfer...
+                    </div>
+                  )}
+
+                  {currentStep === 'approved' && !depositError && (
+                    <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
+                      ✅ Approval complete! Click the button to deposit.
                     </div>
                   )}
 
