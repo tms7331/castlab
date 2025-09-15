@@ -41,6 +41,15 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
         
         // Signal that the app is ready - this hides the splash screen
         await sdk.actions.ready();
+        
+        // Prompt user to add the mini app if they haven't already
+        // This will show the native Farcaster "Add Mini App" dialog
+        try {
+          await sdk.actions.addMiniApp();
+        } catch (error) {
+          // This may fail if already added or in development
+          console.log('Add mini app prompt skipped:', error);
+        }
       } catch (error) {
         console.error('Failed to initialize Farcaster SDK:', error);
       } finally {
