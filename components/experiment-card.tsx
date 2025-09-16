@@ -41,7 +41,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
       const appUrl = `${getAppUrl()}/experiments/${experiment?.experiment_id}`;
 
       const result = await sdk.actions.composeCast({
-        text: `Check out this experiment: "${experiment.title} ${appUrl}" 🧪🔬`,
+        text: `Check out this CastLab experiment: "${experiment.title} ${appUrl}" 🧪🔬`,
         embeds: [appUrl]
       });
 

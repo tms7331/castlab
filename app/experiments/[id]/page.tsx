@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         version: "1",
         imageUrl: imageUrl,
         button: {
-          title: "View Experiment",
+          title: "View CastLab Experiment",
           action: {
             type: "launch_miniapp",  // Changed to launch_miniapp
             name: experiment.title,
@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         version: "1",
         imageUrl: imageUrl,
         button: {
-          title: "View Experiment",
+          title: "View CastLab Experiment",
           action: {
             type: "launch_frame",
             name: experiment.title.length > 32 ? `${experiment.title.slice(0, 29)}...` : experiment.title,  // name goes inside action
