@@ -23,38 +23,6 @@ const appUrl = getAppUrl();
 export const metadata: Metadata = {
   title: "CastLab - Fund Fun Science",
   description: "Crowdfunding platform for fun science experiments",
-  other: {
-    "fc:miniapp": JSON.stringify({
-      version: "1",
-      imageUrl: `${appUrl}/castlab1200.png`,
-      button: {
-        title: "Launch CastLab",
-        action: {
-          type: "launch_frame",
-          name: "CastLab",
-          url: appUrl,
-          iconUrl: `${appUrl}/icon.png`,
-          description: "Fund fun science experiments",
-          aboutUrl: `${appUrl}/about`
-        }
-      }
-    }),
-    "fc:frame": JSON.stringify({
-      version: "1",
-      imageUrl: `${appUrl}/castlab1200.png`,
-      button: {
-        title: "Launch CastLab",
-        action: {
-          type: "launch_frame",
-          name: "CastLab",
-          url: appUrl,
-          iconUrl: `${appUrl}/icon.png`,
-          description: "Fund fun science experiments",
-          aboutUrl: `${appUrl}/about`
-        }
-      }
-    })
-  }
 };
 
 export default function RootLayout({

@@ -14,12 +14,12 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
   const handleCastExperimentIdea = async () => {
     try {
       const appUrl = getAppUrl();
-      
+
       const result = await sdk.actions.composeCast({
-        text: "@motherlizard I have a great experiment idea: ",
+        text: `"@motherlizard I have a great experiment idea: ${appUrl}"`,
         embeds: [appUrl]
       });
-      
+
       if (result?.cast) {
         console.log('Cast successful:', result.cast.hash);
       }
@@ -59,7 +59,7 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
 
           {/* Cast Button */}
           <div className="pt-2">
-            <Button 
+            <Button
               onClick={handleCastExperimentIdea}
               className="w-full max-w-xs"
             >
