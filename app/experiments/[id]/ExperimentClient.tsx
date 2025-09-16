@@ -21,6 +21,7 @@ export default function ExperimentClient() {
   const params = useParams();
   const id = params.id as string;
 
+
   // Debug logging to understand URL handling
   useEffect(() => {
     console.log('[ExperimentClient] Loaded with ID:', id);
@@ -28,6 +29,7 @@ export default function ExperimentClient() {
     console.log('[ExperimentClient] Pathname:', window.location.pathname);
     console.log('[ExperimentClient] Search params:', window.location.search);
     console.log('[ExperimentClient] Params:', params);
+
 
     // Check if we're in a Farcaster context
     if (window.parent !== window) {
