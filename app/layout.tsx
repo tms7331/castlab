@@ -4,7 +4,6 @@ import "./globals.css";
 import { FarcasterProvider } from "./providers/FarcasterProvider";
 import { WagmiProvider } from "@/lib/wagmi/WagmiProvider";
 import { Header } from "@/components/header";
-import { getAppUrl } from "@/lib/utils/app-url";
 import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = localFont({
@@ -17,8 +16,6 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
-
-const appUrl = getAppUrl();
 
 export const metadata: Metadata = {
   title: "CastLab - Fund Fun Science",
