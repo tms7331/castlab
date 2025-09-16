@@ -3,7 +3,6 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import Head from "next/head";
 import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
@@ -21,7 +20,7 @@ import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
 export default function ExperimentClient() {
   const params = useParams();
   const id = params.id as string;
-  
+
   // Debug logging to understand URL handling
   useEffect(() => {
     console.log('[ExperimentClient] Loaded with ID:', id);
@@ -29,7 +28,7 @@ export default function ExperimentClient() {
     console.log('[ExperimentClient] Pathname:', window.location.pathname);
     console.log('[ExperimentClient] Search params:', window.location.search);
     console.log('[ExperimentClient] Params:', params);
-    
+
     // Check if we're in a Farcaster context
     if (window.parent !== window) {
       console.log('[ExperimentClient] Running in iframe/embedded context');
@@ -463,16 +462,7 @@ export default function ExperimentClient() {
   } : null;
 
   return (
-    <>
-      {experiment && embedData && (
-        <Head>
-          <meta name="fc:miniapp" content={JSON.stringify(embedData)} />
-          <meta name="fc:frame" content={JSON.stringify(embedData)} />
-          <title>{experiment.title} - CastLab</title>
-          <meta name="description" content={experiment.summary?.slice(0, 100) || "Fund fun science experiments on CastLab"} />
-        </Head>
-      )}
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
         <main className="px-3 py-4 max-w-2xl mx-auto">
           <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-4">
             <ArrowLeft className="w-4 h-4" />
@@ -766,6 +756,5 @@ export default function ExperimentClient() {
           )}
         </main>
       </div>
-    </>
   );
 }
