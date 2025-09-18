@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { EventInsert } from "@/lib/supabase/types";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
+import { CHAIN } from '@/lib/wagmi/addresses';
 import { CONTRACT_ADDRESS, usdToTokenAmount } from '@/lib/wagmi/adminConfig';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import { decodeEventLog } from 'viem';
@@ -189,8 +189,8 @@ export default function AdminPage() {
     }
 
     // Check if on the correct chain
-    if (chainId !== baseSepolia.id) {
-      alert(`Please switch to ${baseSepolia.name} network in your wallet`);
+    if (chainId !== CHAIN.id) {
+      alert(`Please switch to ${CHAIN.name} network in your wallet`);
       return;
     }
 
@@ -211,7 +211,7 @@ export default function AdminPage() {
         abi: ExperimentFundingABI.abi,
         functionName: 'createExperiment',
         args: [costMinWei, costMaxWei],
-        chainId: baseSepolia.id,
+        chainId: CHAIN.id,
       });
     } catch (error) {
       console.error('Contract creation failed:', error);
@@ -701,7 +701,7 @@ export default function AdminPage() {
                 <div className="mt-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
                   <div>Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</div>
                   <div className="text-xs mt-1">
-                    Network: {chainId === baseSepolia.id ? 'Base Sepolia ✓' : `Wrong Network (Chain ID: ${chainId})`}
+                    Network: {chainId === CHAIN.id ? `${CHAIN.name} ✓` : `Wrong Network (Chain ID: ${chainId})`}
                   </div>
                 </div>
               )}

@@ -1,12 +1,12 @@
 import { http, createConfig } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors';
+import { CHAIN } from './addresses';
 
 // Separate config for admin page with standard wallet connectors
 export const adminConfig = createConfig({
-  chains: [baseSepolia],
+  chains: [CHAIN],
   transports: {
-    [baseSepolia.id]: http(),
+    [CHAIN.id]: http(),
   },
   connectors: [
     injected(),
