@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { supabaseAdmin } from './admin';
 import { Event, EventInsert, EventUpdate } from './types';
 
 export class EventsService {
@@ -7,7 +8,7 @@ export class EventsService {
    */
   static async createEvent(event: EventInsert): Promise<{ data: Event | null; error: Error | null }> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('events')
         .insert([event])
         .select()
@@ -95,7 +96,7 @@ export class EventsService {
    */
   static async updateEvent(experimentId: number, updates: EventUpdate): Promise<{ data: Event | null; error: Error | null }> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('events')
         .update(updates)
         .eq('experiment_id', experimentId)
@@ -118,7 +119,7 @@ export class EventsService {
    */
   static async deleteEvent(experimentId: number): Promise<{ error: Error | null }> {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('events')
         .delete()
         .eq('experiment_id', experimentId);
