@@ -494,14 +494,16 @@ export default function ExperimentClient() {
         {experiment.experiment_url && (
           <Card className="p-4 mb-4 bg-muted/50 border-border/50">
             <div className="flex justify-center">
-              <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80" asChild>
-                <a
-                  href={experiment.experiment_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Read full protocol <ExternalLink className="w-4 h-4 ml-1" />
-                </a>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:text-primary/80"
+                onClick={() => {
+                  // Use SDK to open URL in external browser consistently across all platforms
+                  sdk.actions.openUrl(experiment.experiment_url);
+                }}
+              >
+                Read full protocol <ExternalLink className="w-4 h-4 ml-1" />
               </Button>
             </div>
           </Card>
