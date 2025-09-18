@@ -1,23 +1,18 @@
 import { http, createConfig } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
 import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector';
+import { CHAIN as DEFAULT_CHAIN } from './addresses';
+export { CONTRACT_ADDRESS, TOKEN_ADDRESS } from './addresses';
 
-// Create wagmi config with Farcaster connector - Base Sepolia only for testing
+// Create wagmi config with Farcaster connector
 export const config = createConfig({
-  chains: [baseSepolia],
+  chains: [DEFAULT_CHAIN],
   transports: {
-    [baseSepolia.id]: http(),
+    [DEFAULT_CHAIN.id]: http(),
   },
   connectors: [
     farcasterMiniApp(),
   ],
 });
-
-// Contract configuration for Base Sepolia
-export const CONTRACT_ADDRESS = "0x9f55613af6C11E0c37be58E91ACdE55A30DaB6Cc" as const;
-export const TOKEN_ADDRESS = "0x33c17027bc6d1af5985F18D93377D7731bB03527" as const;
-// We'll use Base Sepolia for testing
-export const DEFAULT_CHAIN = baseSepolia;
 
 // For ERC20 tokens: assuming 1 token = 1 USD with 6 decimals (USDC standard)
 export function usdToTokenAmount(usdAmount: number, decimals: number = 6): bigint {

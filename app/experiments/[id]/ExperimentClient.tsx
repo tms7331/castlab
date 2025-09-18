@@ -9,6 +9,7 @@ import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt,
 import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import ERC20ABI from '@/lib/contracts/ERC20.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 import { Card } from "@/components/ui/card";
@@ -348,11 +349,9 @@ export default function ExperimentClient() {
     const tokenAmount = usdToTokenAmount(Number(fundingAmount));
 
     // Step 1: Approve the contract to spend tokens
-    const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
-
     writeApprove({
       address: TOKEN_ADDRESS as `0x${string}`,
-      abi: ERC20_ABI,
+      abi: ERC20ABI.abi,
       functionName: 'approve',
       args: [CONTRACT_ADDRESS, tokenAmount],
       chainId: baseSepolia.id,
@@ -385,11 +384,9 @@ export default function ExperimentClient() {
     if (!address) return;
 
     try {
-      const ERC20_ABI = (await import('@/lib/contracts/ERC20.json')).default.abi;
-
       writeMint({
         address: TOKEN_ADDRESS as `0x${string}`,
-        abi: ERC20_ABI,
+        abi: ERC20ABI.abi,
         functionName: 'mint',
         args: [],
         chainId: baseSepolia.id,
@@ -409,11 +406,9 @@ export default function ExperimentClient() {
     const tokenAmount = usdToTokenAmount(Number(fundingAmount));
 
     // Step 2: Deposit tokens to the experiment
-    const ExperimentFunding_ABI = (await import('@/lib/contracts/ExperimentFunding.json')).default.abi;
-
     writeDeposit({
       address: CONTRACT_ADDRESS as `0x${string}`,
-      abi: ExperimentFunding_ABI,
+      abi: ExperimentFundingABI.abi,
       functionName: 'deposit',
       args: [BigInt(experimentId), tokenAmount],
       chainId: baseSepolia.id,
