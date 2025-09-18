@@ -52,10 +52,6 @@ export default function ExperimentClient() {
   const { connect, connectors } = useConnect();
   const chainId = useChainId();
 
-  // Determine the network for the contract link
-  // Default to configured chain if not connected
-  const isCorrectChain = !chainId || chainId === CHAIN.id;
-
   // Approve transaction
   const {
     writeContract: writeApprove,

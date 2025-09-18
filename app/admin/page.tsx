@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { EventInsert } from "@/lib/supabase/types";
+import { EventInsert, Event } from "@/lib/supabase/types";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient } from 'wagmi';
 import { CHAIN } from '@/lib/wagmi/addresses';
 import { CONTRACT_ADDRESS, usdToTokenAmount } from '@/lib/wagmi/adminConfig';
@@ -31,6 +31,10 @@ export default function AdminPage() {
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [contractExperimentId, setContractExperimentId] = useState<string | null>(null);
   const [isCreatingContract, setIsCreatingContract] = useState(false);
+  const [existingExperiments, setExistingExperiments] = useState<Event[]>([]);
+  const [isLoadingExperiments, setIsLoadingExperiments] = useState(false);
+  const [dateCompletedInput, setDateCompletedInput] = useState("");
+  const [contractAction, setContractAction] = useState<'close' | 'withdraw' | null>(null);
 
   // Wagmi hooks
   const { address, isConnected } = useAccount();
@@ -53,10 +57,23 @@ export default function AdminPage() {
     hash,
   });
 
+  // Handle contract action confirmations
+  useEffect(() => {
+    if (isConfirmed && receipt && contractAction) {
+      if (contractAction === 'close') {
+        alert('Experiment closed successfully on blockchain!');
+      } else if (contractAction === 'withdraw') {
+        alert('Funds withdrawn successfully!');
+      }
+      setContractAction(null);
+      fetchExperiments(); // Refresh to get updated state
+    }
+  }, [isConfirmed, receipt, contractAction]);
+
   // Extract experiment ID from transaction receipt
   useEffect(() => {
     async function extractExperimentId() {
-      if (isConfirmed && receipt && publicClient) {
+      if (isConfirmed && receipt && publicClient && !contractAction) {
         try {
           // Find the ExperimentCreated event in the logs
           const experimentCreatedEvent = receipt.logs.find(log => {
@@ -98,17 +115,27 @@ export default function AdminPage() {
     }
 
     extractExperimentId();
-  }, [isConfirmed, receipt, publicClient]);
+  }, [isConfirmed, receipt, publicClient, contractAction]);
 
-  // Mock existing experiments for management
-  const existingExperiments = [
-    { id: 1, title: "What Rap Music Goes the Hardest, Objectively", raised: 325, goal: 500, status: "active" },
-    { id: 2, title: "The Science of Talking to Plants", raised: 890, goal: 1200, status: "active" },
-    { id: 3, title: "Canine Classical Music Discrimination", raised: 156, goal: 800, status: "active" },
-    { id: 4, title: "The Optimal Programming Soundtrack", raised: 2100, goal: 2500, status: "active" },
-    { id: 5, title: "Teaching Fungi to Play Video Games", raised: 450, goal: 1500, status: "active" },
-    { id: 6, title: "The Mathematics of Perfect Pizza", raised: 3200, goal: 3000, status: "completed" }
-  ];
+  // Fetch existing experiments from database
+  useEffect(() => {
+    fetchExperiments();
+  }, []);
+
+  const fetchExperiments = async () => {
+    setIsLoadingExperiments(true);
+    try {
+      const response = await fetch('/api/events');
+      const result = await response.json();
+      if (result.data) {
+        setExistingExperiments(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching experiments:', error);
+    } finally {
+      setIsLoadingExperiments(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,7 +155,7 @@ export default function AdminPage() {
       }
 
       setImageFile(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -225,38 +252,38 @@ export default function AdminPage() {
 
   const parseDateString = (dateStr: string): string | null => {
     if (!dateStr) return null;
-    
+
     // Parse MM/DD/YYYY format
     const parts = dateStr.split('/');
     if (parts.length !== 3) {
       alert("Please enter date in MM/DD/YYYY format");
       return null;
     }
-    
+
     const month = parseInt(parts[0]);
     const day = parseInt(parts[1]);
     const year = parseInt(parts[2]);
-    
+
     if (isNaN(month) || isNaN(day) || isNaN(year)) {
       alert("Invalid date format. Please use MM/DD/YYYY");
       return null;
     }
-    
+
     if (month < 1 || month > 12) {
       alert("Invalid month. Please enter a value between 1 and 12");
       return null;
     }
-    
+
     if (day < 1 || day > 31) {
       alert("Invalid day. Please enter a value between 1 and 31");
       return null;
     }
-    
+
     if (year < 2020 || year > 2100) {
       alert("Invalid year. Please enter a reasonable year");
       return null;
     }
-    
+
     // Create a Date object and convert to ISO string
     const date = new Date(year, month - 1, day);
     return date.toISOString();
@@ -269,7 +296,7 @@ export default function AdminPage() {
 
     try {
       let experimentId: number;
-      
+
       // Parse date completed if provided
       let dateCompleted: string | null = null;
       if (newExperiment.dateCompleted) {
@@ -286,9 +313,9 @@ export default function AdminPage() {
         // Generate a random experiment ID for completed experiments
         // Use a large number range to avoid conflicts with blockchain IDs
         experimentId = Math.floor(Math.random() * 900000) + 100000;
-        setSubmitMessage({ 
-          type: 'success', 
-          text: `Creating completed experiment with ID: ${experimentId}` 
+        setSubmitMessage({
+          type: 'success',
+          text: `Creating completed experiment with ID: ${experimentId}`
         });
       } else {
         // For ongoing experiments, require blockchain ID
@@ -376,39 +403,142 @@ export default function AdminPage() {
     }
   };
 
-  const handleCloseExperiment = () => {
+  const handleCloseExperiment = async () => {
     if (!selectedExperiment) {
       alert("Please select an experiment to close");
       return;
     }
-    if (confirm(`Are you sure you want to close experiment ${selectedExperiment}?`)) {
-      console.log("Closing experiment:", selectedExperiment);
-      alert(`Experiment ${selectedExperiment} has been closed`);
-    }
-  };
-
-  const handleWithdrawFunds = () => {
-    if (!selectedExperiment) {
-      alert("Please select an experiment to withdraw from");
+    if (!isConnected) {
+      alert("Please connect your wallet first");
       return;
     }
-    const experiment = existingExperiments.find(exp => exp.id.toString() === selectedExperiment);
-    if (experiment) {
-      if (confirm(`Withdraw $${experiment.raised} from "${experiment.title}"?`)) {
-        console.log("Withdrawing funds from:", selectedExperiment);
-        alert(`Successfully withdrew $${experiment.raised} from experiment ${selectedExperiment}`);
+    if (chainId !== CHAIN.id) {
+      alert(`Please switch to ${CHAIN.name} network in your wallet`);
+      return;
+    }
+
+    const experiment = existingExperiments.find(exp => exp.experiment_id.toString() === selectedExperiment);
+    if (!experiment) return;
+
+    if (confirm(`Are you sure you want to close experiment "${experiment.title}" (ID: ${selectedExperiment})?`)) {
+      setContractAction('close');
+      try {
+        await writeContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          abi: ExperimentFundingABI.abi,
+          functionName: 'adminClose',
+          args: [BigInt(selectedExperiment)],
+          chainId: CHAIN.id,
+        });
+      } catch (error) {
+        console.error('Failed to close experiment:', error);
+        alert('Failed to close experiment: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        setContractAction(null);
       }
     }
   };
 
-  const handleRefundAll = () => {
+  const handleWithdrawFunds = async () => {
     if (!selectedExperiment) {
-      alert("Please select an experiment to refund");
+      alert("Please select an experiment to withdraw from");
       return;
     }
-    if (confirm(`Are you sure you want to refund all backers for experiment ${selectedExperiment}? This action cannot be undone.`)) {
-      console.log("Refunding all backers for:", selectedExperiment);
-      alert(`All backers have been refunded for experiment ${selectedExperiment}`);
+    if (!isConnected) {
+      alert("Please connect your wallet first");
+      return;
+    }
+    if (chainId !== CHAIN.id) {
+      alert(`Please switch to ${CHAIN.name} network in your wallet`);
+      return;
+    }
+
+    const experiment = existingExperiments.find(exp => exp.experiment_id.toString() === selectedExperiment);
+    if (!experiment) return;
+
+    if (confirm(`Withdraw funds from "${experiment.title}" (ID: ${selectedExperiment})?`)) {
+      setContractAction('withdraw');
+      try {
+        await writeContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          abi: ExperimentFundingABI.abi,
+          functionName: 'adminWithdraw',
+          args: [BigInt(selectedExperiment)],
+          chainId: CHAIN.id,
+        });
+      } catch (error) {
+        console.error('Failed to withdraw funds:', error);
+        alert('Failed to withdraw funds: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        setContractAction(null);
+      }
+    }
+  };
+
+  const handleSetDateCompleted = async () => {
+    if (!selectedExperiment) {
+      alert("Please select an experiment to update");
+      return;
+    }
+    if (!dateCompletedInput) {
+      alert("Please enter a completion date");
+      return;
+    }
+
+    const dateCompleted = parseDateString(dateCompletedInput);
+    if (!dateCompleted) return;
+
+    const experiment = existingExperiments.find(exp => exp.experiment_id.toString() === selectedExperiment);
+    if (!experiment) return;
+
+    if (confirm(`Set completion date for "${experiment.title}" to ${dateCompletedInput}?`)) {
+      try {
+        const response = await fetch(`/api/admin/events/${selectedExperiment}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date_completed: dateCompleted }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update experiment');
+        }
+
+        alert('Completion date updated successfully!');
+        setDateCompletedInput('');
+        await fetchExperiments(); // Refresh the list
+      } catch (error) {
+        console.error('Failed to update date:', error);
+        alert('Failed to update completion date');
+      }
+    }
+  };
+
+  const handleDeleteExperiment = async () => {
+    if (!selectedExperiment) {
+      alert("Please select an experiment to delete");
+      return;
+    }
+
+    const experiment = existingExperiments.find(exp => exp.experiment_id.toString() === selectedExperiment);
+    if (!experiment) return;
+
+    if (confirm(`Are you sure you want to DELETE "${experiment.title}" from the database? This cannot be undone!`)) {
+      if (confirm(`This will PERMANENTLY DELETE the experiment. Are you absolutely sure?`)) {
+        try {
+          const response = await fetch(`/api/admin/events/${selectedExperiment}`, {
+            method: 'DELETE',
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to delete experiment');
+          }
+
+          alert('Experiment deleted successfully!');
+          setSelectedExperiment('');
+          await fetchExperiments(); // Refresh the list
+        } catch (error) {
+          console.error('Failed to delete:', error);
+          alert('Failed to delete experiment');
+        }
+      }
     }
   };
 
@@ -526,7 +656,7 @@ export default function AdminPage() {
                 <label className="block text-[#005577] font-semibold mb-2">
                   Experiment Image
                 </label>
-                
+
                 {/* Image Upload */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-center w-full">
@@ -573,7 +703,7 @@ export default function AdminPage() {
                       />
                     </label>
                   </div>
-                  
+
                   {/* Optional: Manual URL input as fallback */}
                   <div>
                     <label className="block text-sm text-[#005577] mb-1">
@@ -735,13 +865,29 @@ export default function AdminPage() {
                 </label>
                 <select
                   value={selectedExperiment}
-                  onChange={(e) => setSelectedExperiment(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedExperiment(e.target.value);
+                    // Pre-fill date if experiment has one
+                    const exp = existingExperiments.find(ex => ex.experiment_id.toString() === e.target.value);
+                    if (exp?.date_completed) {
+                      const date = new Date(exp.date_completed);
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const year = date.getFullYear();
+                      setDateCompletedInput(`${month}/${day}/${year}`);
+                    } else {
+                      setDateCompletedInput('');
+                    }
+                  }}
                   className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                  disabled={isLoadingExperiments}
                 >
                   <option value="">-- Select an experiment --</option>
                   {existingExperiments.map((exp) => (
-                    <option key={exp.id} value={exp.id.toString()}>
-                      {exp.title} (${exp.raised}/${exp.goal} - {exp.status})
+                    <option key={exp.experiment_id} value={exp.experiment_id.toString()}>
+                      ID: {exp.experiment_id} - {exp.title}
+                      {exp.date_completed ? ' (Completed)' : ''}
+                      {exp.cost_min && exp.cost_max ? ` ($${exp.cost_min}-$${exp.cost_max})` : ''}
                     </option>
                   ))}
                 </select>
@@ -751,57 +897,107 @@ export default function AdminPage() {
                 <div className="space-y-4">
                   <div className="p-4 bg-[#e8f5f7] rounded-lg">
                     {(() => {
-                      const exp = existingExperiments.find(e => e.id.toString() === selectedExperiment);
+                      const exp = existingExperiments.find(e => e.experiment_id.toString() === selectedExperiment);
                       return exp ? (
                         <div className="space-y-2">
                           <p className="font-semibold text-[#005577]">{exp.title}</p>
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                              <span className="text-[#0a3d4d]">Status: </span>
-                              <span className={`font-medium ${exp.status === 'completed' ? 'text-green-600' : 'text-blue-600'}`}>
-                                {exp.status === 'completed' ? 'Completed' : 'Active'}
-                              </span>
+                              <span className="text-[#0a3d4d]">Experiment ID: </span>
+                              <span className="font-medium">{exp.experiment_id}</span>
                             </div>
                             <div>
-                              <span className="text-[#0a3d4d]">Progress: </span>
-                              <span className="font-medium text-[#00a8cc]">
-                                ${exp.raised} / ${exp.goal}
+                              <span className="text-[#0a3d4d]">Status: </span>
+                              <span className={`font-medium ${exp.date_completed ? 'text-green-600' : 'text-blue-600'}`}>
+                                {exp.date_completed ? 'Completed' : 'Active'}
                               </span>
                             </div>
+                            {exp.cost_min && exp.cost_max && (
+                              <div>
+                                <span className="text-[#0a3d4d]">Cost Range: </span>
+                                <span className="font-medium text-[#00a8cc]">
+                                  ${exp.cost_min} - ${exp.cost_max}
+                                </span>
+                              </div>
+                            )}
+                            {exp.date_completed && (
+                              <div>
+                                <span className="text-[#0a3d4d]">Completed: </span>
+                                <span className="font-medium">
+                                  {new Date(exp.date_completed).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
                           </div>
+                          {exp.summary && (
+                            <div className="mt-2 pt-2 border-t border-[#00a8cc]/20">
+                              <span className="text-[#0a3d4d] text-sm">Summary: </span>
+                              <p className="text-sm mt-1">{exp.summary}</p>
+                            </div>
+                          )}
                         </div>
                       ) : null;
                     })()}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button
-                      onClick={handleCloseExperiment}
-                      className="px-6 py-3 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 transition-colors"
-                    >
-                      Close Experiment
-                    </button>
+                  <div className="space-y-4">
+                    {/* Contract Actions */}
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#005577] mb-3">Smart Contract Actions</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button
+                          onClick={handleCloseExperiment}
+                          disabled={isWriting || isConfirming}
+                          className={`px-6 py-3 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 transition-colors ${(isWriting || isConfirming) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {contractAction === 'close' && (isWriting || isConfirming)
+                            ? (isWriting ? 'Preparing...' : 'Confirming...')
+                            : 'Admin Close Experiment'}
+                        </button>
 
-                    <button
-                      onClick={handleWithdrawFunds}
-                      className="px-6 py-3 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors"
-                    >
-                      Withdraw Funds
-                    </button>
+                        <button
+                          onClick={handleWithdrawFunds}
+                          disabled={isWriting || isConfirming}
+                          className={`px-6 py-3 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors ${(isWriting || isConfirming) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {contractAction === 'withdraw' && (isWriting || isConfirming)
+                            ? (isWriting ? 'Preparing...' : 'Confirming...')
+                            : 'Admin Withdraw Funds'}
+                        </button>
+                      </div>
+                    </div>
 
-                    <button
-                      onClick={handleRefundAll}
-                      className="px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      Refund All Backers
-                    </button>
+                    {/* Database Actions */}
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#005577] mb-3">Database Actions</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm text-[#0a3d4d] mb-2">Set Completion Date</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={dateCompletedInput}
+                              onChange={(e) => setDateCompletedInput(e.target.value)}
+                              placeholder="MM/DD/YYYY"
+                              className="flex-1 px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                            />
+                            <button
+                              onClick={handleSetDateCompleted}
+                              className="px-6 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                              Set Date
+                            </button>
+                          </div>
+                        </div>
 
-                    <button
-                      onClick={() => alert("Feature coming soon")}
-                      className="px-6 py-3 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors"
-                    >
-                      Post Results
-                    </button>
+                        <button
+                          onClick={handleDeleteExperiment}
+                          className="w-full px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
+                        >
+                          Delete Experiment from Database
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -812,16 +1008,20 @@ export default function AdminPage() {
               <h3 className="text-xl font-bold text-[#005577] mb-4">Platform Statistics</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-[#e8f5f7] rounded-lg">
-                  <p className="text-2xl font-bold text-[#00a8cc]">$8,521</p>
-                  <p className="text-sm text-[#0a3d4d]">Total Raised</p>
+                  <p className="text-2xl font-bold text-[#00a8cc]">{existingExperiments.length}</p>
+                  <p className="text-sm text-[#0a3d4d]">Total Experiments</p>
                 </div>
                 <div className="text-center p-4 bg-[#e8f5f7] rounded-lg">
-                  <p className="text-2xl font-bold text-[#00a8cc]">6</p>
+                  <p className="text-2xl font-bold text-[#00a8cc]">
+                    {existingExperiments.filter(exp => !exp.date_completed).length}
+                  </p>
                   <p className="text-sm text-[#0a3d4d]">Active Experiments</p>
                 </div>
                 <div className="text-center p-4 bg-[#e8f5f7] rounded-lg">
-                  <p className="text-2xl font-bold text-[#00a8cc]">628</p>
-                  <p className="text-sm text-[#0a3d4d]">Total Backers</p>
+                  <p className="text-2xl font-bold text-[#00a8cc]">
+                    {existingExperiments.filter(exp => exp.date_completed).length}
+                  </p>
+                  <p className="text-sm text-[#0a3d4d]">Completed Experiments</p>
                 </div>
               </div>
             </div>
