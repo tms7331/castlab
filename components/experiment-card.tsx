@@ -54,7 +54,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   };
 
   return (
-    <Card className="hover-lift border-border/30 bg-card/40 bg-white/50 dark:bg-black/30 backdrop-blur-lg opacity-85 transition-all hover:shadow-lg">
+    <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
           {experiment.image_url && (
@@ -73,12 +73,12 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
           )}
           <div className="flex-1 min-w-0">
             <Link href={`/experiments/${experiment.experiment_id}`}>
-              <h3 className="font-semibold text-base text-balance leading-tight text-foreground hover:text-primary transition-colors cursor-pointer">
+              <h3 className="font-semibold text-base text-balance leading-tight text-black hover:text-primary transition-colors cursor-pointer">
                 {experiment.title}
               </h3>
             </Link>
             {experiment.summary && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              <p className="text-xs text-black mt-1 line-clamp-2">
                 {experiment.summary}
               </p>
             )}
@@ -92,11 +92,11 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
           {!hideRanges && (
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium text-foreground">{fundingProgress.toFixed(1)}%</span>
+                <span className="text-black">Progress</span>
+                <span className="font-medium text-black">{fundingProgress.toFixed(1)}%</span>
               </div>
               <Progress value={fundingProgress} className="h-2 bg-muted" />
-              <div className="flex justify-between items-center text-xs text-muted-foreground">
+              <div className="flex justify-between items-center text-xs text-black">
                 <span>${totalDepositedUSD.toLocaleString()} raised</span>
                 <span>${fundingGoal.toLocaleString()} goal</span>
               </div>
@@ -105,24 +105,24 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
 
           {/* Funding Range & User Contribution */}
           {!hideRanges ? (
-            <div className="flex items-center justify-between p-3 bg-white/40 dark:bg-black/30 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div>
-                <p className="text-xs text-muted-foreground">Funding Range</p>
+                <p className="text-xs text-black">Funding Range</p>
                 <p className="font-semibold text-primary">
                   ${experiment.cost_min || 0} - ${experiment.cost_max || 0}
                 </p>
               </div>
               {userContribution > 0 && (
                 <div className="text-right">
-                  <p className="text-xs text-muted-foreground">You contributed</p>
+                  <p className="text-xs text-black">You contributed</p>
                   <p className="font-semibold text-secondary">${userContribution}</p>
                 </div>
               )}
             </div>
           ) : (
             userContribution > 0 && (
-              <div className="p-3 bg-white/40 dark:bg-black/30 rounded-lg text-center">
-                <p className="text-xs text-muted-foreground">You contributed</p>
+              <div className="p-3 bg-muted/50 rounded-lg text-center">
+                <p className="text-xs text-black">You contributed</p>
                 <p className="font-semibold text-secondary">${userContribution}</p>
               </div>
             )
