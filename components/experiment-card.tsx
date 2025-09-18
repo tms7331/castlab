@@ -54,7 +54,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   };
 
   return (
-    <Card className="hover-lift border-border/50 bg-card/95 backdrop-blur-sm transition-all hover:shadow-lg">
+    <Card className="hover-lift border-border/30 bg-card/40 bg-white/50 dark:bg-black/30 backdrop-blur-lg opacity-85 transition-all hover:shadow-lg">
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
           {experiment.image_url && (
@@ -104,7 +104,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
 
           {/* Funding Range & User Contribution */}
           {!hideRanges ? (
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-white/40 dark:bg-black/30 rounded-lg">
               <div>
                 <p className="text-xs text-muted-foreground">Funding Range</p>
                 <p className="font-semibold text-primary">
@@ -120,7 +120,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             </div>
           ) : (
             userContribution > 0 && (
-              <div className="p-3 bg-muted/50 rounded-lg text-center">
+              <div className="p-3 bg-white/40 dark:bg-black/30 rounded-lg text-center">
                 <p className="text-xs text-muted-foreground">You contributed</p>
                 <p className="font-semibold text-secondary">${userContribution}</p>
               </div>
