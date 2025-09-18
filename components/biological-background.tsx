@@ -34,7 +34,7 @@ export function BiologicalBackground() {
             helixPhase: number // Added phase for helix rotation
         }> = []
 
-        const streakCount = Math.floor(canvas.width / 60) // More streaks, closer together
+        const streakCount = Math.floor(canvas.width / 45) // Increase streak density for richer background
         for (let i = 0; i < streakCount; i++) {
             streaks.push({
                 x: Math.random() * canvas.width,
