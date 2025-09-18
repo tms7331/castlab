@@ -7,8 +7,8 @@ import { Event } from "@/lib/supabase/types";
 import Image from "next/image";
 import Link from "next/link";
 import { useReadContract } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
+import { CHAIN } from '@/lib/wagmi/addresses';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
@@ -26,7 +26,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
     abi: ExperimentFundingABI.abi,
     functionName: 'getExperimentInfo',
     args: [BigInt(experiment.experiment_id)],
-    chainId: baseSepolia.id,
+    chainId: CHAIN.id,
   });
 
   // Extract totalDeposited from contract data

@@ -6,8 +6,8 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
+import { CHAIN } from '@/lib/wagmi/addresses';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import ERC20ABI from '@/lib/contracts/ERC20.json';
 import { sdk } from '@farcaster/miniapp-sdk';
@@ -53,8 +53,8 @@ export default function ExperimentClient() {
   const chainId = useChainId();
 
   // Determine the network for the contract link
-  // Default to baseSepolia if not connected (since that's the configured network)
-  const isBaseSepolia = !chainId || chainId === baseSepolia.id;
+  // Default to configured chain if not connected
+  const isCorrectChain = !chainId || chainId === CHAIN.id;
 
   // Approve transaction
   const {
@@ -100,7 +100,7 @@ export default function ExperimentClient() {
     abi: ExperimentFundingABI.abi,
     functionName: 'getExperimentInfo',
     args: experiment ? [BigInt(experiment.experiment_id)] : undefined,
-    chainId: baseSepolia.id,
+    chainId: CHAIN.id,
   });
 
   // Read user's token balance
@@ -115,7 +115,7 @@ export default function ExperimentClient() {
     }],
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    chainId: baseSepolia.id,
+    chainId: CHAIN.id,
     query: {
       enabled: !!address,
     },
@@ -127,7 +127,7 @@ export default function ExperimentClient() {
     abi: ExperimentFundingABI.abi,
     functionName: 'getUserDeposit',
     args: address && experiment ? [BigInt(experiment.experiment_id), address] : undefined,
-    chainId: baseSepolia.id,
+    chainId: CHAIN.id,
     query: {
       enabled: !!address && !!experiment,
     },
@@ -338,8 +338,8 @@ export default function ExperimentClient() {
     }
 
     // Check if on the correct chain
-    if (chainId !== baseSepolia.id) {
-      alert(`Please switch to ${baseSepolia.name} network in your wallet`);
+    if (chainId !== CHAIN.id) {
+      alert(`Please switch to ${CHAIN.name} network in your wallet`);
       return;
     }
 
@@ -359,7 +359,7 @@ export default function ExperimentClient() {
       abi: ERC20ABI.abi,
       functionName: 'approve',
       args: [CONTRACT_ADDRESS, tokenAmount],
-      chainId: baseSepolia.id,
+      chainId: CHAIN.id,
     });
     // Error handling is now done in the useEffect hook for approveError
   };
@@ -376,7 +376,7 @@ export default function ExperimentClient() {
         abi: ExperimentFundingABI.abi,
         functionName: 'undeposit',
         args: [BigInt(experiment.experiment_id)],
-        chainId: baseSepolia.id,
+        chainId: CHAIN.id,
       });
     } catch (err) {
       console.error('Withdrawal failed:', err);
@@ -395,7 +395,7 @@ export default function ExperimentClient() {
         abi: ERC20ABI.abi,
         functionName: 'mint',
         args: [],
-        chainId: baseSepolia.id,
+        chainId: CHAIN.id,
       });
     } catch (err) {
       console.error('Minting failed:', err);
@@ -417,7 +417,7 @@ export default function ExperimentClient() {
       abi: ExperimentFundingABI.abi,
       functionName: 'deposit',
       args: [BigInt(experimentId), tokenAmount],
-      chainId: baseSepolia.id,
+      chainId: CHAIN.id,
     });
     // Error handling is now done in the useEffect hook for depositError
   };
@@ -546,7 +546,7 @@ export default function ExperimentClient() {
                     <span className="font-medium text-sm">Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
                   </div>
                   <div className="text-xs text-green-600 mt-1">
-                    Network: {chainId === baseSepolia.id ? 'Base Sepolia ✓' : `Wrong Network (Chain ID: ${chainId})`}
+                    Network: {chainId === CHAIN.id ? `${CHAIN.name} ✓` : `Wrong Network (Chain ID: ${chainId})`}
                   </div>
                 </div>
 
@@ -742,7 +742,7 @@ export default function ExperimentClient() {
             <div className="mt-4 pt-3 border-t border-border">
               <div className="text-xs text-muted-foreground">
                 <a
-                  href={`${isBaseSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
+                  href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors inline-flex items-center gap-1"
@@ -760,7 +760,7 @@ export default function ExperimentClient() {
           <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
             <div className="text-xs text-muted-foreground">
               <a
-                href={`${isBaseSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
+                href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-primary transition-colors inline-flex items-center gap-1"

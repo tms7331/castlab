@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useReadContract } from 'wagmi';
-import { baseSepolia } from 'wagmi/chains';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
+import { CHAIN } from '@/lib/wagmi/addresses';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import { HeroSection } from "@/components/hero-section";
 import { ExperimentCard } from "@/components/experiment-card";
@@ -99,7 +99,7 @@ function ExperimentCardWithContribution({
     abi: ExperimentFundingABI.abi,
     functionName: 'getExperimentInfo',
     args: [BigInt(experiment.experiment_id)],
-    chainId: baseSepolia.id,
+    chainId: CHAIN.id,
   });
 
   // Report funding amount to parent
@@ -118,7 +118,7 @@ function ExperimentCardWithContribution({
     abi: ExperimentFundingABI.abi,
     functionName: 'getUserDeposit',
     args: userAddress ? [BigInt(experiment.experiment_id), userAddress] : undefined,
-    chainId: baseSepolia.id,
+    chainId: CHAIN.id,
     query: {
       enabled: !!userAddress,
     },
