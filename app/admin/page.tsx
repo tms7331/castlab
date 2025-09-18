@@ -146,7 +146,7 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append('file', imageFile);
 
-      const response = await fetch('/api/upload', {
+      const response = await fetch('/api/admin/upload', {
         method: 'POST',
         body: formData,
       });
@@ -333,7 +333,7 @@ export default function AdminPage() {
       };
 
       // Send to the API
-      const response = await fetch('/api/events', {
+      const response = await fetch('/api/admin/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
