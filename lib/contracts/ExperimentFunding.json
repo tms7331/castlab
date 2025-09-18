@@ -9,7 +9,7 @@
           "internalType": "address"
         },
         {
-          "name": "_admin2",
+          "name": "_admin_dev",
           "type": "address",
           "internalType": "address"
         },
@@ -24,19 +24,6 @@
     {
       "type": "function",
       "name": "admin",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "admin2",
       "inputs": [],
       "outputs": [
         {
@@ -90,6 +77,19 @@
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "admin_dev",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
       "type": "function",
@@ -184,7 +184,7 @@
           "internalType": "uint256"
         },
         {
-          "name": "closed",
+          "name": "open",
           "type": "bool",
           "internalType": "bool"
         }
@@ -218,7 +218,7 @@
           "internalType": "uint256"
         },
         {
-          "name": "closed",
+          "name": "open",
           "type": "bool",
           "internalType": "bool"
         }

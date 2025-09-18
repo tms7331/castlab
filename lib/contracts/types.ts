@@ -1,16 +1,15 @@
 export interface ExperimentInfo {
-  description: string;
-  goal: bigint;
+  costMin: bigint;
+  costMax: bigint;
   totalDeposited: bigint;
-  goalReached: boolean;
-  closed: boolean;
+  open: boolean;
 }
 
 export interface ContractFunctions {
   admin: () => Promise<string>;
   adminReturn: (experimentId: bigint) => Promise<void>;
   adminWithdraw: (experimentId: bigint) => Promise<void>;
-  createExperiment: (description: string, goal: bigint) => Promise<bigint>;
+  createExperiment: (costMin: bigint, costMax: bigint) => Promise<bigint>;
   deposit: (experimentId: bigint, value: bigint) => Promise<void>;
   experimentDepositors: (experimentId: bigint, index: bigint) => Promise<string>;
   experiments: (experimentId: bigint) => Promise<ExperimentInfo>;
@@ -22,7 +21,7 @@ export interface ContractFunctions {
 }
 
 export interface ContractEvents {
-  AdminReturn: {
+  AdminClose: {
     experimentId: bigint;
   };
   AdminWithdraw: {
@@ -36,8 +35,8 @@ export interface ContractEvents {
   };
   ExperimentCreated: {
     experimentId: bigint;
-    description: string;
-    goal: bigint;
+    costMin: bigint;
+    costMax: bigint;
   };
   Undeposited: {
     experimentId: bigint;

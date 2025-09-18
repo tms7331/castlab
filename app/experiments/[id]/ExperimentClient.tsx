@@ -140,6 +140,7 @@ export default function ExperimentClient() {
   } = useWriteContract();
 
   // Wait for mint confirmation
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { isLoading: isMintPending, isSuccess: isMintConfirmed } = useWaitForTransactionReceipt({
     hash: mintHash,
   });
@@ -384,6 +385,7 @@ export default function ExperimentClient() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleMintTestTokens = async () => {
     if (!address) return;
 
