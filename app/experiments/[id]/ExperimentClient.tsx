@@ -52,6 +52,10 @@ export default function ExperimentClient() {
   const { connect, connectors } = useConnect();
   const chainId = useChainId();
 
+  // Determine the network for the contract link
+  // Default to baseSepolia if not connected (since that's the configured network)
+  const isBaseSepolia = !chainId || chainId === baseSepolia.id;
+
   // Approve transaction
   const {
     writeContract: writeApprove,
@@ -729,8 +733,33 @@ export default function ExperimentClient() {
             {/* Contract Address Info */}
             <div className="mt-4 pt-3 border-t border-border">
               <div className="text-xs text-muted-foreground">
-                Contract: {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
+                <a
+                  href={`${isBaseSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                >
+                  View smart contract: {CONTRACT_ADDRESS}
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Show contract link for completed experiments outside the funding card */}
+        {experiment.date_completed && (
+          <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
+            <div className="text-xs text-muted-foreground">
+              <a
+                href={`${isBaseSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary transition-colors inline-flex items-center gap-1"
+              >
+                View smart contract: {CONTRACT_ADDRESS}
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           </Card>
         )}
