@@ -447,7 +447,7 @@ export default function ExperimentClient() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <main className="px-3 py-4 max-w-2xl mx-auto">
         <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-4">
           <ArrowLeft className="w-4 h-4" />

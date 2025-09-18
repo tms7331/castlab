@@ -33,7 +33,7 @@ export default function CompletedExperimentsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <section className="relative overflow-hidden">
         <div className="relative px-4 py-2">
           <div className="max-w-sm mx-auto text-center space-y-4">
