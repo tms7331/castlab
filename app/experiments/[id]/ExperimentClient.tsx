@@ -498,7 +498,7 @@ export default function ExperimentClient() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Read full details <ExternalLink className="w-4 h-4 ml-1" />
+                  Read full protocol <ExternalLink className="w-4 h-4 ml-1" />
                 </a>
               </Button>
             </div>
@@ -555,6 +555,7 @@ export default function ExperimentClient() {
                         <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
                         <div className="text-xs text-muted-foreground">Available for funding</div>
                       </div>
+                      {/* Commented out testnet token minting button - may reintroduce later
                       <button
                         onClick={handleMintTestTokens}
                         disabled={isMintPending}
@@ -562,6 +563,7 @@ export default function ExperimentClient() {
                       >
                         {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
                       </button>
+                      */}
                     </div>
                   </Card>
                 )}
@@ -602,6 +604,7 @@ export default function ExperimentClient() {
                       <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
                       <div className="text-xs text-muted-foreground">Available for funding</div>
                     </div>
+                    {/* Commented out testnet token minting button - may reintroduce later
                     <button
                       onClick={handleMintTestTokens}
                       disabled={isMintPending}
@@ -609,6 +612,7 @@ export default function ExperimentClient() {
                     >
                       {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
                     </button>
+                    */}
                   </div>
                 </Card>
 
