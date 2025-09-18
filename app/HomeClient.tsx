@@ -51,7 +51,7 @@ export default function HomeClient() {
   const totalFunded = Array.from(fundingMap.values()).reduce((sum, amount) => sum + amount, 0);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <HeroSection activeCount={experiments.length} totalFunded={totalFunded} />
       <section className="px-4 pb-8">
         <div className="max-w-sm mx-auto space-y-4">

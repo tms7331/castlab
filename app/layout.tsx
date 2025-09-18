@@ -4,6 +4,7 @@ import "./globals.css";
 import { FarcasterProvider } from "./providers/FarcasterProvider";
 import { WagmiProvider } from "@/lib/wagmi/WagmiProvider";
 import { Header } from "@/components/header";
+import { BiologicalBackground } from "@/components/biological-background";
 import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = localFont({
@@ -30,15 +31,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <FarcasterProvider>
-          <WagmiProvider>
-            <Header />
-            <main>
-              {children}
-            </main>
-          </WagmiProvider>
-        </FarcasterProvider>
-        <Analytics />
+        <BiologicalBackground />
+        <div className="relative z-10 flex min-h-screen flex-col">
+          <FarcasterProvider>
+            <WagmiProvider>
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
+            </WagmiProvider>
+          </FarcasterProvider>
+          <Analytics />
+        </div>
       </body>
     </html>
   );
