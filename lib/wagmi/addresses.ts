@@ -3,7 +3,7 @@ import { base, baseSepolia } from 'wagmi/chains';
 export type NetworkType = 'baseSepolia' | 'base';
 
 // Hardcode your network selection here
-export const NETWORK: NetworkType = 'baseSepolia';
+export const NETWORK: NetworkType = 'base';
 
 // Export the chain for convenience
 const NETWORK_TO_CHAIN = {
