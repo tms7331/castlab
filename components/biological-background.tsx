@@ -55,7 +55,7 @@ export function BiologicalBackground() {
             ctx.fillRect(0, 0, canvas.width, canvas.height)
 
             // Draw flowing streaks
-            streaks.forEach((streak, index) => {
+            streaks.forEach((streak) => {
                 // Create gradient for each streak
                 const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
 
