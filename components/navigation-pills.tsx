@@ -19,27 +19,27 @@ const tabs: TabConfig[] = [
     href: "/",
     isActive: (pathname) => pathname === "/" || pathname.startsWith("/experiments"),
     activeClassName:
-      "bg-[#18065b] text-white shadow-lg shadow-[#18065b]/35 border border-[#18065b]/70 scale-105 ring-2 ring-white/80 ring-offset-2 ring-offset-[#18065b]/60",
+      "bg-[linear-gradient(130deg,#18065b_0%,#3a27a8_55%,#5534d4_100%)] text-white shadow-lg shadow-[rgba(24,6,91,0.35)] border border-[#3a27a8]/70 scale-105 ring-2 ring-white/80 ring-offset-2 ring-offset-white",
     inactiveClassName:
-      "bg-[#18065b] text-white border border-[#18065b]/40",
+      "bg-[linear-gradient(130deg,#18065b_0%,#261275_85%,#1d0d5f_100%)] text-white/95 border border-[#18065b]/40",
   },
   {
     label: "Completed",
     href: "/completed-experiments",
     isActive: (pathname) => pathname.startsWith("/completed-experiments"),
     activeClassName:
-      "bg-secondary text-secondary-foreground shadow-lg shadow-secondary/35 border border-secondary/60 scale-105 ring-2 ring-white/80 ring-offset-2 ring-offset-secondary/60",
+      "bg-[linear-gradient(135deg,#c9bbff_0%,#a995ff_60%,#8d79f6_100%)] text-white shadow-lg shadow-[rgba(137,121,246,0.35)] border border-[#9f8dff]/60 scale-105 ring-2 ring-white/70 ring-offset-2 ring-offset-white",
     inactiveClassName:
-      "bg-secondary text-secondary-foreground border border-secondary/40",
+      "bg-[linear-gradient(135deg,#e1d9ff_0%,#cfc0ff_100%)] text-[#2d1c6a] border border-[#c9befc]/45",
   },
   {
     label: "About",
     href: "/about",
     isActive: (pathname) => pathname.startsWith("/about"),
     activeClassName:
-      "bg-background text-foreground border border-primary/70 shadow-lg shadow-primary/20 scale-105 ring-2 ring-primary/40 ring-offset-2 ring-offset-background",
+      "bg-[linear-gradient(140deg,rgba(255,255,255,0.95)_0%,rgba(243,236,255,0.92)_60%,rgba(228,220,255,0.9)_100%)] text-foreground border border-primary/60 shadow-lg shadow-primary/20 scale-105 ring-2 ring-primary/30 ring-offset-2 ring-offset-white",
     inactiveClassName:
-      "bg-background text-foreground border border-border",
+      "bg-[linear-gradient(140deg,rgba(255,255,255,0.88)_0%,rgba(247,243,255,0.88)_100%)] text-foreground border border-border backdrop-blur",
   },
 ];
 
