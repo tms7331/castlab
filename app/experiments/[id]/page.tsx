@@ -47,10 +47,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${experiment.title} - CastLab`,
-    description: experiment.summary || experiment.one_liner || "Fund this experiment on CastLab",
+    description: experiment.summary || "Fund this experiment on CastLab",
     openGraph: {
       title: experiment.title,
-      description: experiment.summary || experiment.one_liner,
+      description: experiment.summary,
       images: [imageUrl],
       url: experimentUrl,
     },

@@ -66,6 +66,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 45vw, 200px"
+                  priority
                 />
               </div>
             </div>
