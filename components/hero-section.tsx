@@ -16,7 +16,7 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
       const appUrl = getAppUrl();
 
       const result = await sdk.actions.composeCast({
-        text: `"@motherlizard I have a great experiment idea: ${appUrl}"`,
+        text: `@motherlizard I have a great experiment idea:`,
         embeds: [appUrl]
       });
 
