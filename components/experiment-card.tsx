@@ -39,15 +39,10 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   const handleCastAboutThis = async () => {
     try {
       const appUrl = `${getAppUrl()}/experiments/${experiment?.experiment_id}`;
-
-      const result = await sdk.actions.composeCast({
-        text: `Check out this CastLab experiment: "${experiment.title} ${appUrl}" 🧪🔬`,
+      await sdk.actions.composeCast({
+        text: `Check out this CastLab experiment: "${experiment.title}" 🧪🔬`,
         embeds: [appUrl]
       });
-
-      if (result?.cast) {
-        console.log('Cast successful:', result.cast.hash);
-      }
     } catch (error) {
       console.error('Failed to compose cast:', error);
     }

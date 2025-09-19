@@ -15,14 +15,10 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
     try {
       const appUrl = getAppUrl();
 
-      const result = await sdk.actions.composeCast({
+      await sdk.actions.composeCast({
         text: `@motherlizard I have a great experiment idea:`,
         embeds: [appUrl]
       });
-
-      if (result?.cast) {
-        console.log('Cast successful:', result.cast.hash);
-      }
     } catch (error) {
       console.error('Failed to compose cast:', error);
     }

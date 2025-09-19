@@ -294,7 +294,6 @@ export default function ExperimentClient() {
       });
 
       if (result?.cast) {
-        console.log('Cast successful:', result.cast.hash);
         // Reset state after successful cast
         setCurrentStep('idle');
         setApprovedAmount(null);
