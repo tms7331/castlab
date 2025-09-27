@@ -19,7 +19,8 @@ export default function AdminPage() {
     costTag: "",
     imageUrl: "",
     experimentUrl: "",
-    dateCompleted: ""
+    dateCompleted: "",
+    dateFundingDeadline: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -346,6 +347,16 @@ export default function AdminPage() {
         }
       }
 
+      // Parse funding deadline date
+      let dateFundingDeadline: string | null = null;
+      if (newExperiment.dateFundingDeadline) {
+        dateFundingDeadline = parseDateString(newExperiment.dateFundingDeadline);
+        if (!dateFundingDeadline) {
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Prepare the event data for the database
       const eventData: EventInsert = {
         experiment_id: experimentId,
@@ -356,6 +367,7 @@ export default function AdminPage() {
         cost_max: newExperiment.costMax ? parseInt(newExperiment.costMax) : null,
         cost_tag: newExperiment.costTag || null,
         date_completed: dateCompleted,
+        date_funding_deadline: dateFundingDeadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Default to 30 days from now
         experiment_url: newExperiment.experimentUrl || null
       };
 
@@ -384,7 +396,8 @@ export default function AdminPage() {
         costTag: "",
         imageUrl: "",
         experimentUrl: "",
-        dateCompleted: ""
+        dateCompleted: "",
+        dateFundingDeadline: ""
       });
       setImageFile(null);
       setImagePreview(null);
@@ -734,20 +747,38 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-[#005577] font-semibold mb-2">
-                  Date Completed (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={newExperiment.dateCompleted}
-                  onChange={(e) => setNewExperiment({ ...newExperiment, dateCompleted: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
-                  placeholder="MM/DD/YYYY (e.g., 03/15/2024)"
-                />
-                <p className="text-xs text-[#0a3d4d] mt-1">
-                  Leave blank for ongoing experiments. Fill in for completed experiments (no blockchain required).
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[#005577] font-semibold mb-2">
+                    Funding Deadline
+                  </label>
+                  <input
+                    type="text"
+                    value={newExperiment.dateFundingDeadline}
+                    onChange={(e) => setNewExperiment({ ...newExperiment, dateFundingDeadline: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                    placeholder="MM/DD/YYYY (e.g., 12/31/2024)"
+                  />
+                  <p className="text-xs text-[#0a3d4d] mt-1">
+                    Deadline for funding. Defaults to 30 days from now if left blank.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-[#005577] font-semibold mb-2">
+                    Date Completed (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newExperiment.dateCompleted}
+                    onChange={(e) => setNewExperiment({ ...newExperiment, dateCompleted: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                    placeholder="MM/DD/YYYY (e.g., 03/15/2024)"
+                  />
+                  <p className="text-xs text-[#0a3d4d] mt-1">
+                    Leave blank for ongoing experiments. Fill in for completed experiments (no blockchain required).
+                  </p>
+                </div>
               </div>
 
               {/* Wallet connection */}

@@ -98,14 +98,23 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             </div>
           )}
 
-          {/* Funding Goal, Deadline & User Contribution */}
+          {/* Experimenter, Deadline & User Contribution */}
           {!hideRanges ? (
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div>
-                <p className="text-xs text-black">Funding Goal</p>
-                <p className="font-semibold text-primary">
-                  ${experiment.cost_min || 0} - ${experiment.cost_max || 0}
-                </p>
+                <p className="text-xs text-black">Experimenter</p>
+                <a
+                  href="https://farcaster.xyz/motherlizard"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-primary hover:underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    sdk.actions.openUrl('https://farcaster.xyz/motherlizard');
+                  }}
+                >
+                  @motherlizard
+                </a>
               </div>
               <div className="text-center">
                 <p className="text-xs text-black">Deadline</p>

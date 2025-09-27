@@ -26,15 +26,15 @@ export default function AboutPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Yes! Once funded, experiments get run by the team at Cosimo Research, an independent scientific research service. They design the protocol, execute the experiment, analyze the data, and share updates along the way. Check out their past work and follow along at{" "}
+                Yes! The initial batch of experiments will be run by the team at Cosimo Research, an independent scientific research service. They design the protocol, execute the experiment, analyze the data, and share updates along the way. Check out their past work and follow along at{" "}
                 <a
                   href="https://www.cosimoresearch.com/journal"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  https://www.cosimoresearch.com/journal
-                </a>.
+                  cosimoresearch.com/journal
+                </a>.  In the future more researchers will be onboarded to run their own experiments.
               </p>
             </CardContent>
           </Card>
