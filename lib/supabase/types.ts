@@ -7,6 +7,7 @@ export interface Event {
   cost_max: number | null;
   cost_tag: string | null;
   date_completed: string | null;
+  date_funding_deadline: string;
   experiment_url: string | null;
   created_at: string;
   updated_at: string;

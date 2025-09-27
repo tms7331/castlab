@@ -33,7 +33,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
   const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
-  const fundingGoal = experiment.cost_max || 1;
+  const fundingGoal = experiment.cost_min || 1;
   const fundingProgress = Math.min((totalDepositedUSD / fundingGoal) * 100, 100);
 
   const handleCastAboutThis = async () => {
@@ -98,13 +98,23 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             </div>
           )}
 
-          {/* Funding Range & User Contribution */}
+          {/* Funding Goal, Deadline & User Contribution */}
           {!hideRanges ? (
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div>
-                <p className="text-xs text-black">Funding Range</p>
+                <p className="text-xs text-black">Funding Goal</p>
                 <p className="font-semibold text-primary">
                   ${experiment.cost_min || 0} - ${experiment.cost_max || 0}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-black">Deadline</p>
+                <p className="font-semibold text-black">
+                  {new Date(experiment.date_funding_deadline).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
                 </p>
               </div>
               {userContribution > 0 && (

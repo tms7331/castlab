@@ -450,7 +450,7 @@ export default function ExperimentClient() {
           Back to all experiments
         </Link>
 
-        <h1 className="text-3xl font-bold text-foreground mb-4">{experiment.title}</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4 text-center">{experiment.title}</h1>
 
         {experiment.image_url && (
           <div className="relative mb-4 rounded-lg overflow-hidden h-64">
@@ -475,6 +475,36 @@ export default function ExperimentClient() {
               day: 'numeric'
             })}
           </div>
+        )}
+
+        {/* Show funding deadline if experiment is not completed */}
+        {!experiment.date_completed && experiment.date_funding_deadline && (
+          <Card className="p-4 mb-4 bg-card/50 backdrop-blur-sm border-border/50">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium text-foreground">
+                Funding Deadline
+              </div>
+              <div className="text-lg font-bold text-foreground">
+                {new Date(experiment.date_funding_deadline).toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </div>
+            </div>
+            {(() => {
+              const daysRemaining = Math.ceil((new Date(experiment.date_funding_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+              return daysRemaining > 0 ? (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
+                </div>
+              ) : (
+                <div className="text-xs text-red-600 mt-1">
+                  Deadline has passed
+                </div>
+              );
+            })()}
+          </Card>
         )}
 
         {experiment.summary && (
