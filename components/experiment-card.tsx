@@ -13,6 +13,8 @@ import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 
+const MOTHERLIZARD_FID = 883930;
+
 interface ExperimentCardProps {
   experiment: Event;
   userContribution?: number;
@@ -103,18 +105,14 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div>
                 <p className="text-xs text-black">Experimenter</p>
-                <a
-                  href="https://farcaster.xyz/motherlizard"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-primary hover:underline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    sdk.actions.openUrl('https://farcaster.xyz/motherlizard');
+                <button
+                  className="font-semibold text-primary hover:underline text-left"
+                  onClick={() => {
+                    sdk.actions.viewProfile({ fid: MOTHERLIZARD_FID });
                   }}
                 >
                   @motherlizard
-                </a>
+                </button>
               </div>
               <div className="text-center">
                 <p className="text-xs text-black">Deadline</p>
