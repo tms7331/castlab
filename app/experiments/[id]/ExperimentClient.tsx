@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
+import { useToast } from "@/lib/hooks/use-toast";
+import { Toaster } from "@/components/ui/toast";
 
 export default function ExperimentClient() {
   const params = useParams();
@@ -46,6 +48,9 @@ export default function ExperimentClient() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [approvedAmount, setApprovedAmount] = useState<string | null>(null);
   const [hasAttemptedDeposit, setHasAttemptedDeposit] = useState(false);
+
+  // Toast hook
+  const { toasts, showToast, removeToast } = useToast();
 
   // Wagmi hooks
   const { address, isConnected } = useAccount();
@@ -268,7 +273,7 @@ export default function ExperimentClient() {
         ]);
       }, 1000);
 
-      alert("Your withdrawal has been completed successfully.");
+      showToast("Your withdrawal has been completed successfully.", "success");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawConfirmed, resetWithdraw]);
@@ -281,7 +286,7 @@ export default function ExperimentClient() {
         await refetchTokenBalance();
       }, 1000);
 
-      alert("Testnet tokens minted successfully!");
+      showToast("Testnet tokens minted successfully!", "success");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMintConfirmed]);
@@ -358,13 +363,13 @@ export default function ExperimentClient() {
     }
 
     if (!fundingAmount || Number(fundingAmount) <= 0) {
-      alert("Please enter a valid amount");
+      showToast("Please enter a valid amount", "error");
       return;
     }
 
     // Check if on the correct chain
     if (chainId !== CHAIN.id) {
-      alert(`Please switch to ${CHAIN.name} network in your wallet`);
+      showToast(`Please switch to ${CHAIN.name} network in your wallet`, "error");
       return;
     }
 
@@ -406,7 +411,7 @@ export default function ExperimentClient() {
     } catch (err) {
       console.error('Withdrawal failed:', err);
       setIsWithdrawing(false);
-      alert('Withdrawal failed. Please try again.');
+      showToast('Withdrawal failed. Please try again.', 'error');
     }
   };
 
@@ -424,7 +429,7 @@ export default function ExperimentClient() {
       });
     } catch (err) {
       console.error('Minting failed:', err);
-      alert('Minting failed. Please try again.');
+      showToast('Minting failed. Please try again.', 'error');
     }
   };
 
@@ -474,6 +479,7 @@ export default function ExperimentClient() {
 
   return (
     <div className="min-h-screen">
+      <Toaster toasts={toasts} onRemove={removeToast} />
       <main className="px-3 py-4 max-w-2xl mx-auto">
         <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-4">
           <ArrowLeft className="w-4 h-4" />
