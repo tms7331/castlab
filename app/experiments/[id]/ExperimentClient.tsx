@@ -209,6 +209,7 @@ export default function ExperimentClient() {
   // Handle deposit confirmation
   useEffect(() => {
     if (isDepositConfirmed && currentStep === 'depositing') {
+      console.log('[Deposit Confirmed] Starting post-deposit flow');
       // Haptic feedback for successful deposit
       sdk.haptics.impactOccurred('medium');
       setCurrentStep('complete');
@@ -217,6 +218,7 @@ export default function ExperimentClient() {
 
       // Add a small delay to ensure blockchain state is updated
       setTimeout(async () => {
+        console.log('[Deposit Confirmed] Refetching contract data and syncing to database');
         // Refetch all data to show updated amounts
         await Promise.all([
           refetchContractData(),
@@ -224,8 +226,10 @@ export default function ExperimentClient() {
           refetchTokenBalance()
         ]);
 
+        console.log('[Deposit Confirmed] About to call syncDonationToDatabase');
         // Sync donation to database for leaderboard
         await syncDonationToDatabase();
+        console.log('[Deposit Confirmed] Completed syncDonationToDatabase');
       }, 1000);
 
       // Don't reset the state automatically - let user dismiss it or cast about it
@@ -271,6 +275,9 @@ export default function ExperimentClient() {
           refetchUserDeposit(),
           refetchTokenBalance()
         ]);
+
+        // Sync donation to database for leaderboard
+        await syncDonationToDatabase();
       }, 1000);
 
       showToast("Your withdrawal has been completed successfully.", "success");
@@ -292,9 +299,15 @@ export default function ExperimentClient() {
   }, [isMintConfirmed]);
 
   const syncDonationToDatabase = async () => {
-    if (!address || !experiment) return;
+    console.log('[syncDonationToDatabase] Called with:', { address, experimentId: experiment?.experiment_id });
+
+    if (!address || !experiment) {
+      console.log('[syncDonationToDatabase] Early return - missing address or experiment:', { address, experiment: !!experiment });
+      return;
+    }
 
     try {
+      console.log('[syncDonationToDatabase] Sending request to /api/donations/sync');
       // Send wallet address and experiment ID to API
       // API will fetch deposit amount from blockchain and profile from Neynar
       const response = await fetch('/api/donations/sync', {
@@ -309,12 +322,14 @@ export default function ExperimentClient() {
       });
 
       if (!response.ok) {
-        console.error('Failed to sync donation:', await response.text());
+        const errorText = await response.text();
+        console.error('[syncDonationToDatabase] Failed to sync donation:', errorText);
       } else {
-        console.log('Donation synced successfully to leaderboard');
+        const result = await response.json();
+        console.log('[syncDonationToDatabase] Donation synced successfully to leaderboard:', result);
       }
     } catch (error) {
-      console.error('Error syncing donation to database:', error);
+      console.error('[syncDonationToDatabase] Error syncing donation to database:', error);
     }
   };
 
