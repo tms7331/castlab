@@ -218,6 +218,9 @@ export default function ExperimentClient() {
           refetchUserDeposit(),
           refetchTokenBalance()
         ]);
+
+        // Sync donation to database for leaderboard
+        await syncDonationToDatabase();
       }, 1000);
 
       // Don't reset the state automatically - let user dismiss it or cast about it
@@ -282,6 +285,33 @@ export default function ExperimentClient() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMintConfirmed]);
+
+  const syncDonationToDatabase = async () => {
+    if (!address || !experiment) return;
+
+    try {
+      // Send wallet address and experiment ID to API
+      // API will fetch deposit amount from blockchain and profile from Neynar
+      const response = await fetch('/api/donations/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: address,
+          experimentId: experiment.experiment_id,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to sync donation:', await response.text());
+      } else {
+        console.log('Donation synced successfully to leaderboard');
+      }
+    } catch (error) {
+      console.error('Error syncing donation to database:', error);
+    }
+  };
 
   const handleCastAboutDonation = async () => {
     try {

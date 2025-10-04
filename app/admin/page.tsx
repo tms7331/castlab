@@ -36,6 +36,10 @@ export default function AdminPage() {
   const [isLoadingExperiments, setIsLoadingExperiments] = useState(false);
   const [dateCompletedInput, setDateCompletedInput] = useState("");
   const [contractAction, setContractAction] = useState<'close' | 'withdraw' | null>(null);
+  const [syncWalletAddress, setSyncWalletAddress] = useState("");
+  const [syncExperimentId, setSyncExperimentId] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // Wagmi hooks
   const { address, isConnected } = useAccount();
@@ -555,6 +559,57 @@ export default function AdminPage() {
     }
   };
 
+  const handleSyncDonation = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!syncWalletAddress || !syncExperimentId) {
+      setSyncMessage({ type: 'error', text: 'Please enter both wallet address and experiment ID' });
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncMessage(null);
+
+    try {
+      const response = await fetch('/api/donations/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: syncWalletAddress,
+          experimentId: parseInt(syncExperimentId),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to sync donation');
+      }
+
+      setSyncMessage({
+        type: 'success',
+        text: result.message || 'Donation synced successfully!'
+      });
+
+      // Clear form on success
+      setSyncWalletAddress('');
+      setSyncExperimentId('');
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSyncMessage(null), 5000);
+    } catch (error) {
+      console.error('Sync donation error:', error);
+      setSyncMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to sync donation'
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-4xl mx-auto">
@@ -1055,6 +1110,62 @@ export default function AdminPage() {
                   <p className="text-sm text-[#0a3d4d]">Completed Experiments</p>
                 </div>
               </div>
+            </div>
+
+            {/* Sync Donation */}
+            <div className="experiment-card">
+              <h3 className="text-xl font-bold text-[#005577] mb-4">Sync Donation to Leaderboard</h3>
+              <p className="text-sm text-[#0a3d4d] mb-4">
+                Manually sync a donation from a wallet address to the donations database.
+                This will query the blockchain for the deposit amount and fetch the Farcaster profile from Neynar.
+              </p>
+
+              <form onSubmit={handleSyncDonation} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#005577] mb-2">
+                    Wallet Address *
+                  </label>
+                  <input
+                    type="text"
+                    value={syncWalletAddress}
+                    onChange={(e) => setSyncWalletAddress(e.target.value)}
+                    placeholder="0x..."
+                    className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50 font-mono text-sm"
+                    disabled={isSyncing}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#005577] mb-2">
+                    Experiment ID *
+                  </label>
+                  <input
+                    type="number"
+                    value={syncExperimentId}
+                    onChange={(e) => setSyncExperimentId(e.target.value)}
+                    placeholder="e.g., 1"
+                    className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                    disabled={isSyncing}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSyncing}
+                  className={`w-full px-6 py-3 bg-[#00a8cc] text-white font-medium rounded-lg hover:bg-[#008fb3] transition-colors ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isSyncing ? 'Syncing...' : 'Sync Donation'}
+                </button>
+
+                {syncMessage && (
+                  <div className={`p-4 rounded-lg ${syncMessage.type === 'success'
+                    ? 'bg-green-100 text-green-700 border border-green-300'
+                    : 'bg-red-100 text-red-700 border border-red-300'
+                    }`}>
+                    {syncMessage.text}
+                  </div>
+                )}
+              </form>
             </div>
           </div>
         )}
