@@ -12,6 +12,7 @@ import { CHAIN } from '@/lib/wagmi/addresses';
 import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
+import { TopDonors } from './top-donors';
 
 const MOTHERLIZARD_FID = 883930;
 
@@ -98,6 +99,11 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
                 <span>${fundingGoal.toLocaleString()} goal</span>
               </div>
             </div>
+          )}
+
+          {/* Top Donors Leaderboard */}
+          {!hideRanges && (
+            <TopDonors experimentId={experiment.experiment_id} />
           )}
 
           {/* Experimenter, Deadline & User Contribution */}
