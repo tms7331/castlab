@@ -11,7 +11,7 @@ interface HeroSectionProps {
   totalBet: number;
 }
 
-export function HeroSection({ activeCount, totalFunded, totalBet }: HeroSectionProps) {
+export function HeroSection({ activeCount: _activeCount, totalFunded: _totalFunded, totalBet: _totalBet }: HeroSectionProps) {
   const handleCastExperimentIdea = async () => {
     try {
       const appUrl = getAppUrl();
@@ -37,27 +37,6 @@ export function HeroSection({ activeCount, totalFunded, totalBet }: HeroSectionP
             <h1 className="text-4xl font-bold text-balance leading-tight">
               Fund and <span className="text-primary">bet</span> on science!
             </h1>
-            <p className="text-lg text-muted-foreground text-balance">Real experiments. Real results. Real fun.</p>
-          </div>
-
-          {/* Stats */}
-          <div className="flex justify-center gap-6 pt-2 text-sm text-muted-foreground">
-            <div className="text-center">
-              <div className="font-semibold text-foreground">{activeCount}</div>
-              <div>Active</div>
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-foreground">
-                ${totalFunded >= 1000 ? `${(totalFunded / 1000).toFixed(0)}k` : totalFunded.toFixed(0)}
-              </div>
-              <div>Funded</div>
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-foreground">
-                ${totalBet >= 1000 ? `${(totalBet / 1000).toFixed(0)}k` : totalBet.toFixed(0)}
-              </div>
-              <div>Bet</div>
-            </div>
           </div>
 
           {/* Cast Button */}
