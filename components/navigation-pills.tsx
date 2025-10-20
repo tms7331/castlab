@@ -16,7 +16,7 @@ type TabConfig = {
 
 const tabs: TabConfig[] = [
   {
-    label: "Experiments",
+    label: "Live",
     href: "/",
     isActive: (pathname) => pathname === "/" || pathname.startsWith("/experiments"),
     activeClassName:

@@ -8,9 +8,10 @@ import { getAppUrl } from '@/lib/utils/app-url';
 interface HeroSectionProps {
   activeCount: number;
   totalFunded: number;
+  totalBet: number;
 }
 
-export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
+export function HeroSection({ activeCount, totalFunded, totalBet }: HeroSectionProps) {
   const handleCastExperimentIdea = async () => {
     try {
       const appUrl = getAppUrl();
@@ -34,7 +35,7 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
           {/* Hero Content */}
           <div className="space-y-3">
             <h1 className="text-4xl font-bold text-balance leading-tight">
-              Fund <span className="text-primary">SCIENCE!</span>
+              Fund and <span className="text-primary">bet</span> on science!
             </h1>
             <p className="text-lg text-muted-foreground text-balance">Real experiments. Real results. Real fun.</p>
           </div>
@@ -50,6 +51,12 @@ export function HeroSection({ activeCount, totalFunded }: HeroSectionProps) {
                 ${totalFunded >= 1000 ? `${(totalFunded / 1000).toFixed(0)}k` : totalFunded.toFixed(0)}
               </div>
               <div>Funded</div>
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-foreground">
+                ${totalBet >= 1000 ? `${(totalBet / 1000).toFixed(0)}k` : totalBet.toFixed(0)}
+              </div>
+              <div>Bet</div>
             </div>
           </div>
 

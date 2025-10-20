@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
@@ -12,7 +12,7 @@ import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
 import ERC20ABI from '@/lib/contracts/ERC20.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -50,6 +50,8 @@ export default function ExperimentClient() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [approvedAmount, setApprovedAmount] = useState<string | null>(null);
   const [hasAttemptedDeposit, setHasAttemptedDeposit] = useState(false);
+  const placeholderBetTotalRef = useRef(Math.floor(Math.random() * 5000) + 500);
+  const placeholderBetOddsRef = useRef(Math.floor(Math.random() * 91) + 5);
 
   // Toast hook
   const { toasts, showToast, removeToast } = useToast();
@@ -589,286 +591,296 @@ export default function ExperimentClient() {
 
         {/* Only show funding card if experiment is not completed */}
         {!experiment.date_completed && (
-          <Card className="p-4 mb-4 bg-card border-border">
-            <div className="text-center mb-3">
-              <div className="text-3xl font-bold text-primary mb-1">
-                ${totalDepositedUSD.toLocaleString()}
-              </div>
-              <div className="text-muted-foreground text-sm">raised</div>
-            </div>
-
-            <div className="mb-3">
-              <div className="text-sm text-muted-foreground mb-1">
-                Target range: ${(experiment.cost_min || 0).toLocaleString()} - ${(experiment.cost_max || 0).toLocaleString()}
-              </div>
-              {experiment.cost_tag && (
-                <div className="text-sm text-primary mb-3">
-                  {experiment.cost_tag}
-                </div>
-              )}
-            </div>
-
-            <div className="mb-4">
-              <Progress value={Math.min((totalDepositedUSD / (experiment.cost_max || 1)) * 100, 100)} className="h-2 mb-2" />
-              <div className="text-center text-sm text-muted-foreground">
-                {Math.round((totalDepositedUSD / (experiment.cost_max || 1)) * 100)}% funded
-              </div>
-            </div>
-
-            {/* Wallet Connection Status and Balance */}
-            {isConnected && (
-              <>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                  <div className="flex items-center gap-2 text-green-700">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="font-medium text-sm">Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
+          <>
+            <Card className="mb-4 bg-card border-border">
+              <CardHeader className="px-4 pb-3">
+                <CardTitle className="text-lg font-semibold text-foreground">Funding Progress</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0 space-y-4">
+                <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
+                  <div>
+                    <div className="text-3xl font-bold text-primary mb-1">
+                      ${totalDepositedUSD.toLocaleString()}
+                    </div>
+                    <div className="text-muted-foreground text-sm">Raised</div>
                   </div>
-                  <div className="text-xs text-green-600 mt-1">
-                    Network: {chainId === CHAIN.id ? `${CHAIN.name} ✓` : `Wrong Network (Chain ID: ${chainId})`}
+                  <div>
+                    <div className="text-3xl font-bold text-secondary mb-1">
+                      ${placeholderBetTotalRef.current.toLocaleString()}
+                    </div>
+                    <div className="text-muted-foreground text-sm">Amount bet</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-foreground mb-1">
+                      {placeholderBetOddsRef.current}%
+                    </div>
+                    <div className="text-muted-foreground text-sm">Current odds</div>
                   </div>
                 </div>
 
-                {/* Token Balance Display - only show if not in complete state */}
-                {currentStep !== 'complete' && (
-                  <Card className="p-3 mb-4 bg-secondary/10 border-secondary/20">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
-                        <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
-                        <div className="text-xs text-muted-foreground">Available for funding</div>
+                <div>
+                  <div className="text-sm text-muted-foreground">
+                    Target range: ${(experiment.cost_min || 0).toLocaleString()} - ${(experiment.cost_max || 0).toLocaleString()}
+                  </div>
+                  {experiment.cost_tag && (
+                    <div className="text-sm text-primary mt-1">
+                      {experiment.cost_tag}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <Progress value={Math.min((totalDepositedUSD / (experiment.cost_max || 1)) * 100, 100)} className="h-2 mb-2" />
+                  <div className="text-center text-sm text-muted-foreground">
+                    {Math.round((totalDepositedUSD / (experiment.cost_max || 1)) * 100)}% funded
+                  </div>
+                </div>
+
+                {isConnected && (
+                  <div className="space-y-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2 text-green-700">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="font-medium text-sm">Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
                       </div>
-                      {/* Commented out testnet token minting button - may reintroduce later
-                      <button
-                        onClick={handleMintTestTokens}
-                        disabled={isMintPending}
-                        className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
-                      </button>
-                      */}
+                      <div className="text-xs text-green-600 mt-1">
+                        Network: {chainId === CHAIN.id ? `${CHAIN.name} ✓` : `Wrong Network (Chain ID: ${chainId})`}
+                      </div>
                     </div>
-                  </Card>
-                )}
 
-                {/* User's Current Stake Display - only show if not in complete state */}
-                {userDepositUSD > 0 && currentStep !== 'complete' && (
-                  <Card className="p-3 mb-4 bg-green-50 border-green-200">
-                    <div className="text-sm font-medium text-green-900">
-                      Your Current Stake
-                    </div>
-                    <div className="text-lg font-bold text-green-700">
-                      ${userDepositUSD.toLocaleString()}
-                    </div>
-                    <button
-                      onClick={handleWithdraw}
-                      disabled={isWithdrawing || isWithdrawPending}
-                      className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
-                    </button>
-                  </Card>
-                )}
-              </>
-            )}
+                    {currentStep !== 'complete' && (
+                      <Card className="p-3 bg-secondary/10 border-secondary/20">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
+                            <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
+                            <div className="text-xs text-muted-foreground">Available for funding</div>
+                          </div>
+                          {/* Commented out testnet token minting button - may reintroduce later
+                          <button
+                            onClick={handleMintTestTokens}
+                            disabled={isMintPending}
+                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
+                          </button>
+                          */}
+                        </div>
+                      </Card>
+                    )}
 
-            {/* Show Cast button when deposit is complete */}
-            {currentStep === 'complete' ? (
-              <div className="space-y-3">
-                <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
-                  ✅ Thank you for funding this experiment!
-                </div>
-
-                {/* Show updated balance after deposit */}
-                <Card className="p-3 bg-secondary/10 border-secondary/20">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
-                      <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
-                      <div className="text-xs text-muted-foreground">Available for funding</div>
-                    </div>
-                    {/* Commented out testnet token minting button - may reintroduce later
-                    <button
-                      onClick={handleMintTestTokens}
-                      disabled={isMintPending}
-                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
-                    </button>
-                    */}
+                    {userDepositUSD > 0 && currentStep !== 'complete' && (
+                      <Card className="p-3 bg-green-50 border-green-200">
+                        <div className="text-sm font-medium text-green-900">
+                          Your Current Stake
+                        </div>
+                        <div className="text-lg font-bold text-green-700">
+                          ${userDepositUSD.toLocaleString()}
+                        </div>
+                        <button
+                          onClick={handleWithdraw}
+                          disabled={isWithdrawing || isWithdrawPending}
+                          className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
+                        </button>
+                      </Card>
+                    )}
                   </div>
-                </Card>
-
-                {/* Show updated stake after deposit */}
-                {userDepositUSD > 0 && (
-                  <Card className="p-3 bg-green-50 border-green-200">
-                    <div className="text-sm font-medium text-green-900">
-                      Your Current Stake
-                    </div>
-                    <div className="text-lg font-bold text-green-700">
-                      ${userDepositUSD.toLocaleString()}
-                    </div>
-                    <button
-                      onClick={handleWithdraw}
-                      disabled={isWithdrawing || isWithdrawPending}
-                      className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
-                    </button>
-                  </Card>
                 )}
 
-                <Button
-                  onClick={handleCastAboutDonation}
-                  className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
-                  size="lg"
-                >
-                  Cast about it! 📢
-                </Button>
-              </div>
-            ) : (
-              /* Show funding form when not complete */
-              <form onSubmit={handleFunding} className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Fund this experiment (USD)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      type="number"
-                      placeholder="50"
-                      className="pl-8"
-                      value={fundingAmount}
-                      onChange={(e) => setFundingAmount(e.target.value)}
-                      min="1"
-                      step="1"
+                <div className="pt-3 border-t border-border">
+                  <div className="text-xs text-muted-foreground">
+                    <a
+                      href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                    >
+                      View smart contract: {CONTRACT_ADDRESS}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mb-4 border border-border/60 bg-card/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-semibold text-foreground">Bet and Fund</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {currentStep === 'complete' ? (
+                  <>
+                    <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
+                      ✅ Thank you for funding this experiment!
+                    </div>
+
+                    <Card className="p-3 bg-secondary/10 border-secondary/20">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
+                          <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Available for funding</div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {userDepositUSD > 0 && (
+                      <Card className="p-3 bg-green-50 border-green-200">
+                        <div className="text-sm font-medium text-green-900">
+                          Your Current Stake
+                        </div>
+                        <div className="text-lg font-bold text-green-700">
+                          ${userDepositUSD.toLocaleString()}
+                        </div>
+                        <button
+                          onClick={handleWithdraw}
+                          disabled={isWithdrawing || isWithdrawPending}
+                          className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
+                        </button>
+                      </Card>
+                    )}
+
+                    <Button
+                      onClick={handleCastAboutDonation}
+                      className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
+                      size="lg"
+                    >
+                      Cast about it! 📢
+                    </Button>
+                  </>
+                ) : (
+                  <form onSubmit={handleFunding} className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Fund this experiment (USD)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                        <Input
+                          type="number"
+                          placeholder="50"
+                          className="pl-8"
+                          value={fundingAmount}
+                          onChange={(e) => setFundingAmount(e.target.value)}
+                          min="1"
+                          step="1"
+                          disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Bet on this experiment
+                      </label>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="block text-xs font-medium text-muted-foreground mb-1">
+                            Yes
+                          </label>
+                          <Input
+                            type="number"
+                            placeholder="25"
+                            value={yesBetAmount}
+                            onChange={(e) => setYesBetAmount(e.target.value)}
+                            min="0"
+                            step="1"
+                            disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-muted-foreground mb-1">
+                            No
+                          </label>
+                          <Input
+                            type="number"
+                            placeholder="25"
+                            value={noBetAmount}
+                            onChange={(e) => setNoBetAmount(e.target.value)}
+                            min="0"
+                            step="1"
+                            disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      type={isConnected ? "submit" : "button"}
+                      onClick={!isConnected ? () => connect({ connector: connectors[0] }) : currentStep === 'approved' ? handleDeposit : undefined}
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
+                      size="lg"
                       disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                    />
-                  </div>
-                </div>
+                    >
+                      {!isConnected
+                        ? "Connect Wallet to Fund"
+                        : currentStep === 'approving' || isApprovePending
+                          ? "Approving Token..."
+                          : currentStep === 'approved'
+                            ? depositError ? "Retry Deposit" : "Click to Deposit"
+                            : currentStep === 'depositing' || isDepositPending
+                              ? "Depositing..."
+                              : "Fund and Bet"}
+                    </Button>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Bet on this experiment
-                  </label>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-xs font-medium text-muted-foreground mb-1">
-                        Yes
-                      </label>
-                      <Input
-                        type="number"
-                        placeholder="25"
-                        value={yesBetAmount}
-                        onChange={(e) => setYesBetAmount(e.target.value)}
-                        min="0"
-                        step="1"
-                        disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-muted-foreground mb-1">
-                        No
-                      </label>
-                      <Input
-                        type="number"
-                        placeholder="25"
-                        value={noBetAmount}
-                        onChange={(e) => setNoBetAmount(e.target.value)}
-                        min="0"
-                        step="1"
-                        disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  type={isConnected ? "submit" : "button"}
-                  onClick={!isConnected ? () => connect({ connector: connectors[0] }) : currentStep === 'approved' ? handleDeposit : undefined}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
-                  size="lg"
-                  disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                >
-                  {!isConnected
-                    ? "Connect Wallet to Fund"
-                    : currentStep === 'approving' || isApprovePending
-                      ? "Approving Token..."
-                      : currentStep === 'approved'
-                        ? depositError ? "Retry Deposit" : "Click to Deposit"
-                        : currentStep === 'depositing' || isDepositPending
-                          ? "Depositing..."
-                          : "Fund and Bet"}
-                </Button>
-
-                {(approveError || depositError) && (
-                  <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
-                    <div className="font-semibold">Transaction Error</div>
-                    <div className="mt-1 text-xs break-all">
-                      {((approveError || depositError)?.message || '').includes('User rejected')
-                        ? 'Transaction was cancelled by user'
-                        : approveError
-                          ? 'Token approval failed. You can try again.'
-                          : 'Deposit failed. You can retry the deposit.'}
-                    </div>
-                    {approveError && currentStep === 'idle' && (
-                      <Button
-                        onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
-                        className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1"
-                        size="sm"
-                      >
-                        Retry Approval
-                      </Button>
+                    {(approveError || depositError) && (
+                      <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
+                        <div className="font-semibold">Transaction Error</div>
+                        <div className="mt-1 text-xs break-all">
+                          {((approveError || depositError)?.message || '').includes('User rejected')
+                            ? 'Transaction was cancelled by user'
+                            : approveError
+                              ? 'Token approval failed. You can try again.'
+                              : 'Deposit failed. You can retry the deposit.'}
+                        </div>
+                        {approveError && currentStep === 'idle' && (
+                          <Button
+                            onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
+                            className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1"
+                            size="sm"
+                          >
+                            Retry Approval
+                          </Button>
+                        )}
+                        {depositError && currentStep === 'approved' && (
+                          <Button
+                            onClick={handleDeposit}
+                            className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
+                            size="sm"
+                          >
+                            Retry Deposit
+                          </Button>
+                        )}
+                      </div>
                     )}
-                    {depositError && currentStep === 'approved' && (
-                      <Button
-                        onClick={handleDeposit}
-                        className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
-                        size="sm"
-                      >
-                        Retry Deposit
-                      </Button>
+
+                    {currentStep === 'approving' && (
+                      <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                        Step 1/2: Approving token transfer...
+                      </div>
                     )}
-                  </div>
-                )}
 
-                {currentStep === 'approving' && (
-                  <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                    Step 1/2: Approving token transfer...
-                  </div>
-                )}
+                    {currentStep === 'approved' && !depositError && (
+                      <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
+                        ✅ Approval complete! Click the button to deposit.
+                      </div>
+                    )}
 
-                {currentStep === 'approved' && !depositError && (
-                  <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
-                    ✅ Approval complete! Click the button to deposit.
-                  </div>
+                    {currentStep === 'depositing' && (
+                      <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                        Step 2/2: Depositing tokens to experiment...
+                      </div>
+                    )}
+                  </form>
                 )}
-
-                {currentStep === 'depositing' && (
-                  <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                    Step 2/2: Depositing tokens to experiment...
-                  </div>
-                )}
-              </form>
-            )}
-
-            {/* Contract Address Info */}
-            <div className="mt-4 pt-3 border-t border-border">
-              <div className="text-xs text-muted-foreground">
-                <a
-                  href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary transition-colors inline-flex items-center gap-1"
-                >
-                  View smart contract: {CONTRACT_ADDRESS}
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </div>
-          </Card>
+              </CardContent>
+            </Card>
+          </>
         )}
-
         {/* Show contract link for completed experiments outside the funding card */}
         {experiment.date_completed && (
           <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">

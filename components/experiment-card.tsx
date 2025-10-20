@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -38,6 +39,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
   const fundingGoal = experiment.cost_min || 1;
   const fundingProgress = Math.min((totalDepositedUSD / fundingGoal) * 100, 100);
+  const [placeholderOdds] = useState(() => Math.floor(Math.random() * 100));
 
   const handleCastAboutThis = async () => {
     try {
@@ -97,6 +99,21 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
               <div className="flex justify-between items-center text-xs text-black">
                 <span>${totalDepositedUSD.toLocaleString()} raised</span>
                 <span>${fundingGoal.toLocaleString()} goal</span>
+              </div>
+              <div className="space-y-2 pt-1">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-black">Current odds</span>
+                  <span className="font-medium text-black">{placeholderOdds}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={placeholderOdds}
+                  onChange={() => {}}
+                  className="w-full accent-primary cursor-default"
+                  aria-readonly
+                />
               </div>
             </div>
           )}
