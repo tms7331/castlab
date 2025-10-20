@@ -20,6 +20,9 @@ import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
 import { useToast } from "@/lib/hooks/use-toast";
 import { Toaster } from "@/components/ui/toast";
 
+const EXPERIMENTER_FID = 883930;
+const EXPERIMENTER_HANDLE = "@motherlizard";
+
 export default function ExperimentClient() {
   const params = useParams();
   const id = params.id as string;
@@ -52,6 +55,8 @@ export default function ExperimentClient() {
   const [hasAttemptedDeposit, setHasAttemptedDeposit] = useState(false);
   const placeholderBetTotalRef = useRef(Math.floor(Math.random() * 5000) + 500);
   const placeholderBetOddsRef = useRef(Math.floor(Math.random() * 91) + 5);
+  const placeholderKendrickRef = useRef(Math.max(50, Math.round(placeholderBetTotalRef.current * 0.6)));
+  const placeholderDrakeRef = useRef(Math.max(0, placeholderBetTotalRef.current - placeholderKendrickRef.current));
 
   // Toast hook
   const { toasts, showToast, removeToast } = useToast();
@@ -154,6 +159,7 @@ export default function ExperimentClient() {
   type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
   const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
+  const fundingTargetUSD = experiment?.cost_max || experiment?.cost_min || 1;
 
   // Convert token balance to USD
   const userBalanceUSD = tokenBalance ? tokenAmountToUsd(tokenBalance as bigint) : 0;
@@ -533,32 +539,43 @@ export default function ExperimentClient() {
         )}
 
         {/* Show funding deadline if experiment is not completed */}
-        {!experiment.date_completed && experiment.date_funding_deadline && (
+        {!experiment.date_completed && (
           <Card className="p-4 mb-4 bg-card/50 backdrop-blur-sm border-border/50">
             <div className="flex items-center justify-between">
-              <div className="text-sm font-medium text-foreground">
-                Funding Deadline
-              </div>
+              <div className="text-sm font-medium text-foreground">Funding Deadline</div>
               <div className="text-lg font-bold text-foreground">
-                {new Date(experiment.date_funding_deadline).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
+                {experiment.date_funding_deadline
+                  ? new Date(experiment.date_funding_deadline).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })
+                  : 'TBD'}
               </div>
             </div>
-            {(() => {
+            {experiment.date_funding_deadline && (() => {
               const daysRemaining = Math.ceil((new Date(experiment.date_funding_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
               return daysRemaining > 0 ? (
                 <div className="text-xs text-muted-foreground mt-1">
                   {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
                 </div>
               ) : (
-                <div className="text-xs text-red-600 mt-1">
-                  Deadline has passed
-                </div>
+                <div className="text-xs text-red-600 mt-1">Deadline has passed</div>
               );
             })()}
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">Experimenter</p>
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-foreground">{EXPERIMENTER_HANDLE}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => sdk.actions.viewProfile({ fid: EXPERIMENTER_FID })}
+                >
+                  View profile
+                </Button>
+              </div>
+            </div>
           </Card>
         )}
 
@@ -571,24 +588,6 @@ export default function ExperimentClient() {
           </Card>
         )}
 
-        {experiment.experiment_url && (
-          <Card className="p-4 mb-4 bg-muted/50 border-border/50">
-            <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-primary hover:text-primary/80"
-                onClick={() => {
-                  // Open in external browser
-                  sdk.actions.openUrl(experiment.experiment_url!);
-                }}
-              >
-                Read full protocol <ExternalLink className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          </Card>
-        )}
-
         {/* Only show funding card if experiment is not completed */}
         {!experiment.date_completed && (
           <>
@@ -596,48 +595,60 @@ export default function ExperimentClient() {
               <CardHeader className="px-4 pb-3">
                 <CardTitle className="text-lg font-semibold text-foreground">Funding Progress</CardTitle>
               </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0 space-y-4">
-                <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
+              <CardContent className="px-4 pb-4 pt-0 space-y-5">
+                <div className="space-y-4">
                   <div>
-                    <div className="text-3xl font-bold text-primary mb-1">
-                      ${totalDepositedUSD.toLocaleString()}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Progress</span>
+                      <span className="font-semibold text-foreground">
+                        ${totalDepositedUSD.toLocaleString()} raised of ${fundingTargetUSD.toLocaleString()}
+                      </span>
                     </div>
-                    <div className="text-muted-foreground text-sm">Raised</div>
+                    <Progress value={Math.min((totalDepositedUSD / fundingTargetUSD) * 100, 100)} className="mt-2 h-2 bg-muted" />
                   </div>
+
                   <div>
-                    <div className="text-3xl font-bold text-secondary mb-1">
-                      ${placeholderBetTotalRef.current.toLocaleString()}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Current odds</span>
+                      <span className="font-semibold text-foreground">{placeholderBetOddsRef.current}%</span>
                     </div>
-                    <div className="text-muted-foreground text-sm">Amount bet</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-foreground mb-1">
-                      {placeholderBetOddsRef.current}%
-                    </div>
-                    <div className="text-muted-foreground text-sm">Current odds</div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={placeholderBetOddsRef.current}
+                      onChange={() => {}}
+                      className="mt-2 w-full accent-primary cursor-default"
+                      aria-readonly
+                    />
                   </div>
                 </div>
 
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Target range: ${(experiment.cost_min || 0).toLocaleString()} - ${(experiment.cost_max || 0).toLocaleString()}
-                  </div>
-                  {experiment.cost_tag && (
-                    <div className="text-sm text-primary mt-1">
-                      {experiment.cost_tag}
+                <div className="grid grid-cols-2 gap-3 text-left sm:text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-secondary">
+                      ${placeholderKendrickRef.current.toLocaleString()}
                     </div>
-                  )}
-                </div>
-
-                <div>
-                  <Progress value={Math.min((totalDepositedUSD / (experiment.cost_max || 1)) * 100, 100)} className="h-2 mb-2" />
-                  <div className="text-center text-sm text-muted-foreground">
-                    {Math.round((totalDepositedUSD / (experiment.cost_max || 1)) * 100)}% funded
+                    <div className="text-muted-foreground text-xs">Amount Kendrick</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-secondary">
+                      ${placeholderDrakeRef.current.toLocaleString()}
+                    </div>
+                    <div className="text-muted-foreground text-xs">Amount Drake</div>
                   </div>
                 </div>
 
+              </CardContent>
+            </Card>
+
+            <Card className="mb-4 border border-border/60 bg-card/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-semibold text-foreground">Bet and Fund</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
                 {isConnected && (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                       <div className="flex items-center gap-2 text-green-700">
                         <CheckCircle className="w-4 h-4" />
@@ -648,26 +659,15 @@ export default function ExperimentClient() {
                       </div>
                     </div>
 
-                    {currentStep !== 'complete' && (
-                      <Card className="p-3 bg-secondary/10 border-secondary/20">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
-                            <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
-                            <div className="text-xs text-muted-foreground">Available for funding</div>
-                          </div>
-                          {/* Commented out testnet token minting button - may reintroduce later
-                          <button
-                            onClick={handleMintTestTokens}
-                            disabled={isMintPending}
-                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isMintPending ? 'Minting...' : 'Get Testnet Tokens'}
-                          </button>
-                          */}
+                    <Card className="p-3 bg-secondary/10 border-secondary/20">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
+                          <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Available for funding</div>
                         </div>
-                      </Card>
-                    )}
+                      </div>
+                    </Card>
 
                     {userDepositUSD > 0 && currentStep !== 'complete' && (
                       <Card className="p-3 bg-green-50 border-green-200">
@@ -689,42 +689,11 @@ export default function ExperimentClient() {
                   </div>
                 )}
 
-                <div className="pt-3 border-t border-border">
-                  <div className="text-xs text-muted-foreground">
-                    <a
-                      href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-primary transition-colors inline-flex items-center gap-1"
-                    >
-                      View smart contract: {CONTRACT_ADDRESS}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="mb-4 border border-border/60 bg-card/60">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold text-foreground">Bet and Fund</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
                 {currentStep === 'complete' ? (
                   <>
                     <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
                       ✅ Thank you for funding this experiment!
                     </div>
-
-                    <Card className="p-3 bg-secondary/10 border-secondary/20">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
-                          <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">Available for funding</div>
-                        </div>
-                      </div>
-                    </Card>
 
                     {userDepositUSD > 0 && (
                       <Card className="p-3 bg-green-50 border-green-200">
@@ -877,6 +846,20 @@ export default function ExperimentClient() {
                     )}
                   </form>
                 )}
+
+                <div className="pt-3 border-t border-border">
+                  <div className="text-xs text-muted-foreground">
+                    <a
+                      href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                    >
+                      View smart contract: {CONTRACT_ADDRESS}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </>

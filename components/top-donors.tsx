@@ -102,7 +102,7 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-muted-foreground">Popular Donor</p>
+            <p className="text-[10px] text-muted-foreground">Biggest Bettor</p>
             <button
               onClick={() => handleViewProfile(topInfluencer.fid)}
               className="font-semibold text-primary hover:underline truncate block max-w-full text-left"

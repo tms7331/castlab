@@ -15,8 +15,6 @@ import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 import { TopDonors } from './top-donors';
 
-const MOTHERLIZARD_FID = 883930;
-
 interface ExperimentCardProps {
   experiment: Event;
   userContribution?: number;
@@ -93,13 +91,11 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-black">Progress</span>
-                <span className="font-medium text-black">{fundingProgress.toFixed(1)}%</span>
+                <span className="font-medium text-black">
+                  ${totalDepositedUSD.toLocaleString()} raised of ${fundingGoal.toLocaleString()}
+                </span>
               </div>
               <Progress value={fundingProgress} className="h-2 bg-muted" />
-              <div className="flex justify-between items-center text-xs text-black">
-                <span>${totalDepositedUSD.toLocaleString()} raised</span>
-                <span>${fundingGoal.toLocaleString()} goal</span>
-              </div>
               <div className="space-y-2 pt-1">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-black">Current odds</span>
@@ -123,21 +119,10 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             <TopDonors experimentId={experiment.experiment_id} />
           )}
 
-          {/* Experimenter, Deadline & User Contribution */}
+          {/* Deadline & User Contribution */}
           {!hideRanges ? (
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div>
-                <p className="text-xs text-black">Experimenter</p>
-                <button
-                  className="font-semibold text-primary hover:underline text-left"
-                  onClick={() => {
-                    sdk.actions.viewProfile({ fid: MOTHERLIZARD_FID });
-                  }}
-                >
-                  @motherlizard
-                </button>
-              </div>
-              <div className="text-center">
                 <p className="text-xs text-black">Deadline</p>
                 <p className="font-semibold text-black">
                   {new Date(experiment.date_funding_deadline).toLocaleDateString('en-US', {
