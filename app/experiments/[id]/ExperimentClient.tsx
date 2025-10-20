@@ -642,7 +642,7 @@ export default function ExperimentClient() {
               </CardContent>
             </Card>
 
-            <Card className="mb-4 border border-border/60 bg-card/60">
+            <Card className="mb-4 border-2 border-primary/40 bg-card/70">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg font-semibold text-foreground">Fund and Bet</CardTitle>
               </CardHeader>
