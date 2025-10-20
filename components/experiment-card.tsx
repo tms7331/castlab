@@ -119,33 +119,11 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             <TopDonors experimentId={experiment.experiment_id} />
           )}
 
-          {/* Deadline & User Contribution */}
-          {!hideRanges ? (
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-xs text-black">Deadline</p>
-                <p className="font-semibold text-black">
-                  {new Date(experiment.date_funding_deadline).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </p>
-              </div>
-              {userContribution > 0 && (
-                <div className="text-right">
-                  <p className="text-xs text-black">You contributed</p>
-                  <p className="font-semibold text-secondary">${userContribution}</p>
-                </div>
-              )}
+          {userContribution > 0 && (
+            <div className="p-3 bg-muted/50 rounded-lg text-center">
+              <p className="text-xs text-black">You contributed</p>
+              <p className="font-semibold text-secondary">${userContribution}</p>
             </div>
-          ) : (
-            userContribution > 0 && (
-              <div className="p-3 bg-muted/50 rounded-lg text-center">
-                <p className="text-xs text-black">You contributed</p>
-                <p className="font-semibold text-secondary">${userContribution}</p>
-              </div>
-            )
           )}
         </CardContent>
       )}
