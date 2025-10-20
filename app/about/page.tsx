@@ -68,6 +68,13 @@ export default function AboutPage() {
                   Fund experiments you care about. Studies launch once they meet their minimum funding goal, but the more support a study gets, the stronger evidence we can gather. So contribute to the ones that you want to see good evidence for! You can withdraw your contribution anytime before a study reaches its goal.
                 </p>
               </div>
+
+              <div>
+                <h3 className="font-semibold text-foreground mb-2">Make bets</h3>
+                <p className="text-muted-foreground text-sm">
+                  Think you know how an experiment will turn out? Place a bet on the outcome you think is most likely. Results are determined using parimutuel betting: the total pool of bets is divided among those who guessed correctly, with payouts proportional to their stakes. If the experiment doesn&apos;t get run, you get your money back.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>

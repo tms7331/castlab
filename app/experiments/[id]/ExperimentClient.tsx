@@ -588,6 +588,23 @@ export default function ExperimentClient() {
           </Card>
         )}
 
+        {experiment.date_completed && experiment.experiment_url && (
+          <Card className="p-4 mb-4 bg-muted/50 border-border/50">
+            <div className="flex justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:text-primary/80"
+                onClick={() => {
+                  sdk.actions.openUrl(experiment.experiment_url!);
+                }}
+              >
+                Read full protocol <ExternalLink className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Only show funding card if experiment is not completed */}
         {!experiment.date_completed && (
           <>
@@ -642,14 +659,16 @@ export default function ExperimentClient() {
               </CardContent>
             </Card>
 
-            <Card className="mb-4 border-2 border-primary/40 bg-card/70">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold text-foreground">Fund and Bet</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  You can fund without betting, or bet without funding. Funding goes towards running the experiment. Betting goes towards the betting pool, which is parimutuel style.  For more info, see the About page.
-                </p>
+            <div className="relative mb-6 rounded-2xl bg-gradient-to-br from-primary/35 via-transparent to-secondary/35 p-[1.5px] shadow-[0_20px_50px_-22px_rgba(124,58,237,0.6)]">
+              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-primary/15 blur-3xl" />
+              <Card className="relative h-full rounded-[1.1rem] border-2 border-primary/40 bg-card/95 backdrop-blur">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-semibold text-foreground">Fund and Bet</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    You can fund without betting, or bet without funding. Funding goes towards running the experiment. Betting goes towards the betting pool, which is parimutuel style.  For more info, see the About page.
+                  </p>
 
                 {currentStep === 'complete' ? (
                   <>
@@ -862,25 +881,10 @@ export default function ExperimentClient() {
                     </a>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-        {/* Show contract link for completed experiments outside the funding card */}
-        {experiment.date_completed && (
-          <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
-            <div className="text-xs text-muted-foreground">
-              <a
-                href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-primary transition-colors inline-flex items-center gap-1"
-              >
-                View smart contract: {CONTRACT_ADDRESS}
-                <ExternalLink className="w-3 h-3" />
-              </a>
+                </CardContent>
+              </Card>
             </div>
-          </Card>
+          </>
         )}
       </main>
     </div>
