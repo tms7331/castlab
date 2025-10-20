@@ -44,6 +44,8 @@ export default function ExperimentClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fundingAmount, setFundingAmount] = useState("");
+  const [yesBetAmount, setYesBetAmount] = useState("");
+  const [noBetAmount, setNoBetAmount] = useState("");
   const [currentStep, setCurrentStep] = useState<'idle' | 'approving' | 'approved' | 'depositing' | 'complete'>('idle');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [approvedAmount, setApprovedAmount] = useState<string | null>(null);
@@ -745,6 +747,42 @@ export default function ExperimentClient() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Bet on this experiment
+                  </label>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
+                        Yes
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="25"
+                        value={yesBetAmount}
+                        onChange={(e) => setYesBetAmount(e.target.value)}
+                        min="0"
+                        step="1"
+                        disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
+                        No
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="25"
+                        value={noBetAmount}
+                        onChange={(e) => setNoBetAmount(e.target.value)}
+                        min="0"
+                        step="1"
+                        disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <Button
                   type={isConnected ? "submit" : "button"}
                   onClick={!isConnected ? () => connect({ connector: connectors[0] }) : currentStep === 'approved' ? handleDeposit : undefined}
@@ -760,7 +798,7 @@ export default function ExperimentClient() {
                         ? depositError ? "Retry Deposit" : "Click to Deposit"
                         : currentStep === 'depositing' || isDepositPending
                           ? "Depositing..."
-                          : "Fund Experiment"}
+                          : "Fund and Bet"}
                 </Button>
 
                 {(approveError || depositError) && (
