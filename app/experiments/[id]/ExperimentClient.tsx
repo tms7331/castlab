@@ -46,9 +46,9 @@ export default function ExperimentClient() {
   const [experiment, setExperiment] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [fundingAmount, setFundingAmount] = useState("");
-  const [yesBetAmount, setYesBetAmount] = useState("");
-  const [noBetAmount, setNoBetAmount] = useState("");
+  const [fundingAmount, setFundingAmount] = useState("0");
+  const [yesBetAmount, setYesBetAmount] = useState("0");
+  const [noBetAmount, setNoBetAmount] = useState("0");
   const [currentStep, setCurrentStep] = useState<'idle' | 'approving' | 'approved' | 'depositing' | 'complete'>('idle');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [approvedAmount, setApprovedAmount] = useState<string | null>(null);
