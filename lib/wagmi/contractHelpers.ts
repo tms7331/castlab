@@ -26,19 +26,26 @@ export const experimentFundingAbi = parseAbi(
 /**
  * Prepare deposit transaction data
  */
-export function prepareDepositTransaction(experimentId: string, amountUSD: number) {
+export function prepareDepositTransaction(
+  experimentId: string,
+  fundAmountUSD: number,
+  betAmount0USD: number = 0,
+  betAmount1USD: number = 0
+) {
   // Convert experiment ID (for now using a simple mapping)
   // In production, you'd store the mapping between database IDs and contract IDs
   const contractExperimentId = BigInt(experimentId.charCodeAt(0));
-  
+
   // Convert USD to Wei
-  const valueInWei = usdToTokenAmount(amountUSD);
-  
+  const fundValueInWei = usdToTokenAmount(fundAmountUSD);
+  const betValue0InWei = usdToTokenAmount(betAmount0USD);
+  const betValue1InWei = usdToTokenAmount(betAmount1USD);
+
   // Encode the function call
   const data = encodeFunctionData({
     abi: CastlabExperimentABI.abi,
-    functionName: 'userDeposit',
-    args: [contractExperimentId, valueInWei],
+    functionName: 'userFundAndBet',
+    args: [contractExperimentId, fundValueInWei, betValue0InWei, betValue1InWei],
   });
 
   return {

@@ -193,9 +193,11 @@ export default function ExperimentClient() {
   useEffect(() => {
     if (isApproved && currentStep === 'approving') {
       setCurrentStep('approved');
-      setApprovedAmount(fundingAmount); // Track the amount that was approved
+      // Track the total amount that was approved (funding + bets)
+      const totalApproved = (Number(fundingAmount) || 0) + (Number(yesBetAmount) || 0) + (Number(noBetAmount) || 0);
+      setApprovedAmount(totalApproved.toString());
     }
-  }, [isApproved, currentStep, fundingAmount]);
+  }, [isApproved, currentStep, fundingAmount, yesBetAmount, noBetAmount]);
 
   // Handle approve error - reset to idle state for retry
   useEffect(() => {
@@ -224,6 +226,8 @@ export default function ExperimentClient() {
       sdk.haptics.impactOccurred('medium');
       setCurrentStep('complete');
       setFundingAmount("");
+      setYesBetAmount("0");
+      setNoBetAmount("0");
       setApprovedAmount(null); // Clear approved amount after successful deposit
 
       // Add a small delay to ensure blockchain state is updated
@@ -261,15 +265,18 @@ export default function ExperimentClient() {
 
   // Reset approval if amount changes after approval
   useEffect(() => {
-    if (currentStep === 'approved' && approvedAmount && fundingAmount !== approvedAmount) {
-      // Amount changed, need new approval
-      setCurrentStep('idle');
-      setApprovedAmount(null);
-      setHasAttemptedDeposit(false);
-      resetApprove();
-      resetDeposit();
+    if (currentStep === 'approved' && approvedAmount) {
+      const currentTotal = (Number(fundingAmount) || 0) + (Number(yesBetAmount) || 0) + (Number(noBetAmount) || 0);
+      if (currentTotal.toString() !== approvedAmount) {
+        // Amount changed, need new approval
+        setCurrentStep('idle');
+        setApprovedAmount(null);
+        setHasAttemptedDeposit(false);
+        resetApprove();
+        resetDeposit();
+      }
     }
-  }, [fundingAmount, approvedAmount, currentStep, resetApprove, resetDeposit]);
+  }, [fundingAmount, yesBetAmount, noBetAmount, approvedAmount, currentStep, resetApprove, resetDeposit]);
 
   // Handle withdrawal confirmation
   useEffect(() => {
@@ -387,8 +394,13 @@ export default function ExperimentClient() {
       return;
     }
 
-    if (!fundingAmount || Number(fundingAmount) <= 0) {
-      showToast("Please enter a valid amount", "error");
+    const fundAmount = Number(fundingAmount) || 0;
+    const yesBet = Number(yesBetAmount) || 0;
+    const noBet = Number(noBetAmount) || 0;
+    const totalAmount = fundAmount + yesBet + noBet;
+
+    if (totalAmount <= 0) {
+      showToast("Please enter a valid amount to fund or bet", "error");
       return;
     }
 
@@ -405,8 +417,8 @@ export default function ExperimentClient() {
 
     setCurrentStep('approving');
 
-    // Convert USD to token amount (assuming 18 decimals for the token)
-    const tokenAmount = usdToTokenAmount(Number(fundingAmount));
+    // Convert USD to token amount - approve total of funding + bets
+    const tokenAmount = usdToTokenAmount(totalAmount);
 
     // Step 1: Approve the contract to spend tokens
     writeApprove({
@@ -459,19 +471,21 @@ export default function ExperimentClient() {
   };
 
   const handleDeposit = async () => {
-    if (!experiment || !fundingAmount) return;
+    if (!experiment) return;
 
     setCurrentStep('depositing');
 
     const experimentId = experiment.experiment_id;
-    const tokenAmount = usdToTokenAmount(Number(fundingAmount));
+    const tokenFundAmount = usdToTokenAmount(Number(fundingAmount) || 0);
+    const tokenBetAmount0 = usdToTokenAmount(Number(yesBetAmount) || 0);
+    const tokenBetAmount1 = usdToTokenAmount(Number(noBetAmount) || 0);
 
-    // Step 2: Deposit tokens to the experiment
+    // Step 2: Fund and bet on the experiment
     writeDeposit({
       address: CONTRACT_ADDRESS as `0x${string}`,
       abi: CastlabExperimentABI.abi,
-      functionName: 'userDeposit',
-      args: [BigInt(experimentId), tokenAmount],
+      functionName: 'userFundAndBet',
+      args: [BigInt(experimentId), tokenFundAmount, tokenBetAmount0, tokenBetAmount1],
       chainId: CHAIN.id,
     });
     // Error handling is now done in the useEffect hook for depositError
