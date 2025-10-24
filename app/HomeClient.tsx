@@ -13,6 +13,7 @@ export default function HomeClient() {
   const [experiments, setExperiments] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [fundingMap, setFundingMap] = useState<Map<number, number>>(new Map());
 
   // Wagmi hooks
@@ -48,12 +49,12 @@ export default function HomeClient() {
     });
   };
 
-  const totalFunded = Array.from(fundingMap.values()).reduce((sum, amount) => sum + amount, 0);
-  const totalBet = 0;
+  // const totalFunded = Array.from(fundingMap.values()).reduce((sum, amount) => sum + amount, 0);
+  // const totalBet = 0;
 
   return (
     <div className="min-h-screen">
-      <HeroSection activeCount={experiments.length} totalFunded={totalFunded} totalBet={totalBet} />
+      <HeroSection />
       <section className="px-4 pb-8">
         <div className="max-w-sm mx-auto space-y-4">
           {loading ? (

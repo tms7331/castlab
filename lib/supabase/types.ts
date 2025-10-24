@@ -5,7 +5,8 @@ export interface Event {
   image_url: string | null;
   cost_min: number | null;
   cost_max: number | null;
-  cost_tag: string | null;
+  outcome_text0: string | null;
+  outcome_text1: string | null;
   date_completed: string | null;
   date_funding_deadline: string;
   experiment_url: string | null;

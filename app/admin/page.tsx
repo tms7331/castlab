@@ -16,7 +16,8 @@ export default function AdminPage() {
     summary: "",
     costMin: "",
     costMax: "",
-    costTag: "",
+    outcomeText0: "",
+    outcomeText1: "",
     imageUrl: "",
     experimentUrl: "",
     dateCompleted: "",
@@ -369,7 +370,8 @@ export default function AdminPage() {
         image_url: imageUrl || null,
         cost_min: newExperiment.costMin ? parseInt(newExperiment.costMin) : null,
         cost_max: newExperiment.costMax ? parseInt(newExperiment.costMax) : null,
-        cost_tag: newExperiment.costTag || null,
+        outcome_text0: newExperiment.outcomeText0 || null,
+        outcome_text1: newExperiment.outcomeText1 || null,
         date_completed: dateCompleted,
         date_funding_deadline: dateFundingDeadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Default to 30 days from now
         experiment_url: newExperiment.experimentUrl || null
@@ -397,7 +399,8 @@ export default function AdminPage() {
         summary: "",
         costMin: "",
         costMax: "",
-        costTag: "",
+        outcomeText0: "",
+        outcomeText1: "",
         imageUrl: "",
         experimentUrl: "",
         dateCompleted: "",
@@ -707,17 +710,32 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[#005577] font-semibold mb-2">
-                  Cost Tag
-                </label>
-                <input
-                  type="text"
-                  value={newExperiment.costTag}
-                  onChange={(e) => setNewExperiment({ ...newExperiment, costTag: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
-                  placeholder="e.g., Equipment, Research, Analysis"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[#005577] font-semibold mb-2">
+                    Outcome 0 Text (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newExperiment.outcomeText0}
+                    onChange={(e) => setNewExperiment({ ...newExperiment, outcomeText0: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                    placeholder="e.g., Drake, No, Fail"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[#005577] font-semibold mb-2">
+                    Outcome 1 Text (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={newExperiment.outcomeText1}
+                    onChange={(e) => setNewExperiment({ ...newExperiment, outcomeText1: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50"
+                    placeholder="e.g., Kendrick, Yes, Success"
+                  />
+                </div>
               </div>
 
               <div>

@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/button";
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 
-interface HeroSectionProps {
-  activeCount: number;
-  totalFunded: number;
-  totalBet: number;
-}
-
-export function HeroSection({ activeCount: _activeCount, totalFunded: _totalFunded, totalBet: _totalBet }: HeroSectionProps) {
+export function HeroSection() {
   const handleCastExperimentIdea = async () => {
     try {
       const appUrl = getAppUrl();

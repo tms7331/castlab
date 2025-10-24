@@ -660,13 +660,13 @@ export default function ExperimentClient() {
                     <div className="text-2xl font-bold text-secondary">
                       ${placeholderKendrickRef.current.toLocaleString()}
                     </div>
-                    <div className="text-muted-foreground text-xs">Amount Kendrick</div>
+                    <div className="text-muted-foreground text-xs">Amount {experiment.outcome_text1 || 'Yes'}</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-secondary">
                       ${placeholderDrakeRef.current.toLocaleString()}
                     </div>
-                    <div className="text-muted-foreground text-xs">Amount Drake</div>
+                    <div className="text-muted-foreground text-xs">Amount {experiment.outcome_text0 || 'No'}</div>
                   </div>
                 </div>
 
@@ -744,7 +744,7 @@ export default function ExperimentClient() {
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label className="block text-xs font-medium text-muted-foreground mb-1">
-                            Yes
+                            {experiment.outcome_text1 || 'Yes'}
                           </label>
                           <Input
                             type="number"
@@ -758,7 +758,7 @@ export default function ExperimentClient() {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-muted-foreground mb-1">
-                            No
+                            {experiment.outcome_text0 || 'No'}
                           </label>
                           <Input
                             type="number"
