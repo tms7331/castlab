@@ -6,7 +6,7 @@ import { EventInsert, Event } from "@/lib/supabase/types";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient } from 'wagmi';
 import { CHAIN } from '@/lib/wagmi/addresses';
 import { CONTRACT_ADDRESS, usdToTokenAmount } from '@/lib/wagmi/adminConfig';
-import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { decodeEventLog } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
@@ -84,7 +84,7 @@ export default function AdminPage() {
           const experimentCreatedEvent = receipt.logs.find(log => {
             try {
               const decoded = decodeEventLog({
-                abi: ExperimentFundingABI.abi,
+                abi: CastlabExperimentABI.abi,
                 data: log.data,
                 topics: log.topics,
               });
@@ -96,7 +96,7 @@ export default function AdminPage() {
 
           if (experimentCreatedEvent) {
             const decoded = decodeEventLog({
-              abi: ExperimentFundingABI.abi,
+              abi: CastlabExperimentABI.abi,
               data: experimentCreatedEvent.data,
               topics: experimentCreatedEvent.topics,
             });
@@ -240,8 +240,8 @@ export default function AdminPage() {
       // Send the transaction with new parameters
       await writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
-        abi: ExperimentFundingABI.abi,
-        functionName: 'createExperiment',
+        abi: CastlabExperimentABI.abi,
+        functionName: 'adminCreateExperiment',
         args: [costMinWei, costMaxWei],
         chainId: CHAIN.id,
       });
@@ -442,7 +442,7 @@ export default function AdminPage() {
       try {
         await writeContract({
           address: CONTRACT_ADDRESS as `0x${string}`,
-          abi: ExperimentFundingABI.abi,
+          abi: CastlabExperimentABI.abi,
           functionName: 'adminClose',
           args: [BigInt(selectedExperiment)],
           chainId: CHAIN.id,
@@ -477,7 +477,7 @@ export default function AdminPage() {
       try {
         await writeContract({
           address: CONTRACT_ADDRESS as `0x${string}`,
-          abi: ExperimentFundingABI.abi,
+          abi: CastlabExperimentABI.abi,
           functionName: 'adminWithdraw',
           args: [BigInt(selectedExperiment)],
           chainId: CHAIN.id,

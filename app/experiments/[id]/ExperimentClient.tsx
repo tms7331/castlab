@@ -8,7 +8,7 @@ import { Event } from "@/lib/supabase/types";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
 import { CHAIN } from '@/lib/wagmi/addresses';
-import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import ERC20ABI from '@/lib/contracts/ERC20.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
@@ -107,7 +107,7 @@ export default function ExperimentClient() {
   // Read experiment data from smart contract
   const { data: contractData, refetch: refetchContractData } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: ExperimentFundingABI.abi,
+    abi: CastlabExperimentABI.abi,
     functionName: 'getExperimentInfo',
     args: experiment ? [BigInt(experiment.experiment_id)] : undefined,
     chainId: CHAIN.id,
@@ -134,7 +134,7 @@ export default function ExperimentClient() {
   // Read user's deposit amount for this experiment
   const { data: userDepositAmount, refetch: refetchUserDeposit } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: ExperimentFundingABI.abi,
+    abi: CastlabExperimentABI.abi,
     functionName: 'getUserDeposit',
     args: address && experiment ? [BigInt(experiment.experiment_id), address] : undefined,
     chainId: CHAIN.id,
@@ -428,8 +428,8 @@ export default function ExperimentClient() {
       // Call undeposit function with experiment ID
       writeWithdraw({
         address: CONTRACT_ADDRESS as `0x${string}`,
-        abi: ExperimentFundingABI.abi,
-        functionName: 'undeposit',
+        abi: CastlabExperimentABI.abi,
+        functionName: 'userUndeposit',
         args: [BigInt(experiment.experiment_id)],
         chainId: CHAIN.id,
       });
@@ -469,8 +469,8 @@ export default function ExperimentClient() {
     // Step 2: Deposit tokens to the experiment
     writeDeposit({
       address: CONTRACT_ADDRESS as `0x${string}`,
-      abi: ExperimentFundingABI.abi,
-      functionName: 'deposit',
+      abi: CastlabExperimentABI.abi,
+      functionName: 'userDeposit',
       args: [BigInt(experimentId), tokenAmount],
       chainId: CHAIN.id,
     });

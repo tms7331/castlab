@@ -1,10 +1,10 @@
 import { parseAbi, encodeFunctionData } from 'viem';
 import { CONTRACT_ADDRESS, usdToTokenAmount } from './config';
-import ExperimentFundingABI from '../contracts/ExperimentFunding.json';
+import CastlabExperimentABI from '../contracts/CastlabExperiment.json';
 
 // Parse the ABI for type safety
 export const experimentFundingAbi = parseAbi(
-  ExperimentFundingABI.abi.map(item => {
+  CastlabExperimentABI.abi.map(item => {
     // Convert ABI to string format for parseAbi
     if (item.type === 'function') {
       const inputs = item.inputs.map(i => `${i.type} ${i.name}`).join(', ');
@@ -36,8 +36,8 @@ export function prepareDepositTransaction(experimentId: string, amountUSD: numbe
   
   // Encode the function call
   const data = encodeFunctionData({
-    abi: ExperimentFundingABI.abi,
-    functionName: 'deposit',
+    abi: CastlabExperimentABI.abi,
+    functionName: 'userDeposit',
     args: [contractExperimentId, valueInWei],
   });
 
@@ -55,8 +55,8 @@ export function prepareCreateExperimentTransaction(costMinUSD: number, costMaxUS
   const costMaxWei = usdToTokenAmount(costMaxUSD);
   
   const data = encodeFunctionData({
-    abi: ExperimentFundingABI.abi,
-    functionName: 'createExperiment',
+    abi: CastlabExperimentABI.abi,
+    functionName: 'adminCreateExperiment',
     args: [costMinWei, costMaxWei],
   });
 

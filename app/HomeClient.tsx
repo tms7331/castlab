@@ -5,7 +5,7 @@ import { Event } from "@/lib/supabase/types";
 import { useAccount, useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
 import { CHAIN } from '@/lib/wagmi/addresses';
-import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { HeroSection } from "@/components/hero-section";
 import { ExperimentCard } from "@/components/experiment-card";
 
@@ -97,7 +97,7 @@ function ExperimentCardWithContribution({
   // Fetch experiment's total funding
   const { data: contractData } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: ExperimentFundingABI.abi,
+    abi: CastlabExperimentABI.abi,
     functionName: 'getExperimentInfo',
     args: [BigInt(experiment.experiment_id)],
     chainId: CHAIN.id,
@@ -116,7 +116,7 @@ function ExperimentCardWithContribution({
   // Fetch user's deposit amount for this specific experiment
   const { data: depositAmount } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: ExperimentFundingABI.abi,
+    abi: CastlabExperimentABI.abi,
     functionName: 'getUserDeposit',
     args: userAddress ? [BigInt(experiment.experiment_id), userAddress] : undefined,
     chainId: CHAIN.id,

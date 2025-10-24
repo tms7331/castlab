@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createPublicClient, http } from 'viem';
 import { CHAIN, CONTRACT_ADDRESS } from '@/lib/wagmi/addresses';
 import { tokenAmountToUsd } from '@/lib/wagmi/config';
-import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 
 // Create Supabase client with service role for write operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     // 1. Query on-chain contract for wallet's actual deposit amount
     const depositAmount = await viemClient.readContract({
       address: CONTRACT_ADDRESS as `0x${string}`,
-      abi: ExperimentFundingABI.abi,
+      abi: CastlabExperimentABI.abi,
       functionName: 'getUserDeposit',
       args: [BigInt(experimentId), normalizedAddress as `0x${string}`],
     });

@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
 import { CHAIN } from '@/lib/wagmi/addresses';
-import ExperimentFundingABI from '@/lib/contracts/ExperimentFunding.json';
+import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 import { TopDonors } from './top-donors';
@@ -25,7 +25,7 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
   // Read experiment data from smart contract
   const { data: contractData } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: ExperimentFundingABI.abi,
+    abi: CastlabExperimentABI.abi,
     functionName: 'getExperimentInfo',
     args: [BigInt(experiment.experiment_id)],
     chainId: CHAIN.id,
