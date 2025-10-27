@@ -82,15 +82,19 @@ export async function POST(req: NextRequest) {
     // Normalize wallet address to lowercase for consistency
     const normalizedAddress = walletAddress.toLowerCase();
 
-    // 1. Query on-chain contract for wallet's actual deposit amount
-    const depositAmount = await viemClient.readContract({
+    // 1. Query on-chain contract for wallet's position (deposit and bets)
+    const userPosition = await viemClient.readContract({
       address: CONTRACT_ADDRESS as `0x${string}`,
       abi: CastlabExperimentABI.abi,
-      functionName: 'getUserDeposit',
+      functionName: 'getUserPosition',
       args: [BigInt(experimentId), normalizedAddress as `0x${string}`],
     });
 
-    const totalAmountUsd = tokenAmountToUsd(depositAmount as bigint);
+    // getUserPosition returns [depositAmount, betAmount0, betAmount1]
+    const [depositAmount, betAmount0, betAmount1] = userPosition as [bigint, bigint, bigint];
+
+    const totalFundedUsd = tokenAmountToUsd(depositAmount);
+    const totalBetUsd = tokenAmountToUsd(betAmount0) + tokenAmountToUsd(betAmount1);
 
     // 2. Fetch Farcaster profile from Neynar using wallet address
     const profile = await fetchFarcasterProfileByAddress(normalizedAddress);
@@ -104,7 +108,7 @@ export async function POST(req: NextRequest) {
       }, { status: 404 });
     }
 
-    // 3. Upsert donation record with verified profile data and on-chain amount
+    // 3. Upsert donation record with verified profile data and on-chain amounts
     const { data, error } = await supabaseAdmin
       .from('donations')
       .upsert(
@@ -116,7 +120,8 @@ export async function POST(req: NextRequest) {
           pfp_url: profile.pfpUrl,
           follower_count: profile.followerCount,
           wallet_address: normalizedAddress,
-          total_amount_usd: totalAmountUsd,
+          total_funded_usd: totalFundedUsd,
+          total_bet_usd: totalBetUsd,
           last_donation_at: new Date().toISOString(),
         },
         {

@@ -20,11 +20,11 @@ export interface ContractAddresses {
 // Mapping of contract addresses per network
 export const NETWORK_CONFIGS: Record<NetworkType, ContractAddresses> = {
   'baseSepolia': {
-    CONTRACT_ADDRESS: '0x4B9480Dfa11C22C19a62cDB24e69CE768E8f62ce',
+    CONTRACT_ADDRESS: '0x9850cE7471C104836eDE3dAf766d476eB5E69ecB',
     TOKEN_ADDRESS: '0xB8a61F5d2E61121a1c476CC8C90113d5D24C48dd',
   },
   'base': {
-    CONTRACT_ADDRESS: '0x4B9480Dfa11C22C19a62cDB24e69CE768E8f62ce',
+    CONTRACT_ADDRESS: '0xCB1E1fA42D840Ba0dC59d093fb660aEe5806AB6b',
     // USDC on base
     TOKEN_ADDRESS: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   },

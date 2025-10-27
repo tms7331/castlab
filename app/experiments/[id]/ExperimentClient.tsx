@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
@@ -47,16 +47,12 @@ export default function ExperimentClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fundingAmount, setFundingAmount] = useState("0");
-  const [yesBetAmount, setYesBetAmount] = useState("0");
-  const [noBetAmount, setNoBetAmount] = useState("0");
+  const [outcome0BetAmount, setOutcome0BetAmount] = useState("0");
+  const [outcome1BetAmount, setOutcome1BetAmount] = useState("0");
   const [currentStep, setCurrentStep] = useState<'idle' | 'approving' | 'approved' | 'depositing' | 'complete'>('idle');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [approvedAmount, setApprovedAmount] = useState<string | null>(null);
   const [hasAttemptedDeposit, setHasAttemptedDeposit] = useState(false);
-  const placeholderBetTotalRef = useRef(Math.floor(Math.random() * 5000) + 500);
-  const placeholderBetOddsRef = useRef(Math.floor(Math.random() * 91) + 5);
-  const placeholderKendrickRef = useRef(Math.max(50, Math.round(placeholderBetTotalRef.current * 0.6)));
-  const placeholderDrakeRef = useRef(Math.max(0, placeholderBetTotalRef.current - placeholderKendrickRef.current));
 
   // Toast hook
   const { toasts, showToast, removeToast } = useToast();
@@ -131,11 +127,11 @@ export default function ExperimentClient() {
     },
   });
 
-  // Read user's deposit amount for this experiment
-  const { data: userDepositAmount, refetch: refetchUserDeposit } = useReadContract({
+  // Read user's position (deposit and bets) for this experiment
+  const { data: userPosition, refetch: refetchUserPosition } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CastlabExperimentABI.abi,
-    functionName: 'getUserDeposit',
+    functionName: 'getUserPosition',
     args: address && experiment ? [BigInt(experiment.experiment_id), address] : undefined,
     chainId: CHAIN.id,
     query: {
@@ -155,17 +151,36 @@ export default function ExperimentClient() {
     hash: mintHash,
   });
 
-  // Extract totalDeposited from contract data
-  type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
+  // Extract data from contract - new structure includes bet amounts
+  type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, boolean];
   const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
+  const totalBet0Tokens = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
+  const totalBet1Tokens = contractData ? (contractData as ExperimentInfo)[4] : BigInt(0);
+
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
-  const fundingTargetUSD = experiment?.cost_max || experiment?.cost_min || 1;
+  const totalBet0USD = tokenAmountToUsd(totalBet0Tokens);
+  const totalBet1USD = tokenAmountToUsd(totalBet1Tokens);
+  const fundingTargetUSD = experiment?.cost_min || experiment?.cost_max || 1;
+
+  // Calculate odds (percentage of total bets for outcome 0)
+  const totalBetsUSD = totalBet0USD + totalBet1USD;
+  const oddsPercentage = totalBetsUSD > 0 ? Math.round((totalBet0USD / totalBetsUSD) * 100) : 50;
 
   // Convert token balance to USD
   const userBalanceUSD = tokenBalance ? tokenAmountToUsd(tokenBalance as bigint) : 0;
 
-  // Convert user's deposit to USD
-  const userDepositUSD = userDepositAmount ? tokenAmountToUsd(userDepositAmount as bigint) : 0;
+  // Convert user's position to USD - getUserPosition returns [depositAmount, betAmount0, betAmount1]
+  type UserPosition = readonly [bigint, bigint, bigint];
+  const userDepositAmount = userPosition ? (userPosition as UserPosition)[0] : BigInt(0);
+  const userBet0Amount = userPosition ? (userPosition as UserPosition)[1] : BigInt(0);
+  const userBet1Amount = userPosition ? (userPosition as UserPosition)[2] : BigInt(0);
+
+  const userDepositUSD = tokenAmountToUsd(userDepositAmount);
+  const userBet0USD = tokenAmountToUsd(userBet0Amount);
+  const userBet1USD = tokenAmountToUsd(userBet1Amount);
+  const userTotalStakeUSD = userDepositUSD + userBet0USD + userBet1USD;
+  const formatUsd = (value: number) =>
+    value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
   useEffect(() => {
     async function fetchEvent() {
@@ -194,10 +209,10 @@ export default function ExperimentClient() {
     if (isApproved && currentStep === 'approving') {
       setCurrentStep('approved');
       // Track the total amount that was approved (funding + bets)
-      const totalApproved = (Number(fundingAmount) || 0) + (Number(yesBetAmount) || 0) + (Number(noBetAmount) || 0);
+      const totalApproved = (Number(fundingAmount) || 0) + (Number(outcome0BetAmount) || 0) + (Number(outcome1BetAmount) || 0);
       setApprovedAmount(totalApproved.toString());
     }
-  }, [isApproved, currentStep, fundingAmount, yesBetAmount, noBetAmount]);
+  }, [isApproved, currentStep, fundingAmount, outcome0BetAmount, outcome1BetAmount]);
 
   // Handle approve error - reset to idle state for retry
   useEffect(() => {
@@ -226,8 +241,8 @@ export default function ExperimentClient() {
       sdk.haptics.impactOccurred('medium');
       setCurrentStep('complete');
       setFundingAmount("");
-      setYesBetAmount("0");
-      setNoBetAmount("0");
+      setOutcome0BetAmount("0");
+      setOutcome1BetAmount("0");
       setApprovedAmount(null); // Clear approved amount after successful deposit
 
       // Add a small delay to ensure blockchain state is updated
@@ -236,7 +251,7 @@ export default function ExperimentClient() {
         // Refetch all data to show updated amounts
         await Promise.all([
           refetchContractData(),
-          refetchUserDeposit(),
+          refetchUserPosition(),
           refetchTokenBalance()
         ]);
 
@@ -266,7 +281,7 @@ export default function ExperimentClient() {
   // Reset approval if amount changes after approval
   useEffect(() => {
     if (currentStep === 'approved' && approvedAmount) {
-      const currentTotal = (Number(fundingAmount) || 0) + (Number(yesBetAmount) || 0) + (Number(noBetAmount) || 0);
+      const currentTotal = (Number(fundingAmount) || 0) + (Number(outcome0BetAmount) || 0) + (Number(outcome1BetAmount) || 0);
       if (currentTotal.toString() !== approvedAmount) {
         // Amount changed, need new approval
         setCurrentStep('idle');
@@ -276,7 +291,7 @@ export default function ExperimentClient() {
         resetDeposit();
       }
     }
-  }, [fundingAmount, yesBetAmount, noBetAmount, approvedAmount, currentStep, resetApprove, resetDeposit]);
+  }, [fundingAmount, outcome0BetAmount, outcome1BetAmount, approvedAmount, currentStep, resetApprove, resetDeposit]);
 
   // Handle withdrawal confirmation
   useEffect(() => {
@@ -289,7 +304,7 @@ export default function ExperimentClient() {
         // Refetch all data to show updated amounts
         await Promise.all([
           refetchContractData(),
-          refetchUserDeposit(),
+          refetchUserPosition(),
           refetchTokenBalance()
         ]);
 
@@ -340,13 +355,13 @@ export default function ExperimentClient() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[syncDonationToDatabase] Failed to sync donation:', errorText);
+        console.log('[syncDonationToDatabase] Could not sync donation (this is okay):', errorText);
       } else {
         const result = await response.json();
         console.log('[syncDonationToDatabase] Donation synced successfully to leaderboard:', result);
       }
     } catch (error) {
-      console.error('[syncDonationToDatabase] Error syncing donation to database:', error);
+      console.log('[syncDonationToDatabase] Could not sync donation to database (this is okay):', error);
     }
   };
 
@@ -372,7 +387,7 @@ export default function ExperimentClient() {
         setTimeout(async () => {
           await Promise.all([
             refetchContractData(),
-            refetchUserDeposit(),
+            refetchUserPosition(),
             refetchTokenBalance()
           ]);
         }, 500);
@@ -395,12 +410,19 @@ export default function ExperimentClient() {
     }
 
     const fundAmount = Number(fundingAmount) || 0;
-    const yesBet = Number(yesBetAmount) || 0;
-    const noBet = Number(noBetAmount) || 0;
-    const totalAmount = fundAmount + yesBet + noBet;
+    const outcome0Bet = Number(outcome0BetAmount) || 0;
+    const outcome1Bet = Number(outcome1BetAmount) || 0;
 
-    if (totalAmount <= 0) {
-      showToast("Please enter a valid amount to fund or bet", "error");
+    // Validation: each field must be 0 or >= 1
+    if ((fundAmount > 0 && fundAmount < 1) || (outcome0Bet > 0 && outcome0Bet < 1) || (outcome1Bet > 0 && outcome1Bet < 1)) {
+      showToast("Each amount must be either 0 or at least $1", "error");
+      return;
+    }
+
+    // Validation: at least one field must be >= 1
+    const totalAmount = fundAmount + outcome0Bet + outcome1Bet;
+    if (totalAmount < 1) {
+      showToast("Please enter at least $1 in one of the fields", "error");
       return;
     }
 
@@ -432,7 +454,7 @@ export default function ExperimentClient() {
   };
 
   const handleWithdraw = async () => {
-    if (!address || !userDepositAmount || !experiment) return;
+    if (!address || !userPosition || !experiment) return;
 
     try {
       setIsWithdrawing(true);
@@ -477,8 +499,8 @@ export default function ExperimentClient() {
 
     const experimentId = experiment.experiment_id;
     const tokenFundAmount = usdToTokenAmount(Number(fundingAmount) || 0);
-    const tokenBetAmount0 = usdToTokenAmount(Number(yesBetAmount) || 0);
-    const tokenBetAmount1 = usdToTokenAmount(Number(noBetAmount) || 0);
+    const tokenBetAmount0 = usdToTokenAmount(Number(outcome0BetAmount) || 0);
+    const tokenBetAmount1 = usdToTokenAmount(Number(outcome1BetAmount) || 0);
 
     // Step 2: Fund and bet on the experiment
     writeDeposit({
@@ -641,13 +663,13 @@ export default function ExperimentClient() {
                   <div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Current odds</span>
-                      <span className="font-semibold text-foreground">{placeholderBetOddsRef.current}%</span>
+                      <span className="font-semibold text-foreground">{oddsPercentage}%</span>
                     </div>
                     <input
                       type="range"
                       min="0"
                       max="100"
-                      value={placeholderBetOddsRef.current}
+                      value={oddsPercentage}
                       onChange={() => { }}
                       className="mt-2 w-full accent-primary cursor-default"
                       aria-readonly
@@ -658,15 +680,15 @@ export default function ExperimentClient() {
                 <div className="grid grid-cols-2 gap-3 text-left sm:text-center">
                   <div>
                     <div className="text-2xl font-bold text-secondary">
-                      ${placeholderKendrickRef.current.toLocaleString()}
+                      ${totalBet0USD.toLocaleString()}
                     </div>
-                    <div className="text-muted-foreground text-xs">Amount {experiment.outcome_text1 || 'Yes'}</div>
+                    <div className="text-muted-foreground text-xs">Amount {experiment.outcome_text0}</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-secondary">
-                      ${placeholderDrakeRef.current.toLocaleString()}
+                      ${totalBet1USD.toLocaleString()}
                     </div>
-                    <div className="text-muted-foreground text-xs">Amount {experiment.outcome_text0 || 'No'}</div>
+                    <div className="text-muted-foreground text-xs">Amount {experiment.outcome_text1}</div>
                   </div>
                 </div>
 
@@ -684,175 +706,216 @@ export default function ExperimentClient() {
                     You can fund without betting, or bet without funding. Funding goes towards running the experiment. Betting goes towards the betting pool, which is parimutuel style.  For more info, see the About page.
                   </p>
 
-                {currentStep === 'complete' ? (
-                  <>
-                    <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
-                      ✅ Thank you for funding this experiment!
-                    </div>
-
-                    {userDepositUSD > 0 && (
-                      <Card className="p-3 bg-green-50 border-green-200">
-                        <div className="text-sm font-medium text-green-900">
-                          Your Current Stake
-                        </div>
-                        <div className="text-lg font-bold text-green-700">
-                          ${userDepositUSD.toLocaleString()}
-                        </div>
-                        <button
-                          onClick={handleWithdraw}
-                          disabled={isWithdrawing || isWithdrawPending}
-                          className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
-                        </button>
-                      </Card>
-                    )}
-
-                    <Button
-                      onClick={handleCastAboutDonation}
-                      className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
-                      size="lg"
-                    >
-                      Cast about it! 📢
-                    </Button>
-                  </>
-                ) : (
-                  <form onSubmit={handleFunding} className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Fund this experiment (USD)
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
-                        <Input
-                          type="number"
-                          placeholder="50"
-                          className="pl-8"
-                          value={fundingAmount}
-                          onChange={(e) => setFundingAmount(e.target.value)}
-                          min="1"
-                          step="1"
-                          disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                        />
+                  {currentStep === 'complete' ? (
+                    <>
+                      <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
+                        ✅ Thank you for funding this experiment!
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Bet on this experiment
-                      </label>
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className="block text-xs font-medium text-muted-foreground mb-1">
-                            {experiment.outcome_text1 || 'Yes'}
-                          </label>
+                      <Button
+                        onClick={handleCastAboutDonation}
+                        className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
+                        size="lg"
+                      >
+                        Cast about it! 📢
+                      </Button>
+                    </>
+                  ) : (
+                    <form onSubmit={handleFunding} className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Fund this experiment (USDC)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
                           <Input
                             type="number"
-                            placeholder="25"
-                            value={yesBetAmount}
-                            onChange={(e) => setYesBetAmount(e.target.value)}
-                            min="0"
-                            step="1"
-                            disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-muted-foreground mb-1">
-                            {experiment.outcome_text0 || 'No'}
-                          </label>
-                          <Input
-                            type="number"
-                            placeholder="25"
-                            value={noBetAmount}
-                            onChange={(e) => setNoBetAmount(e.target.value)}
+                            placeholder="50"
+                            className="pl-8"
+                            value={fundingAmount}
+                            onChange={(e) => setFundingAmount(e.target.value)}
+                            onFocus={(e) => e.target.select()}
                             min="0"
                             step="1"
                             disabled={currentStep === 'approving' || currentStep === 'depositing'}
                           />
                         </div>
                       </div>
-                    </div>
 
-                    <Button
-                      type={isConnected ? "submit" : "button"}
-                      onClick={!isConnected ? () => connect({ connector: connectors[0] }) : currentStep === 'approved' ? handleDeposit : undefined}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
-                      size="lg"
-                      disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                    >
-                      {!isConnected
-                        ? "Connect Wallet to Fund"
-                        : currentStep === 'approving' || isApprovePending
-                          ? "Approving Token..."
-                          : currentStep === 'approved'
-                            ? depositError ? "Retry Deposit" : "Click to Deposit"
-                            : currentStep === 'depositing' || isDepositPending
-                              ? "Depositing..."
-                              : "Fund and Bet"}
-                    </Button>
-
-                    {(approveError || depositError) && (
-                      <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
-                        <div className="font-semibold">Transaction Error</div>
-                        <div className="mt-1 text-xs break-all">
-                          {((approveError || depositError)?.message || '').includes('User rejected')
-                            ? 'Transaction was cancelled by user'
-                            : approveError
-                              ? 'Token approval failed. You can try again.'
-                              : 'Deposit failed. You can retry the deposit.'}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Bet on this experiment (USDC)
+                        </label>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="block text-xs font-medium text-muted-foreground mb-1">
+                              {experiment.outcome_text0}
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                placeholder="25"
+                                className="pl-8"
+                                value={outcome0BetAmount}
+                                onChange={(e) => setOutcome0BetAmount(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                min="0"
+                                step="1"
+                                disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-muted-foreground mb-1">
+                              {experiment.outcome_text1}
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                placeholder="25"
+                                className="pl-8"
+                                value={outcome1BetAmount}
+                                onChange={(e) => setOutcome1BetAmount(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                min="0"
+                                step="1"
+                                disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        {approveError && currentStep === 'idle' && (
-                          <Button
-                            onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
-                            className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1"
-                            size="sm"
-                          >
-                            Retry Approval
-                          </Button>
-                        )}
-                        {depositError && currentStep === 'approved' && (
-                          <Button
-                            onClick={handleDeposit}
-                            className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
-                            size="sm"
-                          >
-                            Retry Deposit
-                          </Button>
-                        )}
                       </div>
-                    )}
 
-                    {currentStep === 'approving' && (
-                      <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                        Step 1/2: Approving token transfer...
-                      </div>
-                    )}
+                      <Button
+                        type={isConnected ? "submit" : "button"}
+                        onClick={!isConnected ? () => connect({ connector: connectors[0] }) : currentStep === 'approved' ? handleDeposit : undefined}
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
+                        size="lg"
+                        disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                      >
+                        {!isConnected
+                          ? "Connect Wallet to Fund"
+                          : currentStep === 'approving' || isApprovePending
+                            ? "Approving Token..."
+                            : currentStep === 'approved'
+                              ? depositError ? "Retry Deposit" : "Click to Deposit"
+                              : currentStep === 'depositing' || isDepositPending
+                                ? "Depositing..."
+                                : "Fund and Bet"}
+                      </Button>
 
-                    {currentStep === 'approved' && !depositError && (
-                      <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
-                        ✅ Approval complete! Click the button to deposit.
-                      </div>
-                    )}
+                      {(approveError || depositError) && (
+                        <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
+                          <div className="font-semibold">Transaction Error</div>
+                          <div className="mt-1 text-xs break-all">
+                            {((approveError || depositError)?.message || '').includes('User rejected')
+                              ? 'Transaction was cancelled by user'
+                              : approveError
+                                ? 'Token approval failed. You can try again.'
+                                : 'Deposit failed. You can retry the deposit.'}
+                          </div>
+                          {approveError && currentStep === 'idle' && (
+                            <Button
+                              onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
+                              className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1"
+                              size="sm"
+                            >
+                              Retry Approval
+                            </Button>
+                          )}
+                          {depositError && currentStep === 'approved' && (
+                            <Button
+                              onClick={handleDeposit}
+                              className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
+                              size="sm"
+                            >
+                              Retry Deposit
+                            </Button>
+                          )}
+                        </div>
+                      )}
 
-                    {currentStep === 'depositing' && (
-                      <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                        Step 2/2: Depositing tokens to experiment...
-                      </div>
-                    )}
-                  </form>
-                )}
+                      {currentStep === 'approving' && (
+                        <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                          Step 1/2: Approving token transfer...
+                        </div>
+                      )}
 
-                {isConnected && (
-                  <div className="space-y-3">
-                    <Card className="p-3 bg-secondary/10 border-secondary/20">
+                      {currentStep === 'approved' && !depositError && (
+                        <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
+                          ✅ Approval complete! Click the button to deposit.
+                        </div>
+                      )}
+
+                      {currentStep === 'depositing' && (
+                        <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                          Step 2/2: Depositing tokens to experiment...
+                        </div>
+                      )}
+                    </form>
+                  )}
+
+                  {isConnected && (
+                    <Card className="mt-4 p-3 bg-secondary/10 border-secondary/20">
                       <div>
                         <div className="text-xs text-secondary-foreground mb-1">Your Base USDC Balance</div>
                         <div className="text-xl font-bold text-secondary">${userBalanceUSD.toLocaleString()}</div>
                         <div className="text-xs text-muted-foreground">Available for funding</div>
                       </div>
                     </Card>
+                  )}
 
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  {/* Your Current Stake */}
+                  <div className="mt-3 rounded-lg border border-border/70 bg-card/90 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Your Current Stake</p>
+                        <p className="text-lg font-semibold text-foreground">${formatUsd(userTotalStakeUSD)}</p>
+                        <p className="text-[11px] text-muted-foreground">Total funding + bets</p>
+                      </div>
+                      {userDepositUSD > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleWithdraw}
+                          disabled={isWithdrawing || isWithdrawPending}
+                          className="border-destructive/70 text-destructive hover:bg-destructive/10 disabled:border-muted disabled:text-muted-foreground"
+                        >
+                          {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Funding'}
+                        </Button>
+                      )}
+                    </div>
+
+                    {userTotalStakeUSD > 0 ? (
+                      <div className="mt-3 grid gap-x-6 gap-y-2 text-xs text-muted-foreground sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-foreground">Funding: ${formatUsd(userDepositUSD)}</p>
+                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Withdrawable</p>
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-foreground">Bet {experiment.outcome_text0}: ${formatUsd(userBet0USD)}</p>
+                          <p className="text-[11px] uppercase tracking-wide text-primary/80">Locked until settlement</p>
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-foreground">Bet {experiment.outcome_text1}: ${formatUsd(userBet1USD)}</p>
+                          <p className="text-[11px] uppercase tracking-wide text-secondary-foreground/80">Locked until settlement</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-3 rounded-md bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                        You haven&apos;t funded or placed a bet on this experiment yet.
+                      </p>
+                    )}
+
+                    <p className="mt-3 text-[11px] text-muted-foreground">
+                      Withdrawals return only your funding contributions. Bets stay in the pool until resolution.
+                    </p>
+                  </div>
+
+                  {isConnected && (
+                    <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
                       <div className="flex items-center gap-2 text-green-700">
                         <CheckCircle className="w-4 h-4" />
                         <span className="font-medium text-sm">Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
@@ -861,40 +924,21 @@ export default function ExperimentClient() {
                         Network: {chainId === CHAIN.id ? `${CHAIN.name} ✓` : `Wrong Network (Chain ID: ${chainId})`}
                       </div>
                     </div>
+                  )}
 
-                    {userDepositUSD > 0 && currentStep !== 'complete' && (
-                      <Card className="p-3 bg-green-50 border-green-200">
-                        <div className="text-sm font-medium text-green-900">
-                          Your Current Stake
-                        </div>
-                        <div className="text-lg font-bold text-green-700">
-                          ${userDepositUSD.toLocaleString()}
-                        </div>
-                        <button
-                          onClick={handleWithdraw}
-                          disabled={isWithdrawing || isWithdrawPending}
-                          className="mt-2 w-full px-3 py-1.5 text-sm border border-red-500 text-red-500 font-medium rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isWithdrawing || isWithdrawPending ? 'Withdrawing...' : 'Withdraw Stake'}
-                        </button>
-                      </Card>
-                    )}
+                  <div className="pt-3 border-t border-border">
+                    <div className="text-xs text-muted-foreground">
+                      <a
+                        href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                      >
+                        View smart contract: {CONTRACT_ADDRESS}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
                   </div>
-                )}
-
-                <div className="pt-3 border-t border-border">
-                  <div className="text-xs text-muted-foreground">
-                    <a
-                      href={`${CHAIN.blockExplorers?.default?.url || 'https://basescan.org'}/address/${CONTRACT_ADDRESS}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-primary transition-colors inline-flex items-center gap-1"
-                    >
-                      View smart contract: {CONTRACT_ADDRESS}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
                 </CardContent>
               </Card>
             </div>

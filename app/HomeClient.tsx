@@ -114,11 +114,11 @@ function ExperimentCardWithContribution({
     }
   }, [contractData]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch user's deposit amount for this specific experiment
-  const { data: depositAmount } = useReadContract({
+  // Fetch user's position (deposit and bets) for this specific experiment
+  const { data: userPosition } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CastlabExperimentABI.abi,
-    functionName: 'getUserDeposit',
+    functionName: 'getUserPosition',
     args: userAddress ? [BigInt(experiment.experiment_id), userAddress] : undefined,
     chainId: CHAIN.id,
     query: {
@@ -126,12 +126,18 @@ function ExperimentCardWithContribution({
     },
   });
 
-  const userContribution = depositAmount ? tokenAmountToUsd(depositAmount as bigint) : 0;
+  // getUserPosition returns [depositAmount, betAmount0, betAmount1]
+  type UserPosition = readonly [bigint, bigint, bigint];
+  const userContribution = userPosition ? tokenAmountToUsd((userPosition as UserPosition)[0]) : 0;
+  const userBet0 = userPosition ? tokenAmountToUsd((userPosition as UserPosition)[1]) : 0;
+  const userBet1 = userPosition ? tokenAmountToUsd((userPosition as UserPosition)[2]) : 0;
 
   return (
     <ExperimentCard
       experiment={experiment}
       userContribution={userContribution}
+      userBet0={userBet0}
+      userBet1={userBet1}
     />
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -18,11 +17,13 @@ import { TopDonors } from './top-donors';
 interface ExperimentCardProps {
   experiment: Event;
   userContribution?: number;
+  userBet0?: number;
+  userBet1?: number;
   hideRanges?: boolean;
 }
 
-export function ExperimentCard({ experiment, userContribution = 0, hideRanges = false }: ExperimentCardProps) {
-  // Read experiment data from smart contract
+export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0, userBet1 = 0, hideRanges = false }: ExperimentCardProps) {
+  // Read experiment data from smart contract - now includes bet amounts
   const { data: contractData } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CastlabExperimentABI.abi,
@@ -31,13 +32,21 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
     chainId: CHAIN.id,
   });
 
-  // Extract totalDeposited from contract data
-  type ExperimentInfo = readonly [bigint, bigint, bigint, boolean];
+  // Extract data from contract - new structure includes bet amounts
+  type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, boolean];
   const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
+  const totalBet0Tokens = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
+  const totalBet1Tokens = contractData ? (contractData as ExperimentInfo)[4] : BigInt(0);
+
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
+  const totalBet0USD = tokenAmountToUsd(totalBet0Tokens);
+  const totalBet1USD = tokenAmountToUsd(totalBet1Tokens);
   const fundingGoal = experiment.cost_min || 1;
   const fundingProgress = Math.min((totalDepositedUSD / fundingGoal) * 100, 100);
-  const [placeholderOdds] = useState(() => Math.floor(Math.random() * 100));
+
+  // Calculate odds (percentage of total bets for outcome 0)
+  const totalBetsUSD = totalBet0USD + totalBet1USD;
+  const oddsPercentage = totalBetsUSD > 0 ? Math.round((totalBet0USD / totalBetsUSD) * 100) : 50;
 
   const handleCastAboutThis = async () => {
     try {
@@ -99,13 +108,13 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
               <div className="space-y-2 pt-1">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-black">Current odds</span>
-                  <span className="font-medium text-black">{placeholderOdds}%</span>
+                  <span className="font-medium text-black">{oddsPercentage}%</span>
                 </div>
                 <input
                   type="range"
                   min="0"
                   max="100"
-                  value={placeholderOdds}
+                  value={oddsPercentage}
                   onChange={() => {}}
                   className="w-full accent-primary cursor-default"
                   aria-readonly
@@ -119,10 +128,37 @@ export function ExperimentCard({ experiment, userContribution = 0, hideRanges = 
             <TopDonors experimentId={experiment.experiment_id} />
           )}
 
-          {userContribution > 0 && (
-            <div className="p-3 bg-muted/50 rounded-lg text-center">
-              <p className="text-xs text-black">You contributed</p>
-              <p className="font-semibold text-secondary">${userContribution}</p>
+          {(userContribution > 0 || userBet0 > 0 || userBet1 > 0) && (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-black">Your Activity</span>
+              </div>
+              <div className="p-2 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between text-xs">
+                  {userContribution > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-black/70">Funded:</span>
+                      <span className="font-semibold text-secondary">${userContribution}</span>
+                    </div>
+                  )}
+                  {(userBet0 > 0 || userBet1 > 0) && (
+                    <div className="flex items-center gap-3">
+                      {userBet0 > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-black/70">{experiment.outcome_text0}:</span>
+                          <span className="font-semibold text-secondary">${userBet0}</span>
+                        </div>
+                      )}
+                      {userBet1 > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-black/70">{experiment.outcome_text1}:</span>
+                          <span className="font-semibold text-secondary">${userBet1}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

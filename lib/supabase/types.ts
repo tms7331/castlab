@@ -27,7 +27,8 @@ export interface Donation {
   pfp_url: string | null;
   follower_count: number | null;
   wallet_address: string;
-  total_amount_usd: number;
+  total_funded_usd: number;
+  total_bet_usd: number;
   last_donation_at: string;
   created_at: string;
   updated_at: string;

@@ -12,7 +12,7 @@ interface TopDonorsProps {
 
 export function TopDonors({ experimentId }: TopDonorsProps) {
   const [topDonor, setTopDonor] = useState<Donation | null>(null);
-  const [topInfluencer, setTopInfluencer] = useState<Donation | null>(null);
+  const [topBettor, setTopBettor] = useState<Donation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,8 +24,8 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
           .from('donations')
           .select('*')
           .eq('experiment_id', experimentId)
-          .gt('total_amount_usd', 0)
-          .order('total_amount_usd', { ascending: false })
+          .gt('total_funded_usd', 0)
+          .order('total_funded_usd', { ascending: false })
           .limit(1)
           .single();
 
@@ -33,19 +33,18 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
           setTopDonor(topDonorData);
         }
 
-        // Fetch top influencer (most followers, only with donations > 0)
-        const { data: topInfluencerData } = await supabase
+        // Fetch top bettor by bet amount (only amounts > 0)
+        const { data: topBettorData } = await supabase
           .from('donations')
           .select('*')
           .eq('experiment_id', experimentId)
-          .gt('total_amount_usd', 0)
-          .not('follower_count', 'is', null)
-          .order('follower_count', { ascending: false })
+          .gt('total_bet_usd', 0)
+          .order('total_bet_usd', { ascending: false })
           .limit(1)
           .single();
 
-        if (topInfluencerData) {
-          setTopInfluencer(topInfluencerData);
+        if (topBettorData) {
+          setTopBettor(topBettorData);
         }
       } catch (error) {
         console.error('Error fetching top donors:', error);
@@ -62,7 +61,7 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
   }
 
   // Don't show if no donors at all
-  if (!topDonor && !topInfluencer) {
+  if (!topDonor && !topBettor) {
     return null;
   }
 
@@ -72,7 +71,7 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
 
   return (
     <div className="flex gap-2 text-xs">
-      {topDonor && topDonor.total_amount_usd > 0 && (
+      {topDonor && topDonor.total_funded_usd > 0 && (
         <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md flex-1">
           <Avatar className="w-5 h-5">
             <AvatarImage src={topDonor.pfp_url || undefined} alt={topDonor.display_name || topDonor.username || ''} />
@@ -89,28 +88,28 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
               @{topDonor.username || 'anonymous'}
             </button>
           </div>
-          <span className="font-bold text-secondary whitespace-nowrap">${topDonor.total_amount_usd}</span>
+          <span className="font-bold text-secondary whitespace-nowrap">${topDonor.total_funded_usd}</span>
         </div>
       )}
 
-      {topInfluencer && topInfluencer.follower_count !== null && topInfluencer.follower_count > 0 && (
+      {topBettor && topBettor.total_bet_usd > 0 && (
         <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md flex-1">
           <Avatar className="w-5 h-5">
-            <AvatarImage src={topInfluencer.pfp_url || undefined} alt={topInfluencer.display_name || topInfluencer.username || ''} />
+            <AvatarImage src={topBettor.pfp_url || undefined} alt={topBettor.display_name || topBettor.username || ''} />
             <AvatarFallback className="text-[8px]">
-              {(topInfluencer.display_name || topInfluencer.username || '?')[0].toUpperCase()}
+              {(topBettor.display_name || topBettor.username || '?')[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-muted-foreground">Biggest Bettor</p>
             <button
-              onClick={() => handleViewProfile(topInfluencer.fid)}
+              onClick={() => handleViewProfile(topBettor.fid)}
               className="font-semibold text-primary hover:underline truncate block max-w-full text-left"
             >
-              @{topInfluencer.username || 'anonymous'}
+              @{topBettor.username || 'anonymous'}
             </button>
           </div>
-          <span className="font-bold text-secondary whitespace-nowrap">${topInfluencer.total_amount_usd}</span>
+          <span className="font-bold text-secondary whitespace-nowrap">${topBettor.total_bet_usd}</span>
         </div>
       )}
     </div>
