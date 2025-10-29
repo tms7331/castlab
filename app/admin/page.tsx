@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { EventInsert, Event } from "@/lib/supabase/types";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient, useReadContract } from 'wagmi';
 import { CHAIN } from '@/lib/wagmi/addresses';
-import { CONTRACT_ADDRESS, usdToTokenAmount } from '@/lib/wagmi/adminConfig';
+import { CONTRACT_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/adminConfig';
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { decodeEventLog } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -41,6 +41,18 @@ export default function AdminPage() {
   const [syncExperimentId, setSyncExperimentId] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [bettingOutcome, setBettingOutcome] = useState<string>("");
+  const [showBettingConfirmDialog, setShowBettingConfirmDialog] = useState(false);
+  const [contractExperimentInfo, setContractExperimentInfo] = useState<{
+    costMin: bigint;
+    costMax: bigint;
+    totalDeposited: bigint;
+    totalBet0: bigint;
+    totalBet1: bigint;
+    experimentCreatedAt: bigint;
+    bettingOutcome: number;
+    open: boolean;
+  } | null>(null);
 
   // Wagmi hooks
   const { address, isConnected } = useAccount();
@@ -54,6 +66,18 @@ export default function AdminPage() {
     reset: resetWrite
   } = useWriteContract();
 
+  // Read contract experiment info
+  const { data: contractInfo, isLoading: isLoadingContractInfo } = useReadContract({
+    address: CONTRACT_ADDRESS as `0x${string}`,
+    abi: CastlabExperimentABI.abi,
+    functionName: 'getExperimentInfo',
+    args: selectedExperiment ? [BigInt(selectedExperiment)] : undefined,
+    chainId: CHAIN.id,
+    query: {
+      enabled: !!selectedExperiment,
+    }
+  });
+
   // Wait for transaction confirmation
   const {
     isLoading: isConfirming,
@@ -62,6 +86,30 @@ export default function AdminPage() {
   } = useWaitForTransactionReceipt({
     hash,
   });
+
+  // Update contract experiment info when data is fetched
+  useEffect(() => {
+    if (contractInfo) {
+      console.log('📊 Contract info received:', contractInfo);
+      console.log('📊 Type:', typeof contractInfo, 'Is array?:', Array.isArray(contractInfo));
+
+      // getExperimentInfo returns a tuple: [costMin, costMax, totalDeposited, totalBet0, totalBet1, experimentCreatedAt, bettingOutcome, open]
+      type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, bigint, number, boolean];
+
+      const info = contractInfo as ExperimentInfo;
+
+      setContractExperimentInfo({
+        costMin: info[0],
+        costMax: info[1],
+        totalDeposited: info[2],
+        totalBet0: info[3],
+        totalBet1: info[4],
+        experimentCreatedAt: info[5],
+        bettingOutcome: info[6],
+        open: info[7],
+      });
+    }
+  }, [contractInfo]);
 
   // Handle contract action confirmations
   useEffect(() => {
@@ -562,6 +610,95 @@ export default function AdminPage() {
     }
   };
 
+  const handleSetBettingOutcome = () => {
+    console.log('🎯 handleSetBettingOutcome called');
+    console.log('  selectedExperiment:', selectedExperiment);
+    console.log('  bettingOutcome:', bettingOutcome);
+    console.log('  isConnected:', isConnected);
+    console.log('  chainId:', chainId, '| CHAIN.id:', CHAIN.id);
+
+    if (!selectedExperiment) {
+      console.log('❌ Validation failed: No experiment selected');
+      alert("Please select an experiment");
+      return;
+    }
+    if (bettingOutcome !== "0" && bettingOutcome !== "1") {
+      console.log('❌ Validation failed: Invalid betting outcome:', bettingOutcome);
+      alert("Please enter a valid betting outcome (0 or 1)");
+      return;
+    }
+    if (!isConnected) {
+      console.log('❌ Validation failed: Wallet not connected');
+      alert("Please connect your wallet first");
+      return;
+    }
+    if (chainId !== CHAIN.id) {
+      console.log('❌ Validation failed: Wrong chain. chainId:', chainId, 'expected:', CHAIN.id);
+      alert(`Please switch to ${CHAIN.name} network in your wallet`);
+      return;
+    }
+
+    // Show confirmation dialog
+    console.log('✅ All validations passed, showing confirmation dialog');
+    setShowBettingConfirmDialog(true);
+  };
+
+  const handleConfirmBettingOutcome = async () => {
+    console.log('🔐 handleConfirmBettingOutcome called');
+    console.log('  selectedExperiment:', selectedExperiment);
+    console.log('  bettingOutcome:', bettingOutcome);
+
+    const experiment = existingExperiments.find(exp => exp.experiment_id.toString() === selectedExperiment);
+    console.log('  experiment found:', !!experiment, experiment);
+    if (!experiment) {
+      console.log('❌ Experiment not found');
+      return;
+    }
+
+    const outcomeNum = parseInt(bettingOutcome);
+    const outcomeText = outcomeNum === 0 ? experiment.outcome_text0 : experiment.outcome_text1;
+    console.log('  outcomeNum:', outcomeNum);
+    console.log('  outcomeText:', outcomeText);
+
+    setShowBettingConfirmDialog(false);
+    setContractAction('close'); // Reusing the 'close' action type
+    console.log('  contractAction set to close');
+
+    try {
+      console.log('📝 About to call writeContract with:');
+      console.log('  address:', CONTRACT_ADDRESS);
+      console.log('  abi length:', CastlabExperimentABI.abi?.length);
+      console.log('  functionName: adminSetResult');
+      console.log('  args:', [BigInt(selectedExperiment), outcomeNum]);
+      console.log('  chainId:', CHAIN.id);
+      console.log('  isWriting:', isWriting);
+      console.log('  isConfirming:', isConfirming);
+
+      const tx = await writeContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: CastlabExperimentABI.abi,
+        functionName: 'adminSetResult',
+        args: [BigInt(selectedExperiment), outcomeNum],
+        chainId: CHAIN.id,
+      });
+
+      console.log('✅ writeContract call returned:', tx);
+
+      // Clear the input after successful submission
+      setBettingOutcome("");
+      console.log('✅ Betting outcome cleared');
+    } catch (error) {
+      console.error('❌ Failed to set betting outcome:', error);
+      console.error('  Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('  Error message:', error instanceof Error ? error.message : String(error));
+      if (error instanceof Error) {
+        console.error('  Stack:', error.stack);
+      }
+      alert('Failed to set betting outcome: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setContractAction(null);
+    }
+  };
+
   const handleSyncDonation = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1044,6 +1181,84 @@ export default function AdminPage() {
                     })()}
                   </div>
 
+                  {/* Contract Experiment Information */}
+                  {contractExperimentInfo && (
+                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
+                      <h4 className="text-lg font-bold text-purple-900 mb-4">Smart Contract Data</h4>
+                      {isLoadingContractInfo ? (
+                        <p className="text-purple-600">Loading contract data...</p>
+                      ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                          <div className="bg-white p-3 rounded border border-purple-200">
+                            <p className="text-purple-700 font-semibold mb-1">Cost Min</p>
+                            <p className="text-purple-900 font-mono font-bold">
+                              ${typeof contractExperimentInfo.costMin === 'bigint'
+                                ? tokenAmountToUsd(contractExperimentInfo.costMin).toFixed(2)
+                                : '0.00'
+                              }
+                            </p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-purple-200">
+                            <p className="text-purple-700 font-semibold mb-1">Cost Max</p>
+                            <p className="text-purple-900 font-mono font-bold">
+                              ${typeof contractExperimentInfo.costMax === 'bigint'
+                                ? tokenAmountToUsd(contractExperimentInfo.costMax).toFixed(2)
+                                : '0.00'
+                              }
+                            </p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-purple-200">
+                            <p className="text-purple-700 font-semibold mb-1">Total Deposited</p>
+                            <p className="text-purple-900 font-mono font-bold">
+                              ${typeof contractExperimentInfo.totalDeposited === 'bigint'
+                                ? tokenAmountToUsd(contractExperimentInfo.totalDeposited).toFixed(2)
+                                : '0.00'
+                              }
+                            </p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-purple-200">
+                            <p className="text-purple-700 font-semibold mb-1">Total Bet (Outcome 0)</p>
+                            <p className="text-purple-900 font-mono font-bold">
+                              ${typeof contractExperimentInfo.totalBet0 === 'bigint'
+                                ? tokenAmountToUsd(contractExperimentInfo.totalBet0).toFixed(2)
+                                : '0.00'
+                              }
+                            </p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-purple-200">
+                            <p className="text-purple-700 font-semibold mb-1">Total Bet (Outcome 1)</p>
+                            <p className="text-purple-900 font-mono font-bold">
+                              ${typeof contractExperimentInfo.totalBet1 === 'bigint'
+                                ? tokenAmountToUsd(contractExperimentInfo.totalBet1).toFixed(2)
+                                : '0.00'
+                              }
+                            </p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-purple-200">
+                            <p className="text-purple-700 font-semibold mb-1">Created At</p>
+                            <p className="text-purple-900 font-mono font-bold">
+                              {contractExperimentInfo.experimentCreatedAt
+                                ? new Date(Number(contractExperimentInfo.experimentCreatedAt) * 1000).toLocaleDateString()
+                                : 'Unknown'}
+                            </p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-purple-200">
+                            <p className="text-purple-700 font-semibold mb-1">Betting Outcome</p>
+                            <p className={`font-mono font-bold ${contractExperimentInfo.bettingOutcome > 0 && contractExperimentInfo.bettingOutcome !== 255 ? 'text-green-600' : 'text-gray-600'}`}>
+                              {contractExperimentInfo.bettingOutcome > 0 && contractExperimentInfo.bettingOutcome !== 255 ? contractExperimentInfo.bettingOutcome : 'Not Set'}
+                            </p>
+                          </div>
+                          <div className="bg-white p-3 rounded border border-purple-200">
+                            <p className="text-purple-700 font-semibold mb-1">Status</p>
+                            <p className={`font-bold ${contractExperimentInfo.open ? 'text-green-600' : 'text-red-600'}`}>
+                              {contractExperimentInfo.open ? 'Open' : 'Closed'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="space-y-4">
                     {/* Contract Actions */}
                     <div>
@@ -1069,6 +1284,49 @@ export default function AdminPage() {
                             : 'Admin Withdraw Funds'}
                         </button>
                       </div>
+                    </div>
+
+                    {/* Set Betting Outcome */}
+                    <div>
+                      <h4 className="text-lg font-semibold text-[#005577] mb-3">Set Betting Outcome</h4>
+                      {(() => {
+                        const exp = existingExperiments.find(e => e.experiment_id.toString() === selectedExperiment);
+                        return exp && (
+                          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm font-medium text-blue-900 mb-2">Betting Options:</p>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div className="p-3 bg-white rounded border border-blue-300">
+                                <span className="font-semibold text-blue-900">0:</span>{" "}
+                                <span className="text-blue-700">{exp.outcome_text0 || "Not set"}</span>
+                              </div>
+                              <div className="p-3 bg-white rounded border border-blue-300">
+                                <span className="font-semibold text-blue-900">1:</span>{" "}
+                                <span className="text-blue-700">{exp.outcome_text1 || "Not set"}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={bettingOutcome}
+                          onChange={(e) => setBettingOutcome(e.target.value)}
+                          placeholder="Enter 0 or 1"
+                          className="w-32 px-4 py-2 border border-[#00a8cc]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a8cc] bg-white/50 text-center font-bold text-lg"
+                          maxLength={1}
+                        />
+                        <button
+                          onClick={handleSetBettingOutcome}
+                          disabled={isWriting || isConfirming}
+                          className={`flex-1 px-6 py-3 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors ${(isWriting || isConfirming) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          Set Experiment Result
+                        </button>
+                      </div>
+                      <p className="text-xs text-[#0a3d4d] mt-2">
+                        This will close betting and set the winning outcome. This action cannot be undone.
+                      </p>
                     </div>
 
                     {/* Database Actions */}
@@ -1196,6 +1454,61 @@ export default function AdminPage() {
           </p>
         </div>
       </div>
+
+      {/* Betting Outcome Confirmation Dialog */}
+      {showBettingConfirmDialog && (() => {
+        const experiment = existingExperiments.find(exp => exp.experiment_id.toString() === selectedExperiment);
+        const outcomeNum = parseInt(bettingOutcome);
+        const outcomeText = experiment && (outcomeNum === 0 ? experiment.outcome_text0 : experiment.outcome_text1);
+
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-[#005577] mb-4">Confirm Betting Outcome</h3>
+
+              <div className="space-y-4 mb-6">
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 font-semibold mb-2">⚠️ Warning</p>
+                  <p className="text-sm text-yellow-700">
+                    This action will permanently set the betting outcome and cannot be undone.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-[#0a3d4d] mb-2">
+                    <strong>Experiment:</strong> {experiment?.title}
+                  </p>
+                  <p className="text-sm text-[#0a3d4d] mb-2">
+                    <strong>Experiment ID:</strong> {selectedExperiment}
+                  </p>
+                  <p className="text-sm text-[#0a3d4d]">
+                    <strong>Winning Outcome:</strong> {outcomeNum} - {outcomeText || "Not set"}
+                  </p>
+                </div>
+
+                <p className="text-sm text-[#0a3d4d]">
+                  Are you sure the result is <strong>&quot;{outcomeText || `Outcome ${outcomeNum}`}&quot;</strong>?
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBettingConfirmDialog(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmBettingOutcome}
+                  className="flex-1 px-4 py-2 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 transition-colors"
+                >
+                  Confirm & Set Outcome
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

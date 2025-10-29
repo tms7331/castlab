@@ -100,6 +100,20 @@ export default function ExperimentClient() {
     hash: withdrawHash,
   });
 
+  // Claim bet profit transaction hooks
+  const {
+    writeContract: writeClaimBet,
+    data: claimBetHash,
+    reset: resetClaimBet
+  } = useWriteContract();
+
+  // Wait for claim confirmation
+  const { isLoading: isClaimBetPending, isSuccess: isClaimBetConfirmed } = useWaitForTransactionReceipt({
+    hash: claimBetHash,
+  });
+
+  const [isClaiming, setIsClaiming] = useState(false);
+
   // Read experiment data from smart contract
   const { data: contractData, refetch: refetchContractData } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -151,11 +165,12 @@ export default function ExperimentClient() {
     hash: mintHash,
   });
 
-  // Extract data from contract - new structure includes bet amounts
-  type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, boolean];
+  // Extract data from contract - new structure includes bet amounts and bettingOutcome
+  type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, bigint, number, boolean];
   const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
   const totalBet0Tokens = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
   const totalBet1Tokens = contractData ? (contractData as ExperimentInfo)[4] : BigInt(0);
+  const bettingOutcome: number = contractData ? (contractData as ExperimentInfo)[6] : 255; // 255 means no outcome set yet
 
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
   const totalBet0USD = tokenAmountToUsd(totalBet0Tokens);
@@ -329,6 +344,30 @@ export default function ExperimentClient() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMintConfirmed]);
+
+  // Handle claim bet profit confirmation
+  useEffect(() => {
+    if (isClaimBetConfirmed) {
+      setIsClaiming(false);
+      resetClaimBet();
+
+      // Add a small delay to ensure blockchain state is updated
+      setTimeout(async () => {
+        // Refetch all data to show updated amounts
+        await Promise.all([
+          refetchContractData(),
+          refetchUserPosition(),
+          refetchTokenBalance()
+        ]);
+
+        // Sync donation to database for leaderboard
+        await syncDonationToDatabase();
+      }, 1000);
+
+      showToast("Your winnings have been claimed successfully!", "success");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClaimBetConfirmed, resetClaimBet]);
 
   const syncDonationToDatabase = async () => {
     console.log('[syncDonationToDatabase] Called with:', { address, experimentId: experiment?.experiment_id });
@@ -511,6 +550,27 @@ export default function ExperimentClient() {
       chainId: CHAIN.id,
     });
     // Error handling is now done in the useEffect hook for depositError
+  };
+
+  const handleClaimBetProfit = async () => {
+    if (!address || !experiment) return;
+
+    try {
+      setIsClaiming(true);
+
+      // Call userClaimBetProfit function with experiment ID
+      writeClaimBet({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: CastlabExperimentABI.abi,
+        functionName: 'userClaimBetProfit',
+        args: [BigInt(experiment.experiment_id)],
+        chainId: CHAIN.id,
+      });
+    } catch (err) {
+      console.error('Claim bet profit failed:', err);
+      setIsClaiming(false);
+      showToast('Claiming winnings failed. Please try again.', 'error');
+    }
   };
 
   if (loading) {
@@ -912,6 +972,33 @@ export default function ExperimentClient() {
                     <p className="mt-3 text-[11px] text-muted-foreground">
                       Withdrawals return only your funding contributions. Bets stay in the pool until resolution.
                     </p>
+
+                    {/* Claim Winnings Button - only show if betting outcome is set and user has bets */}
+                    {bettingOutcome !== 255 && (userBet0USD > 0 || userBet1USD > 0) && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">
+                                {bettingOutcome === 0 ? `Outcome: ${experiment.outcome_text0}` : `Outcome: ${experiment.outcome_text1}`}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Betting has been resolved</p>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={handleClaimBetProfit}
+                            disabled={isClaiming || isClaimBetPending}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
+                            size="lg"
+                          >
+                            {isClaiming || isClaimBetPending ? 'Claiming Winnings...' : 'Claim Your Winnings'}
+                          </Button>
+                          <p className="text-[10px] text-muted-foreground text-center">
+                            Click to claim your share of the betting pool based on your winning bets
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {isConnected && (

@@ -32,11 +32,12 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     chainId: CHAIN.id,
   });
 
-  // Extract data from contract - new structure includes bet amounts
-  type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, boolean];
+  // Extract data from contract - new structure includes bet amounts and bettingOutcome
+  type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, bigint, number, boolean];
   const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
   const totalBet0Tokens = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
   const totalBet1Tokens = contractData ? (contractData as ExperimentInfo)[4] : BigInt(0);
+  // const bettingOutcome = contractData ? (contractData as ExperimentInfo)[6] : 255; // Uncomment if needed in card view
 
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
   const totalBet0USD = tokenAmountToUsd(totalBet0Tokens);
