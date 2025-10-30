@@ -724,15 +724,21 @@ export default function ExperimentClient() {
               </CardHeader>
               <CardContent className="px-4 pb-4 pt-0 space-y-5">
                 <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-semibold text-foreground">
-                        ${totalDepositedUSD.toLocaleString()} raised of ${fundingTargetUSD.toLocaleString()}
-                      </span>
+                  {experimentState === 'open' ? (
+                    <div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-semibold text-foreground">
+                          ${totalDepositedUSD.toLocaleString()} raised of ${fundingTargetUSD.toLocaleString()}
+                        </span>
+                      </div>
+                      <Progress value={Math.min((totalDepositedUSD / fundingTargetUSD) * 100, 100)} className="mt-2 h-2 bg-muted" />
                     </div>
-                    <Progress value={Math.min((totalDepositedUSD / fundingTargetUSD) * 100, 100)} className="mt-2 h-2 bg-muted" />
-                  </div>
+                  ) : (
+                    <div className="text-sm">
+                      <span className="font-semibold text-foreground">Progress: Fully Funded!</span>
+                    </div>
+                  )}
 
                   <div>
                     <div className="flex items-center justify-between text-sm">
@@ -776,159 +782,163 @@ export default function ExperimentClient() {
                   <CardTitle className="text-lg font-semibold text-foreground">Fund and Bet</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    You can fund without betting, or bet without funding. Funding goes towards running the experiment. Betting goes towards the betting pool, which is parimutuel style.  For more info, see the About page.
-                  </p>
-
-                  {currentStep === 'complete' ? (
+                  {experimentState === 'open' && (
                     <>
-                      <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
-                        ✅ Thank you for funding this experiment!
-                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        You can fund without betting, or bet without funding. Funding goes towards running the experiment. Betting goes towards the betting pool, which is parimutuel style.  For more info, see the About page.
+                      </p>
 
-                      <Button
-                        onClick={handleCastAboutDonation}
-                        className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
-                        size="lg"
-                      >
-                        Cast about it! 📢
-                      </Button>
-                    </>
-                  ) : (
-                    <form onSubmit={handleFunding} className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Fund this experiment (USDC)
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
-                          <Input
-                            type="number"
-                            placeholder="50"
-                            className="pl-8"
-                            value={fundingAmount}
-                            onChange={(e) => setFundingAmount(e.target.value)}
-                            onFocus={(e) => e.target.select()}
-                            min="0"
-                            step="1"
+                      {currentStep === 'complete' ? (
+                        <>
+                          <div className="p-3 bg-green-100 text-green-700 rounded-lg text-sm font-medium text-center">
+                            ✅ Thank you for funding this experiment!
+                          </div>
+
+                          <Button
+                            onClick={handleCastAboutDonation}
+                            className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
+                            size="lg"
+                          >
+                            Cast about it! 📢
+                          </Button>
+                        </>
+                      ) : (
+                        <form onSubmit={handleFunding} className="space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Fund this experiment (USDC)
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                placeholder="50"
+                                className="pl-8"
+                                value={fundingAmount}
+                                onChange={(e) => setFundingAmount(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                min="0"
+                                step="1"
+                                disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Bet on this experiment (USDC)
+                            </label>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                  {experiment.outcome_text0}
+                                </label>
+                                <div className="relative">
+                                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                  <Input
+                                    type="number"
+                                    placeholder="25"
+                                    className="pl-8"
+                                    value={outcome0BetAmount}
+                                    onChange={(e) => setOutcome0BetAmount(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    min="0"
+                                    step="1"
+                                    disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                                  {experiment.outcome_text1}
+                                </label>
+                                <div className="relative">
+                                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+                                  <Input
+                                    type="number"
+                                    placeholder="25"
+                                    className="pl-8"
+                                    value={outcome1BetAmount}
+                                    onChange={(e) => setOutcome1BetAmount(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    min="0"
+                                    step="1"
+                                    disabled={currentStep === 'approving' || currentStep === 'depositing'}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <Button
+                            type={isConnected ? "submit" : "button"}
+                            onClick={!isConnected ? () => connect({ connector: connectors[0] }) : currentStep === 'approved' ? handleDeposit : undefined}
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
+                            size="lg"
                             disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                          />
-                        </div>
-                      </div>
+                          >
+                            {!isConnected
+                              ? "Connect Wallet to Fund"
+                              : currentStep === 'approving' || isApprovePending
+                                ? "Approving Token..."
+                                : currentStep === 'approved'
+                                  ? depositError ? "Retry Deposit" : "Click to Deposit"
+                                  : currentStep === 'depositing' || isDepositPending
+                                    ? "Depositing..."
+                                    : "Fund and Bet"}
+                          </Button>
 
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Bet on this experiment (USDC)
-                        </label>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">
-                              {experiment.outcome_text0}
-                            </label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
-                              <Input
-                                type="number"
-                                placeholder="25"
-                                className="pl-8"
-                                value={outcome0BetAmount}
-                                onChange={(e) => setOutcome0BetAmount(e.target.value)}
-                                onFocus={(e) => e.target.select()}
-                                min="0"
-                                step="1"
-                                disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                              />
+                          {(approveError || depositError) && (
+                            <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
+                              <div className="font-semibold">Transaction Error</div>
+                              <div className="mt-1 text-xs break-all">
+                                {((approveError || depositError)?.message || '').includes('User rejected')
+                                  ? 'Transaction was cancelled by user'
+                                  : approveError
+                                    ? 'Token approval failed. You can try again.'
+                                    : 'Deposit failed. You can retry the deposit.'}
+                              </div>
+                              {approveError && currentStep === 'idle' && (
+                                <Button
+                                  onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
+                                  className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1"
+                                  size="sm"
+                                >
+                                  Retry Approval
+                                </Button>
+                              )}
+                              {depositError && currentStep === 'approved' && (
+                                <Button
+                                  onClick={handleDeposit}
+                                  className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
+                                  size="sm"
+                                >
+                                  Retry Deposit
+                                </Button>
+                              )}
                             </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-muted-foreground mb-1">
-                              {experiment.outcome_text1}
-                            </label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
-                              <Input
-                                type="number"
-                                placeholder="25"
-                                className="pl-8"
-                                value={outcome1BetAmount}
-                                onChange={(e) => setOutcome1BetAmount(e.target.value)}
-                                onFocus={(e) => e.target.select()}
-                                min="0"
-                                step="1"
-                                disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                              />
+                          )}
+
+                          {currentStep === 'approving' && (
+                            <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                              Step 1/2: Approving token transfer...
                             </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Button
-                        type={isConnected ? "submit" : "button"}
-                        onClick={!isConnected ? () => connect({ connector: connectors[0] }) : currentStep === 'approved' ? handleDeposit : undefined}
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2"
-                        size="lg"
-                        disabled={currentStep === 'approving' || currentStep === 'depositing'}
-                      >
-                        {!isConnected
-                          ? "Connect Wallet to Fund"
-                          : currentStep === 'approving' || isApprovePending
-                            ? "Approving Token..."
-                            : currentStep === 'approved'
-                              ? depositError ? "Retry Deposit" : "Click to Deposit"
-                              : currentStep === 'depositing' || isDepositPending
-                                ? "Depositing..."
-                                : "Fund and Bet"}
-                      </Button>
-
-                      {(approveError || depositError) && (
-                        <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
-                          <div className="font-semibold">Transaction Error</div>
-                          <div className="mt-1 text-xs break-all">
-                            {((approveError || depositError)?.message || '').includes('User rejected')
-                              ? 'Transaction was cancelled by user'
-                              : approveError
-                                ? 'Token approval failed. You can try again.'
-                                : 'Deposit failed. You can retry the deposit.'}
-                          </div>
-                          {approveError && currentStep === 'idle' && (
-                            <Button
-                              onClick={() => handleFunding({ preventDefault: () => { } } as React.FormEvent)}
-                              className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1"
-                              size="sm"
-                            >
-                              Retry Approval
-                            </Button>
                           )}
-                          {depositError && currentStep === 'approved' && (
-                            <Button
-                              onClick={handleDeposit}
-                              className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
-                              size="sm"
-                            >
-                              Retry Deposit
-                            </Button>
+
+                          {currentStep === 'approved' && !depositError && (
+                            <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
+                              ✅ Approval complete! Click the button to deposit.
+                            </div>
                           )}
-                        </div>
-                      )}
 
-                      {currentStep === 'approving' && (
-                        <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                          Step 1/2: Approving token transfer...
-                        </div>
+                          {currentStep === 'depositing' && (
+                            <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                              Step 2/2: Depositing tokens to experiment...
+                            </div>
+                          )}
+                        </form>
                       )}
-
-                      {currentStep === 'approved' && !depositError && (
-                        <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
-                          ✅ Approval complete! Click the button to deposit.
-                        </div>
-                      )}
-
-                      {currentStep === 'depositing' && (
-                        <div className="mt-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                          Step 2/2: Depositing tokens to experiment...
-                        </div>
-                      )}
-                    </form>
+                    </>
                   )}
 
                   {isConnected && (
@@ -949,7 +959,7 @@ export default function ExperimentClient() {
                         <p className="text-lg font-semibold text-foreground">${formatUsd(userTotalStakeUSD)}</p>
                         <p className="text-[11px] text-muted-foreground">Total funding + bets</p>
                       </div>
-                      {userDepositUSD > 0 && (
+                      {userDepositUSD > 0 && experimentState === 'open' && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -966,7 +976,9 @@ export default function ExperimentClient() {
                       <div className="mt-3 grid gap-x-6 gap-y-2 text-xs text-muted-foreground sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
                         <div className="space-y-0.5">
                           <p className="font-medium text-foreground">Funding: ${formatUsd(userDepositUSD)}</p>
-                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Withdrawable</p>
+                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                            {experimentState === 'open' ? 'Withdrawable' : 'Funding complete'}
+                          </p>
                         </div>
                         <div className="space-y-0.5">
                           <p className="font-medium text-foreground">Bet {experiment.outcome_text0}: ${formatUsd(userBet0USD)}</p>

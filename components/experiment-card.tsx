@@ -83,7 +83,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   return (
     <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
       <CardHeader className="pb-3">
-        {statusLabel && (
+        {statusLabel && !hideRanges && (
           <Badge
             variant="outline"
             className="mb-2 border-secondary/40 bg-secondary/10 text-black text-[11px] uppercase tracking-wide"
@@ -143,7 +143,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
                   min="0"
                   max="100"
                   value={oddsPercentage}
-                  onChange={() => {}}
+                  onChange={() => { }}
                   className="w-full accent-primary cursor-default"
                   aria-readonly
                 />
