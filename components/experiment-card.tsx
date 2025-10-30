@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { Event } from "@/lib/supabase/types";
 import Image from "next/image";
 import Link from "next/link";
@@ -83,9 +84,12 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
       <CardHeader className="pb-3">
         {statusLabel && (
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+          <Badge
+            variant="outline"
+            className="mb-2 border-secondary/40 bg-secondary/10 text-black text-[11px] uppercase tracking-wide"
+          >
             {statusLabel}
-          </p>
+          </Badge>
         )}
         <div className="flex items-start gap-3">
           {experiment.image_url && (
