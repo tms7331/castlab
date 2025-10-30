@@ -32,12 +32,14 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     chainId: CHAIN.id,
   });
 
-  // Extract data from contract - new structure includes bet amounts and bettingOutcome
+  // Extract data from contract - structure includes bet amounts, outcome, and open state
   type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, bigint, number, boolean];
-  const totalDepositedTokens = contractData ? (contractData as ExperimentInfo)[2] : BigInt(0);
-  const totalBet0Tokens = contractData ? (contractData as ExperimentInfo)[3] : BigInt(0);
-  const totalBet1Tokens = contractData ? (contractData as ExperimentInfo)[4] : BigInt(0);
-  // const bettingOutcome = contractData ? (contractData as ExperimentInfo)[6] : 255; // Uncomment if needed in card view
+  const experimentInfo = contractData as ExperimentInfo | undefined;
+  const totalDepositedTokens = experimentInfo ? experimentInfo[2] : BigInt(0);
+  const totalBet0Tokens = experimentInfo ? experimentInfo[3] : BigInt(0);
+  const totalBet1Tokens = experimentInfo ? experimentInfo[4] : BigInt(0);
+  const bettingOutcome = experimentInfo ? experimentInfo[6] : undefined;
+  const isOpen = experimentInfo ? experimentInfo[7] : undefined;
 
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
   const totalBet0USD = tokenAmountToUsd(totalBet0Tokens);
@@ -48,6 +50,22 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   // Calculate odds (percentage of total bets for outcome 0)
   const totalBetsUSD = totalBet0USD + totalBet1USD;
   const oddsPercentage = totalBetsUSD > 0 ? Math.round((totalBet0USD / totalBetsUSD) * 100) : 50;
+
+  const statusLabel = (() => {
+    if (isOpen === undefined || bettingOutcome === undefined) {
+      return null;
+    }
+
+    if (isOpen) {
+      return "Status: Funding and betting open";
+    }
+
+    if (bettingOutcome === 255) {
+      return "Status: Experiment in progress";
+    }
+
+    return "Status: Winning bets claimable";
+  })();
 
   const handleCastAboutThis = async () => {
     try {
@@ -64,6 +82,11 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   return (
     <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
       <CardHeader className="pb-3">
+        {statusLabel && (
+          <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+            {statusLabel}
+          </p>
+        )}
         <div className="flex items-start gap-3">
           {experiment.image_url && (
             <div className="w-[45%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
