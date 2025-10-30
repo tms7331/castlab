@@ -3,17 +3,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Event } from "@/lib/supabase/types";
 import Image from "next/image";
 import Link from "next/link";
-import { useReadContract } from 'wagmi';
+import { useState, useEffect } from 'react';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
 import { CHAIN } from '@/lib/wagmi/addresses';
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 import { TopDonors } from './top-donors';
+import { useToast } from "@/lib/hooks/use-toast";
 
 interface ExperimentCardProps {
   experiment: Event;
@@ -24,13 +25,29 @@ interface ExperimentCardProps {
 }
 
 export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0, userBet1 = 0, hideRanges = false }: ExperimentCardProps) {
+  const { address } = useAccount();
+  const { showToast } = useToast();
+  const [isClaiming, setIsClaiming] = useState(false);
+
   // Read experiment data from smart contract - now includes bet amounts
-  const { data: contractData } = useReadContract({
+  const { data: contractData, refetch: refetchContractData } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CastlabExperimentABI.abi,
     functionName: 'getExperimentInfo',
     args: [BigInt(experiment.experiment_id)],
     chainId: CHAIN.id,
+  });
+
+  // Claim bet profit transaction hooks
+  const {
+    writeContract: writeClaimBet,
+    data: claimBetHash,
+    reset: resetClaimBet
+  } = useWriteContract();
+
+  // Wait for claim confirmation
+  const { isLoading: isClaimBetPending, isSuccess: isClaimBetConfirmed } = useWaitForTransactionReceipt({
+    hash: claimBetHash,
   });
 
   // Extract data from contract - structure includes bet amounts, outcome, and open state
@@ -51,22 +68,45 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   // Calculate odds (percentage of total bets for outcome 0)
   const totalBetsUSD = totalBet0USD + totalBet1USD;
   const oddsPercentage = totalBetsUSD > 0 ? Math.round((totalBet0USD / totalBetsUSD) * 100) : 50;
+  const hasClaimableBet = (bettingOutcome === 0 && userBet0 > 0) || (bettingOutcome === 1 && userBet1 > 0);
 
-  const statusLabel = (() => {
-    if (isOpen === undefined || bettingOutcome === undefined) {
-      return null;
+  // Handle claim bet profit confirmation
+  useEffect(() => {
+    if (isClaimBetConfirmed) {
+      setIsClaiming(false);
+      resetClaimBet();
+
+      // Add a small delay to ensure blockchain state is updated
+      setTimeout(async () => {
+        // Refetch contract data to show updated amounts
+        await refetchContractData();
+      }, 1000);
+
+      showToast("Your winnings have been claimed successfully!", "success");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClaimBetConfirmed, resetClaimBet]);
 
-    if (isOpen) {
-      return "Status: Open";
+  const handleClaimBetProfit = async () => {
+    if (!address || !experiment) return;
+
+    try {
+      setIsClaiming(true);
+
+      // Call userClaimBetProfit function with experiment ID
+      writeClaimBet({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: CastlabExperimentABI.abi,
+        functionName: 'userClaimBetProfit',
+        args: [BigInt(experiment.experiment_id)],
+        chainId: CHAIN.id,
+      });
+    } catch (err) {
+      console.error('Claim bet profit failed:', err);
+      setIsClaiming(false);
+      showToast('Claiming winnings failed. Please try again.', 'error');
     }
-
-    if (bettingOutcome === 255) {
-      return "Status: Experiment in progress";
-    }
-
-    return "Status: Claim Bets";
-  })();
+  };
 
   const handleCastAboutThis = async () => {
     try {
@@ -83,14 +123,6 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   return (
     <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
       <CardHeader className="pb-3">
-        {statusLabel && !hideRanges && (
-          <Badge
-            variant="outline"
-            className="mb-2 border-secondary/40 bg-secondary/10 text-black text-[11px] uppercase tracking-wide"
-          >
-            {statusLabel}
-          </Badge>
-        )}
         <div className="flex items-start gap-3">
           {experiment.image_url && (
             <div className="w-[45%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
@@ -200,24 +232,48 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         </CardContent>
       )}
 
-      <CardFooter className="flex gap-2 pt-0">
-        <Button
-          size="sm"
-          className="flex-1"
-          asChild
-        >
-          <Link href={`/experiments/${experiment.experiment_id}`}>
-            View Details
-          </Link>
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1"
-          onClick={handleCastAboutThis}
-        >
-          Cast About This
-        </Button>
+      <CardFooter className="flex flex-col gap-2 pt-0">
+        {hasClaimableBet && (
+          <Button
+            size="sm"
+            onClick={handleClaimBetProfit}
+            disabled={isClaiming || isClaimBetPending}
+            className="relative w-full overflow-hidden bg-gradient-to-r from-amber-700 via-yellow-500 to-amber-600 text-black font-semibold tracking-wide uppercase shadow-[0_18px_42px_rgba(217,119,6,0.45)] hover:shadow-[0_22px_48px_rgba(217,119,6,0.55)] border border-amber-300/80 transition-transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.6),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.4),transparent_35%)] opacity-60"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-[-40%] w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent mix-blend-screen animate-[shimmer_2.6s_linear_infinite]"
+            />
+            <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+              <span className="text-lg leading-none">✶</span>
+              <span>{isClaiming || isClaimBetPending ? 'Claiming Winnings...' : 'Claim Winnings'}</span>
+              <span className="text-lg leading-none">✶</span>
+            </span>
+          </Button>
+        )}
+        <div className="flex gap-2 w-full">
+          <Button
+            size="sm"
+            className="flex-1"
+            asChild
+          >
+            <Link href={`/experiments/${experiment.experiment_id}`}>
+              View Details
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={handleCastAboutThis}
+          >
+            Cast About This
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

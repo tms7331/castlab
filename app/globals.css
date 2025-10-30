@@ -230,3 +230,17 @@
   box-shadow: 0 8px 30px rgba(0, 85, 119, 0.25);
   transform: translateY(-4px);
 }
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-15deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(250%) skewX(-15deg);
+    opacity: 0;
+  }
+}
