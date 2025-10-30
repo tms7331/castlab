@@ -126,13 +126,21 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
           {/* Funding Progress - only show if not hiding ranges */}
           {!hideRanges && (
             <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-black">Progress</span>
-                <span className="font-medium text-black">
-                  ${totalDepositedUSD.toLocaleString()} raised of ${fundingGoal.toLocaleString()}
-                </span>
-              </div>
-              <Progress value={fundingProgress} className="h-2 bg-muted" />
+              {isOpen ? (
+                <>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-black">Progress</span>
+                    <span className="font-medium text-black">
+                      ${totalDepositedUSD.toLocaleString()} raised of ${fundingGoal.toLocaleString()}
+                    </span>
+                  </div>
+                  <Progress value={fundingProgress} className="h-2 bg-muted" />
+                </>
+              ) : (
+                <div className="text-sm">
+                  <span className="font-semibold text-black">Progress: Fully Funded!</span>
+                </div>
+              )}
               <div className="space-y-2 pt-1">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-black">Current odds</span>
