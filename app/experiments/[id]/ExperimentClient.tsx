@@ -172,6 +172,20 @@ export default function ExperimentClient() {
   const totalBet1Tokens = contractData ? (contractData as ExperimentInfo)[4] : BigInt(0);
   const bettingOutcome: number = contractData ? (contractData as ExperimentInfo)[6] : 255; // 255 means no outcome set yet
 
+  // Extract isOpen from blockchain data
+  const isOpen: boolean = contractData ? (contractData as ExperimentInfo)[7] : false;
+
+  // Determine experiment state
+  const experimentState: 'open' | 'inProgress' | 'betClaims' | 'completed' | null = experiment?.date_completed
+    ? 'completed'
+    : isOpen
+      ? 'open'
+      : bettingOutcome === 0 || bettingOutcome === 1
+        ? 'betClaims'
+        : !isOpen && bettingOutcome === 255
+          ? 'inProgress'
+          : null;
+
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
   const totalBet0USD = tokenAmountToUsd(totalBet0Tokens);
   const totalBet1USD = tokenAmountToUsd(totalBet1Tokens);
