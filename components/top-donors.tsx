@@ -69,6 +69,17 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
     sdk.actions.viewProfile({ fid });
   };
 
+  const formatUsdAmount = (value: number) => {
+    if (!Number.isFinite(value)) {
+      return String(value ?? "");
+    }
+
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+    });
+  };
+
   return (
     <div className="flex gap-2 text-xs">
       {topDonor && topDonor.total_funded_usd > 0 && (
@@ -83,12 +94,14 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
             <p className="text-[10px] text-muted-foreground">Biggest Donor</p>
             <button
               onClick={() => handleViewProfile(topDonor.fid)}
-              className="font-semibold text-primary hover:underline truncate block max-w-full text-left"
+              className="block max-w-full break-words text-left font-semibold text-primary hover:underline"
             >
               @{topDonor.username || 'anonymous'}
             </button>
+            <span className="mt-0.5 block break-all font-bold text-secondary">
+              ${formatUsdAmount(topDonor.total_funded_usd)}
+            </span>
           </div>
-          <span className="font-bold text-secondary whitespace-nowrap">${topDonor.total_funded_usd}</span>
         </div>
       )}
 
@@ -104,12 +117,14 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
             <p className="text-[10px] text-muted-foreground">Biggest Bettor</p>
             <button
               onClick={() => handleViewProfile(topBettor.fid)}
-              className="font-semibold text-primary hover:underline truncate block max-w-full text-left"
+              className="block max-w-full break-words text-left font-semibold text-primary hover:underline"
             >
               @{topBettor.username || 'anonymous'}
             </button>
+            <span className="mt-0.5 block break-all font-bold text-secondary">
+              ${formatUsdAmount(topBettor.total_bet_usd)}
+            </span>
           </div>
-          <span className="font-bold text-secondary whitespace-nowrap">${topBettor.total_bet_usd}</span>
         </div>
       )}
     </div>
