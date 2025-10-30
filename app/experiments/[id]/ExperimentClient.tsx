@@ -999,8 +999,8 @@ export default function ExperimentClient() {
                       Withdrawals return only your funding contributions. Bets stay in the pool until resolution.
                     </p>
 
-                    {/* Claim Winnings Button - only show if betting outcome is set and user has bets */}
-                    {bettingOutcome !== 255 && (userBet0USD > 0 || userBet1USD > 0) && (
+                    {/* Claim Winnings Button - only show if user bet on the winning side */}
+                    {((bettingOutcome === 0 && userBet0USD > 0) || (bettingOutcome === 1 && userBet1USD > 0)) && (
                       <div className="mt-3 pt-3 border-t border-border">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">

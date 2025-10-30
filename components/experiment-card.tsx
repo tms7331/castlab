@@ -58,14 +58,14 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     }
 
     if (isOpen) {
-      return "Status: Funding and betting open";
+      return "Status: Open";
     }
 
     if (bettingOutcome === 255) {
       return "Status: Experiment in progress";
     }
 
-    return "Status: Winning bets claimable";
+    return "Status: Claim Bets";
   })();
 
   const handleCastAboutThis = async () => {
