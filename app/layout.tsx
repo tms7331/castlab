@@ -6,6 +6,7 @@ import { WagmiProvider } from "@/lib/wagmi/WagmiProvider";
 import { Header } from "@/components/header";
 import { BiologicalBackground } from "@/components/biological-background";
 import { Analytics } from "@vercel/analytics/next";
+import { Toaster } from "sonner";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -43,6 +44,7 @@ export default function RootLayout({
           </FarcasterProvider>
           <Analytics />
         </div>
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );

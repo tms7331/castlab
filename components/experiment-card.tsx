@@ -14,8 +14,7 @@ import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 import { TopDonors } from './top-donors';
-import { useToast } from "@/lib/hooks/use-toast";
-import { Toaster } from "@/components/ui/toast";
+import { toast } from "sonner";
 
 interface ExperimentCardProps {
   experiment: Event;
@@ -27,7 +26,6 @@ interface ExperimentCardProps {
 
 export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0, userBet1 = 0, hideRanges = false }: ExperimentCardProps) {
   const { address } = useAccount();
-  const { toasts, showToast, removeToast } = useToast();
   const [isClaiming, setIsClaiming] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
 
@@ -70,7 +68,6 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   const totalDepositedTokens = experimentInfo ? experimentInfo[2] : BigInt(0);
   const totalBet0Tokens = experimentInfo ? experimentInfo[3] : BigInt(0);
   const totalBet1Tokens = experimentInfo ? experimentInfo[4] : BigInt(0);
-  const bettingOutcome = experimentInfo ? experimentInfo[6] : undefined;
   const isOpen = experimentInfo ? experimentInfo[7] : undefined;
 
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
@@ -111,7 +108,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       });
-      showToast(`🎉 Successfully claimed $${formattedAmount} in winnings!`, "success");
+      toast.success(`🎉 Successfully claimed $${formattedAmount} in winnings!`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClaimBetConfirmed, resetClaimBet]);
@@ -133,7 +130,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     } catch (err) {
       console.error('Claim bet profit failed:', err);
       setIsClaiming(false);
-      showToast('Claiming winnings failed. Please try again.', 'error');
+      toast.error('Claiming winnings failed. Please try again.');
     }
   };
 
@@ -150,168 +147,165 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   };
 
   return (
-    <>
-      <Toaster toasts={toasts} onRemove={removeToast} />
-      <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
-        <CardHeader className="pb-3">
-          <div className="flex items-start gap-3">
-            {experiment.image_url && (
-              <div className="w-[45%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
-                <div className="relative w-full h-full rounded-lg bg-card overflow-hidden">
-                  <Image
-                    src={experiment.image_url}
-                    alt={experiment.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 45vw, 200px"
-                    priority
-                  />
-                </div>
+    <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
+      <CardHeader className="pb-3">
+        <div className="flex items-start gap-3">
+          {experiment.image_url && (
+            <div className="w-[45%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
+              <div className="relative w-full h-full rounded-lg bg-card overflow-hidden">
+                <Image
+                  src={experiment.image_url}
+                  alt={experiment.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 45vw, 200px"
+                  priority
+                />
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <Link href={`/experiments/${experiment.experiment_id}`}>
-                <h3 className="font-semibold text-base text-balance leading-tight text-black hover:text-primary transition-colors cursor-pointer">
-                  {experiment.title}
-                </h3>
-              </Link>
-              {experiment.summary && (
-                <p className="text-xs text-black mt-1 line-clamp-2">
-                  {experiment.summary}
-                </p>
-              )}
             </div>
-          </div>
-        </CardHeader>
-
-        {(!hideRanges || userContribution > 0) && (
-          <CardContent className="space-y-4">
-            {/* Funding Progress - only show if not hiding ranges */}
-            {!hideRanges && (
-              <div className="space-y-2">
-                {isOpen ? (
-                  <>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-black">Progress</span>
-                      <span className="font-medium text-black">
-                        ${totalDepositedUSD.toLocaleString()} raised of ${fundingGoal.toLocaleString()}
-                      </span>
-                    </div>
-                    <Progress value={fundingProgress} className="h-2 bg-muted" />
-                  </>
-                ) : (
-                  <div className="text-sm">
-                    <span className="font-semibold text-black">Progress: Fully Funded!</span>
-                  </div>
-                )}
-                <div className="space-y-2 pt-1">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-black">Current odds</span>
-                    <span className="font-medium text-black">{oddsPercentage}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={oddsPercentage}
-                    onChange={() => { }}
-                    className="w-full accent-primary cursor-default"
-                    aria-readonly
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Top Donors Leaderboard */}
-            {!hideRanges && (
-              <TopDonors experimentId={experiment.experiment_id} />
-            )}
-
-            {(userContribution > 0 || userBet0 > 0 || userBet1 > 0) && (
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-black">Your Activity</span>
-                </div>
-                <div className="p-2 bg-muted/50 rounded-lg">
-                  <div className="flex items-center justify-between text-xs">
-                    {userContribution > 0 && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-black/70">Funded:</span>
-                        <span className="font-semibold text-secondary">${userContribution}</span>
-                      </div>
-                    )}
-                    {(userBet0 > 0 || userBet1 > 0) && (
-                      <div className="flex items-center gap-3">
-                        {userBet0 > 0 && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-black/70">{experiment.outcome_text0}:</span>
-                            <span className="font-semibold text-secondary">${userBet0}</span>
-                          </div>
-                        )}
-                        {userBet1 > 0 && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-black/70">{experiment.outcome_text1}:</span>
-                            <span className="font-semibold text-secondary">${userBet1}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        )}
-
-        <CardFooter className="flex flex-col gap-2 pt-0">
-          {hasClaimableBet && (
-            <Button
-              size="sm"
-              onClick={handleClaimBetProfit}
-              disabled={isClaiming || isClaimBetPending}
-              className="relative w-full overflow-hidden bg-gradient-to-r from-amber-700 via-yellow-500 to-amber-600 text-black font-semibold tracking-wide uppercase shadow-[0_18px_42px_rgba(217,119,6,0.45)] hover:shadow-[0_22px_48px_rgba(217,119,6,0.55)] border border-amber-300/80 transition-transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.6),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.4),transparent_35%)] opacity-60"
-              />
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 left-[-40%] w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent mix-blend-screen animate-[shimmer_2.6s_linear_infinite]"
-              />
-              <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
-                <span className="text-lg leading-none">✶</span>
-                <span>
-                  {isClaiming || isClaimBetPending
-                    ? 'Claiming Winnings...'
-                    : `Claim $${claimableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                  }
-                </span>
-                <span className="text-lg leading-none">✶</span>
-              </span>
-            </Button>
           )}
-          <div className="flex gap-2 w-full">
-            <Button
-              size="sm"
-              className="flex-1"
-              asChild
-            >
-              <Link href={`/experiments/${experiment.experiment_id}`}>
-                View Details
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              onClick={handleCastAboutThis}
-            >
-              Cast About This
-            </Button>
+          <div className="flex-1 min-w-0">
+            <Link href={`/experiments/${experiment.experiment_id}`}>
+              <h3 className="font-semibold text-base text-balance leading-tight text-black hover:text-primary transition-colors cursor-pointer">
+                {experiment.title}
+              </h3>
+            </Link>
+            {experiment.summary && (
+              <p className="text-xs text-black mt-1 line-clamp-2">
+                {experiment.summary}
+              </p>
+            )}
           </div>
-        </CardFooter>
-      </Card>
-    </>
+        </div>
+      </CardHeader>
+
+      {(!hideRanges || userContribution > 0) && (
+        <CardContent className="space-y-4">
+          {/* Funding Progress - only show if not hiding ranges */}
+          {!hideRanges && (
+            <div className="space-y-2">
+              {isOpen ? (
+                <>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-black">Progress</span>
+                    <span className="font-medium text-black">
+                      ${totalDepositedUSD.toLocaleString()} raised of ${fundingGoal.toLocaleString()}
+                    </span>
+                  </div>
+                  <Progress value={fundingProgress} className="h-2 bg-muted" />
+                </>
+              ) : (
+                <div className="text-sm">
+                  <span className="font-semibold text-black">Progress: Fully Funded!</span>
+                </div>
+              )}
+              <div className="space-y-2 pt-1">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-black">Current odds</span>
+                  <span className="font-medium text-black">{oddsPercentage}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={oddsPercentage}
+                  onChange={() => { }}
+                  className="w-full accent-primary cursor-default"
+                  aria-readonly
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Top Donors Leaderboard */}
+          {!hideRanges && (
+            <TopDonors experimentId={experiment.experiment_id} />
+          )}
+
+          {(userContribution > 0 || userBet0 > 0 || userBet1 > 0) && (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-black">Your Activity</span>
+              </div>
+              <div className="p-2 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between text-xs">
+                  {userContribution > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-black/70">Funded:</span>
+                      <span className="font-semibold text-secondary">${userContribution}</span>
+                    </div>
+                  )}
+                  {(userBet0 > 0 || userBet1 > 0) && (
+                    <div className="flex items-center gap-3">
+                      {userBet0 > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-black/70">{experiment.outcome_text0}:</span>
+                          <span className="font-semibold text-secondary">${userBet0}</span>
+                        </div>
+                      )}
+                      {userBet1 > 0 && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-black/70">{experiment.outcome_text1}:</span>
+                          <span className="font-semibold text-secondary">${userBet1}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      )}
+
+      <CardFooter className="flex flex-col gap-2 pt-0">
+        {hasClaimableBet && (
+          <Button
+            size="sm"
+            onClick={handleClaimBetProfit}
+            disabled={isClaiming || isClaimBetPending}
+            className="relative w-full overflow-hidden bg-gradient-to-r from-amber-700 via-yellow-500 to-amber-600 text-black font-semibold tracking-wide uppercase shadow-[0_18px_42px_rgba(217,119,6,0.45)] hover:shadow-[0_22px_48px_rgba(217,119,6,0.55)] border border-amber-300/80 transition-transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.6),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.4),transparent_35%)] opacity-60"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-[-40%] w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent mix-blend-screen animate-[shimmer_2.6s_linear_infinite]"
+            />
+            <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+              <span className="text-lg leading-none">✶</span>
+              <span>
+                {isClaiming || isClaimBetPending
+                  ? 'Claiming Winnings...'
+                  : `Claim $${claimableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                }
+              </span>
+              <span className="text-lg leading-none">✶</span>
+            </span>
+          </Button>
+        )}
+        <div className="flex gap-2 w-full">
+          <Button
+            size="sm"
+            className="flex-1"
+            asChild
+          >
+            <Link href={`/experiments/${experiment.experiment_id}`}>
+              View Details
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={handleCastAboutThis}
+          >
+            Cast About This
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
   );
 }

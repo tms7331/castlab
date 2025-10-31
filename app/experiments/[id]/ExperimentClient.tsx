@@ -17,8 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
-import { useToast } from "@/lib/hooks/use-toast";
-import { Toaster } from "@/components/ui/toast";
+import { toast } from "sonner";
 
 const EXPERIMENTER_FID = 883930;
 const EXPERIMENTER_HANDLE = "@motherlizard";
@@ -54,9 +53,6 @@ export default function ExperimentClient() {
   const [approvedAmount, setApprovedAmount] = useState<string | null>(null);
   const [hasAttemptedDeposit, setHasAttemptedDeposit] = useState(false);
 
-  // Toast hook
-  const { toasts, showToast, removeToast } = useToast();
-
   // Wagmi hooks
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
@@ -70,7 +66,7 @@ export default function ExperimentClient() {
     reset: resetApprove
   } = useWriteContract();
 
-  // Deposit transaction  
+  // Deposit transaction
   const {
     writeContract: writeDeposit,
     data: depositHash,
@@ -87,6 +83,29 @@ export default function ExperimentClient() {
   const { isLoading: isDepositPending, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({
     hash: depositHash,
   });
+
+  // Debug logging for transaction hashes
+  useEffect(() => {
+    console.log('[Transaction Hashes] approveHash:', approveHash, 'depositHash:', depositHash);
+  }, [approveHash, depositHash]);
+
+  // Debug logging for transaction pending states
+  useEffect(() => {
+    console.log('[Transaction Pending] isApprovePending:', isApprovePending, 'isDepositPending:', isDepositPending);
+  }, [isApprovePending, isDepositPending]);
+
+  // Debug logging for transaction success states
+  useEffect(() => {
+    console.log('[Transaction Success] isApproved:', isApproved, 'isDepositConfirmed:', isDepositConfirmed);
+  }, [isApproved, isDepositConfirmed]);
+
+  // Debug logging for transaction errors
+  useEffect(() => {
+    console.log('[Transaction Errors] approveError:', approveError, 'depositError:', depositError);
+    if (depositError) {
+      console.error('[Transaction Errors] Deposit error details:', depositError);
+    }
+  }, [approveError, depositError]);
 
   // Withdrawal transaction hooks
   const {
@@ -221,18 +240,22 @@ export default function ExperimentClient() {
 
   // Handle approve confirmation
   useEffect(() => {
+    console.log('[Approve Effect] isApproved:', isApproved, 'currentStep:', currentStep);
     if (isApproved && currentStep === 'approving') {
+      console.log('[Approve Effect] Moving to approved state');
       setCurrentStep('approved');
       // Track the total amount that was approved (funding + bets)
       const totalApproved = (Number(fundingAmount) || 0) + (Number(outcome0BetAmount) || 0) + (Number(outcome1BetAmount) || 0);
+      console.log('[Approve Effect] Total approved amount:', totalApproved);
       setApprovedAmount(totalApproved.toString());
     }
   }, [isApproved, currentStep, fundingAmount, outcome0BetAmount, outcome1BetAmount]);
 
   // Handle approve error - reset to idle state for retry
   useEffect(() => {
+    console.log('[Approve Error Effect] approveError:', approveError, 'currentStep:', currentStep);
     if (approveError && currentStep === 'approving') {
-      console.error('Approve transaction failed:', approveError);
+      console.error('[Approve Error Effect] Approve transaction failed:', approveError);
       setCurrentStep('idle');
       // Reset approve state to allow retry
       resetApprove();
@@ -241,7 +264,9 @@ export default function ExperimentClient() {
 
   // Automatically proceed to deposit after approval (only first time)
   useEffect(() => {
+    console.log('[Auto Deposit Effect] currentStep:', currentStep, 'hasAttemptedDeposit:', hasAttemptedDeposit);
     if (currentStep === 'approved' && !hasAttemptedDeposit) {
+      console.log('[Auto Deposit Effect] Auto-triggering deposit');
       setHasAttemptedDeposit(true);
       handleDeposit();
     }
@@ -250,10 +275,12 @@ export default function ExperimentClient() {
 
   // Handle deposit confirmation
   useEffect(() => {
+    console.log('[Deposit Confirmed Effect] isDepositConfirmed:', isDepositConfirmed, 'currentStep:', currentStep);
     if (isDepositConfirmed && currentStep === 'depositing') {
       console.log('[Deposit Confirmed] Starting post-deposit flow');
       // Haptic feedback for successful deposit
       sdk.haptics.impactOccurred('medium');
+      console.log('[Deposit Confirmed] Setting currentStep to "complete"');
       setCurrentStep('complete');
       setFundingAmount("");
       setOutcome0BetAmount("0");
@@ -283,11 +310,13 @@ export default function ExperimentClient() {
 
   // Handle deposit error - keep approval and allow manual retry
   useEffect(() => {
+    console.log('[Deposit Error Effect] depositError:', depositError, 'currentStep:', currentStep);
     if (depositError && currentStep === 'depositing') {
-      console.error('Deposit transaction failed:', depositError);
+      console.error('[Deposit Error Effect] Deposit transaction failed:', depositError);
 
       // Always go back to approved state so user can retry just the deposit
       // This preserves the approval transaction
+      console.log('[Deposit Error Effect] Resetting to approved state');
       setCurrentStep('approved');
       resetDeposit();
     }
@@ -295,10 +324,13 @@ export default function ExperimentClient() {
 
   // Reset approval if amount changes after approval
   useEffect(() => {
+    console.log('[Amount Change Effect] currentStep:', currentStep, 'approvedAmount:', approvedAmount);
     if (currentStep === 'approved' && approvedAmount) {
       const currentTotal = (Number(fundingAmount) || 0) + (Number(outcome0BetAmount) || 0) + (Number(outcome1BetAmount) || 0);
+      console.log('[Amount Change Effect] currentTotal:', currentTotal, 'approvedAmount:', approvedAmount);
       if (currentTotal.toString() !== approvedAmount) {
         // Amount changed, need new approval
+        console.log('[Amount Change Effect] Amount changed, resetting to idle');
         setCurrentStep('idle');
         setApprovedAmount(null);
         setHasAttemptedDeposit(false);
@@ -327,7 +359,7 @@ export default function ExperimentClient() {
         await syncDonationToDatabase();
       }, 1000);
 
-      showToast("Your withdrawal has been completed successfully.", "success");
+      toast.success("Your withdrawal has been completed successfully.");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawConfirmed, resetWithdraw]);
@@ -340,7 +372,7 @@ export default function ExperimentClient() {
         await refetchTokenBalance();
       }, 1000);
 
-      showToast("Testnet tokens minted successfully!", "success");
+      toast.success("Testnet tokens minted successfully!");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMintConfirmed]);
@@ -381,6 +413,7 @@ export default function ExperimentClient() {
   };
 
   const handleCastAboutDonation = async () => {
+    console.log('[handleCastAboutDonation] Called, currentStep:', currentStep);
     try {
       // Link to the specific experiment page
       const appUrl = `${getAppUrl()}/experiments/${experiment?.experiment_id}`;
@@ -390,8 +423,10 @@ export default function ExperimentClient() {
         embeds: [appUrl]
       });
 
+      console.log('[handleCastAboutDonation] Compose cast result:', result);
       if (result?.cast) {
         // Reset state after successful cast
+        console.log('[handleCastAboutDonation] Cast successful, resetting state to idle');
         setCurrentStep('idle');
         setApprovedAmount(null);
         setHasAttemptedDeposit(false);
@@ -406,17 +441,21 @@ export default function ExperimentClient() {
             refetchTokenBalance()
           ]);
         }, 500);
+      } else {
+        console.log('[handleCastAboutDonation] No cast in result, not resetting state');
       }
     } catch (error) {
-      console.error('Failed to compose cast:', error);
+      console.error('[handleCastAboutDonation] Failed to compose cast:', error);
     }
   };
 
   const handleFunding = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[handleFunding] Called, currentStep:', currentStep);
 
     // Connect wallet if not connected
     if (!isConnected) {
+      console.log('[handleFunding] Wallet not connected, connecting...');
       // Simply connect with the Farcaster connector (the only one available)
       if (connectors[0]) {
         await connect({ connector: connectors[0] });
@@ -427,37 +466,42 @@ export default function ExperimentClient() {
     const fundAmount = Number(fundingAmount) || 0;
     const outcome0Bet = Number(outcome0BetAmount) || 0;
     const outcome1Bet = Number(outcome1BetAmount) || 0;
+    console.log('[handleFunding] Amounts - fund:', fundAmount, 'bet0:', outcome0Bet, 'bet1:', outcome1Bet);
 
     // Validation: each field must be 0 or >= 1
     if ((fundAmount > 0 && fundAmount < 1) || (outcome0Bet > 0 && outcome0Bet < 1) || (outcome1Bet > 0 && outcome1Bet < 1)) {
-      showToast("Each amount must be either 0 or at least $1", "error");
+      toast.error("Each amount must be either 0 or at least $1");
       return;
     }
 
     // Validation: at least one field must be >= 1
     const totalAmount = fundAmount + outcome0Bet + outcome1Bet;
     if (totalAmount < 1) {
-      showToast("Please enter at least $1 in one of the fields", "error");
+      toast.error("Please enter at least $1 in one of the fields");
       return;
     }
 
     // Check if on the correct chain
     if (chainId !== CHAIN.id) {
-      showToast(`Please switch to ${CHAIN.name} network in your wallet`, "error");
+      toast.error(`Please switch to ${CHAIN.name} network in your wallet`);
       return;
     }
 
     // Clear any previous errors before starting
+    console.log('[handleFunding] Clearing previous states and resetting');
     resetApprove();
     resetDeposit();
     setHasAttemptedDeposit(false);
 
+    console.log('[handleFunding] Setting currentStep to "approving"');
     setCurrentStep('approving');
 
     // Convert USD to token amount - approve total of funding + bets
     const tokenAmount = usdToTokenAmount(totalAmount);
+    console.log('[handleFunding] Token amount to approve:', tokenAmount);
 
     // Step 1: Approve the contract to spend tokens
+    console.log('[handleFunding] Calling writeApprove');
     writeApprove({
       address: TOKEN_ADDRESS as `0x${string}`,
       abi: ERC20ABI.abi,
@@ -485,7 +529,7 @@ export default function ExperimentClient() {
     } catch (err) {
       console.error('Withdrawal failed:', err);
       setIsWithdrawing(false);
-      showToast('Withdrawal failed. Please try again.', 'error');
+      toast.error('Withdrawal failed. Please try again.');
     }
   };
 
@@ -503,21 +547,28 @@ export default function ExperimentClient() {
       });
     } catch (err) {
       console.error('Minting failed:', err);
-      showToast('Minting failed. Please try again.', 'error');
+      toast.error('Minting failed. Please try again.');
     }
   };
 
   const handleDeposit = async () => {
-    if (!experiment) return;
+    console.log('[handleDeposit] Called, currentStep:', currentStep);
+    if (!experiment) {
+      console.log('[handleDeposit] No experiment, returning');
+      return;
+    }
 
+    console.log('[handleDeposit] Setting currentStep to "depositing"');
     setCurrentStep('depositing');
 
     const experimentId = experiment.experiment_id;
     const tokenFundAmount = usdToTokenAmount(Number(fundingAmount) || 0);
     const tokenBetAmount0 = usdToTokenAmount(Number(outcome0BetAmount) || 0);
     const tokenBetAmount1 = usdToTokenAmount(Number(outcome1BetAmount) || 0);
+    console.log('[handleDeposit] Deposit amounts - fund:', tokenFundAmount, 'bet0:', tokenBetAmount0, 'bet1:', tokenBetAmount1);
 
     // Step 2: Fund and bet on the experiment
+    console.log('[handleDeposit] Calling writeDeposit for experiment:', experimentId);
     writeDeposit({
       address: CONTRACT_ADDRESS as `0x${string}`,
       abi: CastlabExperimentABI.abi,
@@ -555,7 +606,6 @@ export default function ExperimentClient() {
 
   return (
     <div className="min-h-screen">
-      <Toaster toasts={toasts} onRemove={removeToast} />
       <main className="px-3 py-4 max-w-2xl mx-auto">
         <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-4">
           <ArrowLeft className="w-4 h-4" />
