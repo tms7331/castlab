@@ -125,7 +125,7 @@ export default function ExperimentClient() {
   } = useWriteContract();
 
   // Wait for withdrawal confirmation
-  const { isLoading: isWithdrawPending, isSuccess: isWithdrawConfirmed } = useWaitForTransactionReceipt({
+  const { isLoading: isWithdrawPending, isSuccess: isWithdrawConfirmed, error: withdrawError } = useWaitForTransactionReceipt({
     hash: withdrawHash,
   });
 
@@ -175,8 +175,7 @@ export default function ExperimentClient() {
   } = useWriteContract();
 
   // Wait for mint confirmation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { isLoading: isMintPending, isSuccess: isMintConfirmed } = useWaitForTransactionReceipt({
+  const { isLoading: isMintPending, isSuccess: isMintConfirmed, error: mintError } = useWaitForTransactionReceipt({
     hash: mintHash,
   });
 
@@ -454,6 +453,30 @@ export default function ExperimentClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawConfirmed, resetWithdraw]);
 
+  // Handle withdrawal error - reset state to allow retry
+  useEffect(() => {
+    if (withdrawError) {
+      console.error('[Withdrawal Error] Transaction failed:', withdrawError);
+
+      // Track withdrawal failure
+      trackTransaction('transaction_withdrawal_failed', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: experiment?.experiment_id,
+        experiment_title: experiment?.title,
+        error_message: withdrawError.message,
+        error_code: withdrawError.name,
+      });
+
+      // Reset state to allow retry
+      setIsWithdrawing(false);
+      resetWithdraw();
+
+      // Show error toast
+      toast.error('Withdrawal failed. Please try again.');
+    }
+  }, [withdrawError, address, chainId, experiment, resetWithdraw]);
+
   // Handle mint confirmation
   useEffect(() => {
     if (isMintConfirmed) {
@@ -466,6 +489,14 @@ export default function ExperimentClient() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMintConfirmed]);
+
+  // Handle mint error
+  useEffect(() => {
+    if (mintError) {
+      console.error('[Mint Error] Transaction failed:', mintError);
+      toast.error('Minting failed. Please try again.');
+    }
+  }, [mintError]);
 
   const syncDonationToDatabase = async () => {
     console.log('[syncDonationToDatabase] Called with:', { address, experimentId: experiment?.experiment_id });

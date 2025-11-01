@@ -69,7 +69,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   } = useWriteContract();
 
   // Wait for claim confirmation
-  const { isLoading: isClaimBetPending, isSuccess: isClaimBetConfirmed } = useWaitForTransactionReceipt({
+  const { isLoading: isClaimBetPending, isSuccess: isClaimBetConfirmed, error: claimBetError } = useWaitForTransactionReceipt({
     hash: claimBetHash,
   });
 
@@ -133,6 +133,31 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClaimBetConfirmed, resetClaimBet]);
+
+  // Handle claim bet profit error - reset state to allow retry
+  useEffect(() => {
+    if (claimBetError) {
+      console.error('[Claim Bet Error] Transaction failed:', claimBetError);
+
+      // Track claim failure
+      trackTransaction('transaction_claim_failed', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: experiment.experiment_id,
+        experiment_title: experiment.title,
+        claim_amount_usd: claimableAmount,
+        error_message: claimBetError.message,
+        error_code: claimBetError.name,
+      });
+
+      // Reset state to allow retry
+      setIsClaiming(false);
+      resetClaimBet();
+
+      // Show error toast
+      toast.error('Claiming winnings failed. Please try again.');
+    }
+  }, [claimBetError, address, chainId, experiment, claimableAmount, resetClaimBet]);
 
   const handleClaimBetProfit = async () => {
     if (!address || !experiment) return;
