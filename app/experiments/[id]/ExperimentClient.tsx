@@ -371,9 +371,11 @@ export default function ExperimentClient() {
 
   // Handle deposit error - keep approval and allow manual retry
   useEffect(() => {
-    console.log('[Deposit Error Effect] depositError:', depositError, 'depositReceiptError:', depositReceiptError, 'currentStep:', currentStep);
+    console.log('[Deposit Error Effect] depositError:', depositError, 'depositReceiptError:', depositReceiptError, 'currentStep:', currentStep, 'hasAttemptedDeposit:', hasAttemptedDeposit);
     const hasDepositError = depositError || depositReceiptError;
-    if (hasDepositError && currentStep === 'depositing') {
+    // Handle error if we're in depositing state OR if we attempted deposit and are in approved state
+    // The second condition catches race conditions where error is set before currentStep updates
+    if (hasDepositError && (currentStep === 'depositing' || (currentStep === 'approved' && hasAttemptedDeposit))) {
       console.error('[Deposit Error Effect] Deposit transaction failed:', hasDepositError);
 
       const fundAmount = Number(fundingAmount) || 0;
@@ -404,7 +406,49 @@ export default function ExperimentClient() {
       setCurrentStep('approved');
       resetDeposit();
     }
-  }, [depositError, depositReceiptError, currentStep, resetDeposit, fundingAmount, outcome0BetAmount, outcome1BetAmount, address, chainId, experiment]);
+  }, [depositError, depositReceiptError, currentStep, hasAttemptedDeposit, resetDeposit, fundingAmount, outcome0BetAmount, outcome1BetAmount, address, chainId, experiment]);
+
+  // Timeout for stuck deposit transactions (10 seconds)
+  useEffect(() => {
+    if (currentStep === 'depositing') {
+      console.log('[Deposit Timeout] Starting 10-second timeout for deposit transaction');
+      const timeoutId = setTimeout(() => {
+        console.error('[Deposit Timeout] Transaction timed out after 10 seconds');
+
+        const fundAmount = Number(fundingAmount) || 0;
+        const bet0Amount = Number(outcome0BetAmount) || 0;
+        const bet1Amount = Number(outcome1BetAmount) || 0;
+
+        // Track deposit failure due to timeout
+        trackTransaction('transaction_deposit_failed', {
+          wallet_address: address,
+          chain_id: chainId,
+          experiment_id: experiment?.experiment_id,
+          experiment_title: experiment?.title,
+          fund_amount_usd: fundAmount,
+          bet_amount_0_usd: bet0Amount,
+          bet_amount_1_usd: bet1Amount,
+          total_amount_usd: fundAmount + bet0Amount + bet1Amount,
+          error_message: 'Transaction timed out after 10 seconds',
+          error_code: 'TIMEOUT',
+          transaction_step: 'depositing',
+        });
+
+        // Show error toast
+        toast.error('Transaction timed out. Please try again.');
+
+        // Reset to approved state
+        setCurrentStep('approved');
+        resetDeposit();
+      }, 10000); // 10 seconds
+
+      // Cleanup timeout if component unmounts or state changes
+      return () => {
+        console.log('[Deposit Timeout] Clearing timeout');
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [currentStep, address, chainId, experiment, fundingAmount, outcome0BetAmount, outcome1BetAmount, resetDeposit]);
 
   // Reset approval if amount changes after approval
   useEffect(() => {
@@ -714,6 +758,11 @@ export default function ExperimentClient() {
       console.log('[handleDeposit] No experiment, returning');
       return;
     }
+
+    // Reset deposit state first to clear any previous errors
+    // This prevents race conditions where an error is set before currentStep updates
+    console.log('[handleDeposit] Resetting deposit state');
+    resetDeposit();
 
     console.log('[handleDeposit] Setting currentStep to "depositing"');
     setCurrentStep('depositing');
