@@ -175,7 +175,7 @@ export default function ExperimentClient() {
   } = useWriteContract();
 
   // Wait for mint confirmation
-  const { isLoading: isMintPending, isSuccess: isMintConfirmed, error: mintError } = useWaitForTransactionReceipt({
+  const { isSuccess: isMintConfirmed, error: mintError } = useWaitForTransactionReceipt({
     hash: mintHash,
   });
 
