@@ -210,8 +210,30 @@ export default function AdminPage() {
     if (transactionError) {
       console.error('[Admin Transaction Error]:', transactionError);
 
-      if (contractAction === 'create') {
-        // Track admin create experiment failure
+      if (contractAction === 'close') {
+        // Track admin close experiment failure
+        trackTransaction('admin_close_experiment_failed', {
+          wallet_address: address,
+          chain_id: chainId,
+          experiment_id: selectedExperiment ? parseInt(selectedExperiment) : undefined,
+          error_message: transactionError.message,
+          error_code: transactionError.name,
+        });
+        alert('Failed to close experiment. Please try again.');
+        setContractAction(null);
+      } else if (contractAction === 'withdraw') {
+        // Track admin withdraw failure
+        trackTransaction('admin_withdraw_failed', {
+          wallet_address: address,
+          chain_id: chainId,
+          experiment_id: selectedExperiment ? parseInt(selectedExperiment) : undefined,
+          error_message: transactionError.message,
+          error_code: transactionError.name,
+        });
+        alert('Failed to withdraw funds. Please try again.');
+        setContractAction(null);
+      } else if (isCreatingContract) {
+        // Handle experiment creation failure (doesn't use contractAction)
         trackTransaction('admin_create_experiment_failed', {
           wallet_address: address,
           chain_id: chainId,
@@ -223,41 +245,9 @@ export default function AdminPage() {
           type: 'error',
           text: 'Failed to create experiment on blockchain. Please try again.'
         });
-      } else if (contractAction === 'close') {
-        // Track admin close experiment failure
-        trackTransaction('admin_close_experiment_failed', {
-          wallet_address: address,
-          chain_id: chainId,
-          experiment_id: selectedExperiment ? parseInt(selectedExperiment) : undefined,
-          error_message: transactionError.message,
-          error_code: transactionError.name,
-        });
-        alert('Failed to close experiment. Please try again.');
-      } else if (contractAction === 'withdraw') {
-        // Track admin withdraw failure
-        trackTransaction('admin_withdraw_failed', {
-          wallet_address: address,
-          chain_id: chainId,
-          experiment_id: selectedExperiment ? parseInt(selectedExperiment) : undefined,
-          error_message: transactionError.message,
-          error_code: transactionError.name,
-        });
-        alert('Failed to withdraw funds. Please try again.');
-      } else if (contractAction === 'setOutcome') {
-        // Track admin set outcome failure
-        trackTransaction('admin_set_outcome_failed', {
-          wallet_address: address,
-          chain_id: chainId,
-          experiment_id: selectedExperiment ? parseInt(selectedExperiment) : undefined,
-          error_message: transactionError.message,
-          error_code: transactionError.name,
-        });
-        alert('Failed to set outcome. Please try again.');
       }
-
-      setContractAction(null);
     }
-  }, [transactionError, contractAction, address, chainId, selectedExperiment]);
+  }, [transactionError, contractAction, isCreatingContract, address, chainId, selectedExperiment]);
 
   // Fetch existing experiments from database
   useEffect(() => {
