@@ -34,13 +34,6 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         // Privacy settings
         mask_all_text: false, // We want to see error messages
         mask_all_element_attributes: false,
-
-        // Disable in development
-        loaded: (posthog) => {
-          if (process.env.NODE_ENV === 'development') {
-            posthog.opt_out_capturing()
-          }
-        },
       })
     }
   }, [])
