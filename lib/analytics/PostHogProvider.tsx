@@ -13,28 +13,13 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     if (apiKey && typeof window !== 'undefined') {
       posthog.init(apiKey, {
         api_host: host,
-        person_profiles: 'identified_only', // Only track identified users
-        capture_pageview: false, // We'll manually capture pageviews
+        capture_pageview: true, // Auto-capture pageviews
         capture_pageleave: true,
-
-        // Enable session replay
-        session_recording: {
-          recordCrossOriginIframes: true,
-        },
-
-        // Enable autocapture with web3 specific elements
-        autocapture: {
-          dom_event_allowlist: ['click', 'change', 'submit'],
-          capture_copied_text: true,
-        },
-
-        // Enable better error tracking
-        capture_performance: true,
-
-        // Privacy settings
-        mask_all_text: false, // We want to see error messages
-        mask_all_element_attributes: false,
       })
+
+      console.log('[PostHog] Initialized with key:', apiKey.substring(0, 10) + '...')
+    } else {
+      console.log('[PostHog] Not initialized - missing key or not in browser')
     }
   }, [])
 

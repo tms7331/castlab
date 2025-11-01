@@ -82,8 +82,8 @@ export function trackTransaction(
   event: TransactionEventType,
   properties: TransactionProperties = {}
 ) {
-  // Only track if PostHog is initialized
-  if (typeof window === 'undefined' || !posthog.__loaded) {
+  // Only track if in browser
+  if (typeof window === 'undefined') {
     return
   }
 
@@ -94,7 +94,7 @@ export function trackTransaction(
     environment: process.env.NODE_ENV,
   }
 
-  console.log(`[PostHog] ${event}:`, eventProperties)
+  console.log(`[PostHog] Tracking event: ${event}`, eventProperties)
   posthog.capture(event, eventProperties)
 }
 
@@ -102,7 +102,7 @@ export function trackTransaction(
  * Identify a user by their wallet address
  */
 export function identifyUser(walletAddress: string, properties?: Record<string, unknown>) {
-  if (typeof window === 'undefined' || !posthog.__loaded) {
+  if (typeof window === 'undefined') {
     return
   }
 
@@ -114,7 +114,7 @@ export function identifyUser(walletAddress: string, properties?: Record<string, 
  * Track a page view
  */
 export function trackPageView(path: string, properties?: Record<string, unknown>) {
-  if (typeof window === 'undefined' || !posthog.__loaded) {
+  if (typeof window === 'undefined') {
     return
   }
 
@@ -128,7 +128,7 @@ export function trackPageView(path: string, properties?: Record<string, unknown>
  * Reset user identity (on disconnect)
  */
 export function resetUser() {
-  if (typeof window === 'undefined' || !posthog.__loaded) {
+  if (typeof window === 'undefined') {
     return
   }
 

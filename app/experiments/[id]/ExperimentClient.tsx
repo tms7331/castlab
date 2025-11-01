@@ -90,7 +90,7 @@ export default function ExperimentClient() {
   });
 
   // Wait for deposit confirmation
-  const { isLoading: isDepositPending, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({
+  const { isLoading: isDepositPending, isSuccess: isDepositConfirmed, error: depositReceiptError } = useWaitForTransactionReceipt({
     hash: depositHash,
   });
 
@@ -111,11 +111,14 @@ export default function ExperimentClient() {
 
   // Debug logging for transaction errors
   useEffect(() => {
-    console.log('[Transaction Errors] approveError:', approveError, 'depositError:', depositError);
+    console.log('[Transaction Errors] approveError:', approveError, 'depositError:', depositError, 'depositReceiptError:', depositReceiptError);
     if (depositError) {
       console.error('[Transaction Errors] Deposit error details:', depositError);
     }
-  }, [approveError, depositError]);
+    if (depositReceiptError) {
+      console.error('[Transaction Errors] Deposit receipt error details:', depositReceiptError);
+    }
+  }, [approveError, depositError, depositReceiptError]);
 
   // Withdrawal transaction hooks
   const {
@@ -368,9 +371,10 @@ export default function ExperimentClient() {
 
   // Handle deposit error - keep approval and allow manual retry
   useEffect(() => {
-    console.log('[Deposit Error Effect] depositError:', depositError, 'currentStep:', currentStep);
-    if (depositError && currentStep === 'depositing') {
-      console.error('[Deposit Error Effect] Deposit transaction failed:', depositError);
+    console.log('[Deposit Error Effect] depositError:', depositError, 'depositReceiptError:', depositReceiptError, 'currentStep:', currentStep);
+    const hasDepositError = depositError || depositReceiptError;
+    if (hasDepositError && currentStep === 'depositing') {
+      console.error('[Deposit Error Effect] Deposit transaction failed:', hasDepositError);
 
       const fundAmount = Number(fundingAmount) || 0;
       const bet0Amount = Number(outcome0BetAmount) || 0;
@@ -386,8 +390,8 @@ export default function ExperimentClient() {
         bet_amount_0_usd: bet0Amount,
         bet_amount_1_usd: bet1Amount,
         total_amount_usd: fundAmount + bet0Amount + bet1Amount,
-        error_message: depositError.message,
-        error_code: depositError.name,
+        error_message: hasDepositError.message,
+        error_code: hasDepositError.name,
         transaction_step: 'depositing',
       });
 
@@ -400,7 +404,7 @@ export default function ExperimentClient() {
       setCurrentStep('approved');
       resetDeposit();
     }
-  }, [depositError, currentStep, resetDeposit, fundingAmount, outcome0BetAmount, outcome1BetAmount, address, chainId, experiment]);
+  }, [depositError, depositReceiptError, currentStep, resetDeposit, fundingAmount, outcome0BetAmount, outcome1BetAmount, address, chainId, experiment]);
 
   // Reset approval if amount changes after approval
   useEffect(() => {
@@ -1042,17 +1046,17 @@ export default function ExperimentClient() {
                               : currentStep === 'approving' || isApprovePending
                                 ? "Approving Token..."
                                 : currentStep === 'approved'
-                                  ? depositError ? "Retry Deposit" : "Click to Deposit"
+                                  ? (depositError || depositReceiptError) ? "Retry Deposit" : "Click to Deposit"
                                   : currentStep === 'depositing' || isDepositPending
                                     ? "Depositing..."
                                     : "Fund and Bet"}
                           </Button>
 
-                          {(approveError || depositError) && (
+                          {(approveError || depositError || depositReceiptError) && (
                             <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg text-sm break-words overflow-hidden">
                               <div className="font-semibold">Transaction Error</div>
                               <div className="mt-1 text-xs break-all">
-                                {((approveError || depositError)?.message || '').includes('User rejected')
+                                {((approveError || depositError || depositReceiptError)?.message || '').includes('User rejected')
                                   ? 'Transaction was cancelled by user'
                                   : approveError
                                     ? 'Token approval failed. You can try again.'
@@ -1067,7 +1071,7 @@ export default function ExperimentClient() {
                                   Retry Approval
                                 </Button>
                               )}
-                              {depositError && currentStep === 'approved' && (
+                              {(depositError || depositReceiptError) && currentStep === 'approved' && (
                                 <Button
                                   onClick={handleDeposit}
                                   className="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs py-1"
@@ -1085,7 +1089,7 @@ export default function ExperimentClient() {
                             </div>
                           )}
 
-                          {currentStep === 'approved' && !depositError && (
+                          {currentStep === 'approved' && !depositError && !depositReceiptError && (
                             <div className="mt-2 p-2 bg-green-100 text-green-700 rounded-lg text-sm">
                               ✅ Approval complete! Click the button to deposit.
                             </div>
