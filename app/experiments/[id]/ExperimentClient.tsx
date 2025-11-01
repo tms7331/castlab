@@ -290,6 +290,9 @@ export default function ExperimentClient() {
         transaction_step: 'approving',
       });
 
+      // Show error toast
+      toast.error('Approval failed. Please try again.');
+
       // Reset approve state to allow retry
       resetApprove();
     }
@@ -329,6 +332,10 @@ export default function ExperimentClient() {
         total_amount_usd: fundAmount + bet0Amount + bet1Amount,
         transaction_step: 'complete',
       });
+
+      // Show success toast
+      const totalAmount = fundAmount + bet0Amount + bet1Amount;
+      toast.success(`Successfully funded $${totalAmount.toFixed(2)}! 🎉`);
 
       // Haptic feedback for successful deposit
       sdk.haptics.impactOccurred('medium');
@@ -384,6 +391,9 @@ export default function ExperimentClient() {
         error_code: depositError.name,
         transaction_step: 'depositing',
       });
+
+      // Show error toast
+      toast.error('Deposit failed. Please try again.');
 
       // Always go back to approved state so user can retry just the deposit
       // This preserves the approval transaction

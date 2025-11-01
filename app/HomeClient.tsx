@@ -8,7 +8,6 @@ import { CHAIN } from '@/lib/wagmi/addresses';
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { HeroSection } from "@/components/hero-section";
 import { ExperimentCard } from "@/components/experiment-card";
-
 export default function HomeClient() {
   const [experiments, setExperiments] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
