@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { trackTransaction, identifyUser } from "@/lib/analytics/events";
 
 const EXPERIMENTER_FID = 883930;
 const EXPERIMENTER_HANDLE = "@motherlizard";
@@ -57,6 +58,15 @@ export default function ExperimentClient() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const chainId = useChainId();
+
+  // Identify user in PostHog when wallet connects
+  useEffect(() => {
+    if (address && isConnected) {
+      identifyUser(address, {
+        chain_id: chainId,
+      });
+    }
+  }, [address, isConnected, chainId]);
 
   // Approve transaction
   const {
@@ -248,8 +258,19 @@ export default function ExperimentClient() {
       const totalApproved = (Number(fundingAmount) || 0) + (Number(outcome0BetAmount) || 0) + (Number(outcome1BetAmount) || 0);
       console.log('[Approve Effect] Total approved amount:', totalApproved);
       setApprovedAmount(totalApproved.toString());
+
+      // Track approval confirmation
+      trackTransaction('transaction_approval_confirmed', {
+        wallet_address: address,
+        chain_id: chainId,
+        transaction_hash: approveHash,
+        experiment_id: experiment?.experiment_id,
+        experiment_title: experiment?.title,
+        total_amount_usd: totalApproved,
+        transaction_step: 'approved',
+      });
     }
-  }, [isApproved, currentStep, fundingAmount, outcome0BetAmount, outcome1BetAmount]);
+  }, [isApproved, currentStep, fundingAmount, outcome0BetAmount, outcome1BetAmount, address, chainId, approveHash, experiment]);
 
   // Handle approve error - reset to idle state for retry
   useEffect(() => {
@@ -257,10 +278,22 @@ export default function ExperimentClient() {
     if (approveError && currentStep === 'approving') {
       console.error('[Approve Error Effect] Approve transaction failed:', approveError);
       setCurrentStep('idle');
+
+      // Track approval failure
+      trackTransaction('transaction_approval_failed', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: experiment?.experiment_id,
+        experiment_title: experiment?.title,
+        error_message: approveError.message,
+        error_code: approveError.name,
+        transaction_step: 'approving',
+      });
+
       // Reset approve state to allow retry
       resetApprove();
     }
-  }, [approveError, currentStep, resetApprove]);
+  }, [approveError, currentStep, resetApprove, address, chainId, experiment]);
 
   // Automatically proceed to deposit after approval (only first time)
   useEffect(() => {
@@ -278,6 +311,25 @@ export default function ExperimentClient() {
     console.log('[Deposit Confirmed Effect] isDepositConfirmed:', isDepositConfirmed, 'currentStep:', currentStep);
     if (isDepositConfirmed && currentStep === 'depositing') {
       console.log('[Deposit Confirmed] Starting post-deposit flow');
+
+      const fundAmount = Number(fundingAmount) || 0;
+      const bet0Amount = Number(outcome0BetAmount) || 0;
+      const bet1Amount = Number(outcome1BetAmount) || 0;
+
+      // Track deposit confirmation
+      trackTransaction('transaction_deposit_confirmed', {
+        wallet_address: address,
+        chain_id: chainId,
+        transaction_hash: depositHash,
+        experiment_id: experiment?.experiment_id,
+        experiment_title: experiment?.title,
+        fund_amount_usd: fundAmount,
+        bet_amount_0_usd: bet0Amount,
+        bet_amount_1_usd: bet1Amount,
+        total_amount_usd: fundAmount + bet0Amount + bet1Amount,
+        transaction_step: 'complete',
+      });
+
       // Haptic feedback for successful deposit
       sdk.haptics.impactOccurred('medium');
       console.log('[Deposit Confirmed] Setting currentStep to "complete"');
@@ -314,13 +366,32 @@ export default function ExperimentClient() {
     if (depositError && currentStep === 'depositing') {
       console.error('[Deposit Error Effect] Deposit transaction failed:', depositError);
 
+      const fundAmount = Number(fundingAmount) || 0;
+      const bet0Amount = Number(outcome0BetAmount) || 0;
+      const bet1Amount = Number(outcome1BetAmount) || 0;
+
+      // Track deposit failure
+      trackTransaction('transaction_deposit_failed', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: experiment?.experiment_id,
+        experiment_title: experiment?.title,
+        fund_amount_usd: fundAmount,
+        bet_amount_0_usd: bet0Amount,
+        bet_amount_1_usd: bet1Amount,
+        total_amount_usd: fundAmount + bet0Amount + bet1Amount,
+        error_message: depositError.message,
+        error_code: depositError.name,
+        transaction_step: 'depositing',
+      });
+
       // Always go back to approved state so user can retry just the deposit
       // This preserves the approval transaction
       console.log('[Deposit Error Effect] Resetting to approved state');
       setCurrentStep('approved');
       resetDeposit();
     }
-  }, [depositError, currentStep, resetDeposit]);
+  }, [depositError, currentStep, resetDeposit, fundingAmount, outcome0BetAmount, outcome1BetAmount, address, chainId, experiment]);
 
   // Reset approval if amount changes after approval
   useEffect(() => {
@@ -343,6 +414,15 @@ export default function ExperimentClient() {
   // Handle withdrawal confirmation
   useEffect(() => {
     if (isWithdrawConfirmed) {
+      // Track withdrawal confirmation
+      trackTransaction('transaction_withdrawal_confirmed', {
+        wallet_address: address,
+        chain_id: chainId,
+        transaction_hash: withdrawHash,
+        experiment_id: experiment?.experiment_id,
+        experiment_title: experiment?.title,
+      });
+
       setIsWithdrawing(false);
       resetWithdraw();
 
@@ -500,6 +580,19 @@ export default function ExperimentClient() {
     const tokenAmount = usdToTokenAmount(totalAmount);
     console.log('[handleFunding] Token amount to approve:', tokenAmount);
 
+    // Track approval start
+    trackTransaction('transaction_approval_started', {
+      wallet_address: address,
+      chain_id: chainId,
+      experiment_id: experiment?.experiment_id,
+      experiment_title: experiment?.title,
+      fund_amount_usd: fundAmount,
+      bet_amount_0_usd: outcome0Bet,
+      bet_amount_1_usd: outcome1Bet,
+      total_amount_usd: totalAmount,
+      transaction_step: 'approving',
+    });
+
     // Step 1: Approve the contract to spend tokens
     console.log('[handleFunding] Calling writeApprove');
     writeApprove({
@@ -518,6 +611,14 @@ export default function ExperimentClient() {
     try {
       setIsWithdrawing(true);
 
+      // Track withdrawal start
+      trackTransaction('transaction_withdrawal_started', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: experiment.experiment_id,
+        experiment_title: experiment.title,
+      });
+
       // Call undeposit function with experiment ID
       writeWithdraw({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -529,6 +630,17 @@ export default function ExperimentClient() {
     } catch (err) {
       console.error('Withdrawal failed:', err);
       setIsWithdrawing(false);
+
+      // Track withdrawal failure
+      trackTransaction('transaction_withdrawal_failed', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: experiment.experiment_id,
+        experiment_title: experiment.title,
+        error_message: err instanceof Error ? err.message : 'Unknown error',
+        error_code: err instanceof Error ? err.name : 'Error',
+      });
+
       toast.error('Withdrawal failed. Please try again.');
     }
   };
@@ -562,10 +674,26 @@ export default function ExperimentClient() {
     setCurrentStep('depositing');
 
     const experimentId = experiment.experiment_id;
-    const tokenFundAmount = usdToTokenAmount(Number(fundingAmount) || 0);
-    const tokenBetAmount0 = usdToTokenAmount(Number(outcome0BetAmount) || 0);
-    const tokenBetAmount1 = usdToTokenAmount(Number(outcome1BetAmount) || 0);
+    const fundAmount = Number(fundingAmount) || 0;
+    const bet0Amount = Number(outcome0BetAmount) || 0;
+    const bet1Amount = Number(outcome1BetAmount) || 0;
+    const tokenFundAmount = usdToTokenAmount(fundAmount);
+    const tokenBetAmount0 = usdToTokenAmount(bet0Amount);
+    const tokenBetAmount1 = usdToTokenAmount(bet1Amount);
     console.log('[handleDeposit] Deposit amounts - fund:', tokenFundAmount, 'bet0:', tokenBetAmount0, 'bet1:', tokenBetAmount1);
+
+    // Track deposit start
+    trackTransaction('transaction_deposit_started', {
+      wallet_address: address,
+      chain_id: chainId,
+      experiment_id: experimentId,
+      experiment_title: experiment.title,
+      fund_amount_usd: fundAmount,
+      bet_amount_0_usd: bet0Amount,
+      bet_amount_1_usd: bet1Amount,
+      total_amount_usd: fundAmount + bet0Amount + bet1Amount,
+      transaction_step: 'depositing',
+    });
 
     // Step 2: Fund and bet on the experiment
     console.log('[handleDeposit] Calling writeDeposit for experiment:', experimentId);

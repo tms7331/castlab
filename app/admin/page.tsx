@@ -9,6 +9,7 @@ import { CONTRACT_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagm
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { decodeEventLog } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { trackTransaction, identifyUser } from "@/lib/analytics/events";
 
 export default function AdminPage() {
   const [newExperiment, setNewExperiment] = useState({
@@ -58,6 +59,16 @@ export default function AdminPage() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const publicClient = usePublicClient();
+
+  // Identify admin user in PostHog when wallet connects
+  useEffect(() => {
+    if (address && isConnected) {
+      identifyUser(address, {
+        chain_id: chainId,
+        is_admin: true,
+      });
+    }
+  }, [address, isConnected, chainId]);
   const {
     writeContract,
     data: hash,
@@ -115,14 +126,28 @@ export default function AdminPage() {
   useEffect(() => {
     if (isConfirmed && receipt && contractAction) {
       if (contractAction === 'close') {
+        // Track admin close/set outcome confirmation
+        trackTransaction('admin_close_experiment_confirmed', {
+          wallet_address: address,
+          chain_id: chainId,
+          transaction_hash: hash,
+          experiment_id: selectedExperiment ? parseInt(selectedExperiment) : undefined,
+        });
         alert('Experiment closed successfully on blockchain!');
       } else if (contractAction === 'withdraw') {
+        // Track admin withdraw confirmation
+        trackTransaction('admin_withdraw_confirmed', {
+          wallet_address: address,
+          chain_id: chainId,
+          transaction_hash: hash,
+          experiment_id: selectedExperiment ? parseInt(selectedExperiment) : undefined,
+        });
         alert('Funds withdrawn successfully!');
       }
       setContractAction(null);
       fetchExperiments(); // Refresh to get updated state
     }
-  }, [isConfirmed, receipt, contractAction]);
+  }, [isConfirmed, receipt, contractAction, address, chainId, hash, selectedExperiment]);
 
   // Extract experiment ID from transaction receipt
   useEffect(() => {
@@ -156,6 +181,14 @@ export default function AdminPage() {
             setContractExperimentId(expId.toString());
             setIsCreatingContract(false);
 
+            // Track admin create experiment confirmation
+            trackTransaction('admin_create_experiment_confirmed', {
+              wallet_address: address,
+              chain_id: chainId,
+              transaction_hash: hash,
+              experiment_id: parseInt(expId.toString()),
+            });
+
             // Show success message
             setSubmitMessage({
               type: 'success',
@@ -169,7 +202,7 @@ export default function AdminPage() {
     }
 
     extractExperimentId();
-  }, [isConfirmed, receipt, publicClient, contractAction]);
+  }, [isConfirmed, receipt, publicClient, contractAction, address, chainId, hash]);
 
   // Fetch existing experiments from database
   useEffect(() => {
@@ -286,6 +319,14 @@ export default function AdminPage() {
       console.log('costMinWei', costMinWei);
       console.log('costMaxWei', costMaxWei);
 
+      // Track admin create experiment start
+      trackTransaction('admin_create_experiment_started', {
+        wallet_address: address,
+        chain_id: chainId,
+        cost_min_wei: costMinWei.toString(),
+        cost_max_wei: costMaxWei.toString(),
+      });
+
       // Send the transaction with new parameters
       await writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -296,6 +337,17 @@ export default function AdminPage() {
       });
     } catch (error) {
       console.error('Contract creation failed:', error);
+
+      // Track admin create experiment failure
+      trackTransaction('admin_create_experiment_failed', {
+        wallet_address: address,
+        chain_id: chainId,
+        cost_min_wei: usdToTokenAmount(parseFloat(newExperiment.costMin)).toString(),
+        cost_max_wei: usdToTokenAmount(parseFloat(newExperiment.costMax)).toString(),
+        error_message: error instanceof Error ? error.message : 'Unknown error',
+        error_code: error instanceof Error ? error.name : 'Error',
+      });
+
       setSubmitMessage({
         type: 'error',
         text: error instanceof Error ? error.message : 'Failed to create experiment on-chain'
@@ -491,6 +543,13 @@ export default function AdminPage() {
     if (confirm(`Are you sure you want to close experiment "${experiment.title}" (ID: ${selectedExperiment})?`)) {
       setContractAction('close');
       try {
+        // Track admin close experiment start
+        trackTransaction('admin_close_experiment_started', {
+          wallet_address: address,
+          chain_id: chainId,
+          experiment_id: parseInt(selectedExperiment),
+        });
+
         await writeContract({
           address: CONTRACT_ADDRESS as `0x${string}`,
           abi: CastlabExperimentABI.abi,
@@ -500,6 +559,16 @@ export default function AdminPage() {
         });
       } catch (error) {
         console.error('Failed to close experiment:', error);
+
+        // Track admin close experiment failure
+        trackTransaction('admin_close_experiment_failed', {
+          wallet_address: address,
+          chain_id: chainId,
+          experiment_id: parseInt(selectedExperiment),
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+          error_code: error instanceof Error ? error.name : 'Error',
+        });
+
         alert('Failed to close experiment: ' + (error instanceof Error ? error.message : 'Unknown error'));
         setContractAction(null);
       }
@@ -526,6 +595,13 @@ export default function AdminPage() {
     if (confirm(`Withdraw funds from "${experiment.title}" (ID: ${selectedExperiment})?`)) {
       setContractAction('withdraw');
       try {
+        // Track admin withdraw start
+        trackTransaction('admin_withdraw_started', {
+          wallet_address: address,
+          chain_id: chainId,
+          experiment_id: parseInt(selectedExperiment),
+        });
+
         await writeContract({
           address: CONTRACT_ADDRESS as `0x${string}`,
           abi: CastlabExperimentABI.abi,
@@ -535,6 +611,16 @@ export default function AdminPage() {
         });
       } catch (error) {
         console.error('Failed to withdraw funds:', error);
+
+        // Track admin withdraw failure
+        trackTransaction('admin_withdraw_failed', {
+          wallet_address: address,
+          chain_id: chainId,
+          experiment_id: parseInt(selectedExperiment),
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+          error_code: error instanceof Error ? error.name : 'Error',
+        });
+
         alert('Failed to withdraw funds: ' + (error instanceof Error ? error.message : 'Unknown error'));
         setContractAction(null);
       }
@@ -674,6 +760,14 @@ export default function AdminPage() {
       console.log('  isWriting:', isWriting);
       console.log('  isConfirming:', isConfirming);
 
+      // Track admin set outcome start
+      trackTransaction('admin_set_outcome_started', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: parseInt(selectedExperiment),
+        outcome: outcomeNum,
+      });
+
       const tx = await writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: CastlabExperimentABI.abi,
@@ -691,6 +785,16 @@ export default function AdminPage() {
       console.error('❌ Failed to set betting outcome:', error);
       console.error('  Error type:', error instanceof Error ? error.constructor.name : typeof error);
       console.error('  Error message:', error instanceof Error ? error.message : String(error));
+
+      // Track admin set outcome failure
+      trackTransaction('admin_set_outcome_failed', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: parseInt(selectedExperiment),
+        outcome: outcomeNum,
+        error_message: error instanceof Error ? error.message : 'Unknown error',
+        error_code: error instanceof Error ? error.name : 'Error',
+      });
       if (error instanceof Error) {
         console.error('  Stack:', error.stack);
       }

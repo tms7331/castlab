@@ -7,7 +7,7 @@ import { Event } from "@/lib/supabase/types";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
 import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
 import { CHAIN } from '@/lib/wagmi/addresses';
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
@@ -15,6 +15,7 @@ import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 import { TopDonors } from './top-donors';
 import { toast } from "sonner";
+import { trackTransaction, identifyUser } from "@/lib/analytics/events";
 
 interface ExperimentCardProps {
   experiment: Event;
@@ -26,8 +27,18 @@ interface ExperimentCardProps {
 
 export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0, userBet1 = 0, hideRanges = false }: ExperimentCardProps) {
   const { address } = useAccount();
+  const chainId = useChainId();
   const [isClaiming, setIsClaiming] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
+
+  // Identify user in PostHog when wallet connects
+  useEffect(() => {
+    if (address) {
+      identifyUser(address, {
+        chain_id: chainId,
+      });
+    }
+  }, [address, chainId]);
 
   // Read experiment data from smart contract - now includes bet amounts
   const { data: contractData, refetch: refetchContractData } = useReadContract({
@@ -90,6 +101,16 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
       // Store the claimed amount before refetching (which will reset claimable to 0)
       const claimedAmount = claimableAmount;
 
+      // Track claim confirmation
+      trackTransaction('transaction_claim_confirmed', {
+        wallet_address: address,
+        chain_id: chainId,
+        transaction_hash: claimBetHash,
+        experiment_id: experiment.experiment_id,
+        experiment_title: experiment.title,
+        claim_amount_usd: claimedAmount,
+      });
+
       setIsClaiming(false);
       setHasClaimed(true); // Mark as claimed to hide the button
       resetClaimBet();
@@ -119,6 +140,15 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     try {
       setIsClaiming(true);
 
+      // Track claim start
+      trackTransaction('transaction_claim_started', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: experiment.experiment_id,
+        experiment_title: experiment.title,
+        claim_amount_usd: claimableAmount,
+      });
+
       // Call userClaimBetProfit function with experiment ID
       writeClaimBet({
         address: CONTRACT_ADDRESS as `0x${string}`,
@@ -130,6 +160,18 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     } catch (err) {
       console.error('Claim bet profit failed:', err);
       setIsClaiming(false);
+
+      // Track claim failure
+      trackTransaction('transaction_claim_failed', {
+        wallet_address: address,
+        chain_id: chainId,
+        experiment_id: experiment.experiment_id,
+        experiment_title: experiment.title,
+        claim_amount_usd: claimableAmount,
+        error_message: err instanceof Error ? err.message : 'Unknown error',
+        error_code: err instanceof Error ? err.name : 'Error',
+      });
+
       toast.error('Claiming winnings failed. Please try again.');
     }
   };
