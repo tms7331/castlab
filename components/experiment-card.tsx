@@ -65,11 +65,12 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   const {
     writeContract: writeClaimBet,
     data: claimBetHash,
+    error: claimBetWriteError,
     reset: resetClaimBet
   } = useWriteContract();
 
   // Wait for claim confirmation
-  const { isLoading: isClaimBetPending, isSuccess: isClaimBetConfirmed, error: claimBetError } = useWaitForTransactionReceipt({
+  const { isLoading: isClaimBetPending, isSuccess: isClaimBetConfirmed, error: claimBetReceiptError } = useWaitForTransactionReceipt({
     hash: claimBetHash,
   });
 
@@ -136,8 +137,10 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
 
   // Handle claim bet profit error - reset state to allow retry
   useEffect(() => {
-    if (claimBetError) {
-      console.error('[Claim Bet Error] Transaction failed:', claimBetError);
+    const hasClaimError = claimBetWriteError || claimBetReceiptError;
+    // Handle error if we're claiming OR if we have an error (catches race conditions)
+    if (hasClaimError && isClaiming) {
+      console.error('[Claim Bet Error] Transaction failed:', hasClaimError);
 
       // Track claim failure
       trackTransaction('transaction_claim_failed', {
@@ -146,8 +149,8 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         experiment_id: experiment.experiment_id,
         experiment_title: experiment.title,
         claim_amount_usd: claimableAmount,
-        error_message: claimBetError.message,
-        error_code: claimBetError.name,
+        error_message: hasClaimError.message,
+        error_code: hasClaimError.name,
       });
 
       // Reset state to allow retry
@@ -157,12 +160,50 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
       // Show error toast
       toast.error('Claiming winnings failed. Please try again.');
     }
-  }, [claimBetError, address, chainId, experiment, claimableAmount, resetClaimBet]);
+  }, [claimBetWriteError, claimBetReceiptError, isClaiming, address, chainId, experiment, claimableAmount, resetClaimBet]);
+
+  // Timeout for stuck claim transactions (15 seconds)
+  useEffect(() => {
+    if (isClaiming) {
+      console.log('[Claim Timeout] Starting 15-second timeout for claim transaction');
+      const timeoutId = setTimeout(() => {
+        console.error('[Claim Timeout] Transaction timed out after 15 seconds');
+
+        // Track claim failure due to timeout
+        trackTransaction('transaction_claim_failed', {
+          wallet_address: address,
+          chain_id: chainId,
+          experiment_id: experiment.experiment_id,
+          experiment_title: experiment.title,
+          claim_amount_usd: claimableAmount,
+          error_message: 'Transaction timed out after 15 seconds',
+          error_code: 'TIMEOUT',
+        });
+
+        // Show error toast
+        toast.error('Claim transaction timed out. Please try again.');
+
+        // Reset state
+        setIsClaiming(false);
+        resetClaimBet();
+      }, 15000); // 15 seconds
+
+      // Cleanup timeout if component unmounts or state changes
+      return () => {
+        console.log('[Claim Timeout] Clearing timeout');
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [isClaiming, address, chainId, experiment, claimableAmount, resetClaimBet]);
 
   const handleClaimBetProfit = async () => {
     if (!address || !experiment) return;
 
     try {
+      // Reset claim state first to clear any previous errors
+      // This prevents race conditions where an error is set before isClaiming updates
+      resetClaimBet();
+
       setIsClaiming(true);
 
       // Track claim start

@@ -408,12 +408,12 @@ export default function ExperimentClient() {
     }
   }, [depositError, depositReceiptError, currentStep, hasAttemptedDeposit, resetDeposit, fundingAmount, outcome0BetAmount, outcome1BetAmount, address, chainId, experiment]);
 
-  // Timeout for stuck deposit transactions (10 seconds)
+  // Timeout for stuck deposit transactions (15 seconds)
   useEffect(() => {
     if (currentStep === 'depositing') {
-      console.log('[Deposit Timeout] Starting 10-second timeout for deposit transaction');
+      console.log('[Deposit Timeout] Starting 15-second timeout for deposit transaction');
       const timeoutId = setTimeout(() => {
-        console.error('[Deposit Timeout] Transaction timed out after 10 seconds');
+        console.error('[Deposit Timeout] Transaction timed out after 15 seconds');
 
         const fundAmount = Number(fundingAmount) || 0;
         const bet0Amount = Number(outcome0BetAmount) || 0;
@@ -429,7 +429,7 @@ export default function ExperimentClient() {
           bet_amount_0_usd: bet0Amount,
           bet_amount_1_usd: bet1Amount,
           total_amount_usd: fundAmount + bet0Amount + bet1Amount,
-          error_message: 'Transaction timed out after 10 seconds',
+          error_message: 'Transaction timed out after 15 seconds',
           error_code: 'TIMEOUT',
           transaction_step: 'depositing',
         });
@@ -440,7 +440,7 @@ export default function ExperimentClient() {
         // Reset to approved state
         setCurrentStep('approved');
         resetDeposit();
-      }, 10000); // 10 seconds
+      }, 15000); // 15 seconds
 
       // Cleanup timeout if component unmounts or state changes
       return () => {
