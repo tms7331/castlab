@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Event } from "@/lib/supabase/types";
-import { useAccount, useReadContract } from 'wagmi';
-import { CONTRACT_ADDRESS, tokenAmountToUsd } from '@/lib/wagmi/config';
-import { CHAIN } from '@/lib/wagmi/addresses';
-import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
+import { useAccount, useReadContract } from "wagmi";
+import { CONTRACT_ADDRESS, tokenAmountToUsd } from "@/lib/wagmi/config";
+import { CHAIN } from "@/lib/wagmi/addresses";
+import CastlabExperimentABI from "@/lib/contracts/CastlabExperiment.json";
 import { HeroSection } from "@/components/hero-section";
 import { ExperimentCard } from "@/components/experiment-card";
 export default function HomeClient() {
@@ -54,6 +55,60 @@ export default function HomeClient() {
   return (
     <div className="min-h-screen">
       <HeroSection />
+      <section className="px-4 pb-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="rounded-2xl border border-border/60 bg-card/90 backdrop-blur-lg p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Toast previews (temporary)</span>
+              <button
+                type="button"
+                className="text-xs font-medium text-muted-foreground/80 hover:text-foreground transition"
+                onClick={() => {
+                  toast("Default CastLab toast", {
+                    description: "Baseline surface using neutral styling.",
+                  });
+                }}
+              >
+                Trigger default
+              </button>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <ToastPreviewButton
+                label="Success"
+                onClick={() => {
+                  toast.success("Funding completed", {
+                    description: "Tokens arrived safely in the experiment pool.",
+                  });
+                }}
+              />
+              <ToastPreviewButton
+                label="Info"
+                onClick={() => {
+                  toast.info("Heads up", {
+                    description: "We are updating real-time experiment stats.",
+                  });
+                }}
+              />
+              <ToastPreviewButton
+                label="Warning"
+                onClick={() => {
+                  toast.warning("Action required", {
+                    description: "Verify your wallet connection before proceeding.",
+                  });
+                }}
+              />
+              <ToastPreviewButton
+                label="Error"
+                onClick={() => {
+                  toast.error("Transaction failed", {
+                    description: "We could not confirm the on-chain write.",
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
       <section className="px-4 pb-8">
         <div className="max-w-sm mx-auto space-y-4">
           {loading ? (
@@ -138,5 +193,23 @@ function ExperimentCardWithContribution({
       userBet0={userBet0}
       userBet1={userBet1}
     />
+  );
+}
+
+function ToastPreviewButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center justify-center rounded-xl border border-border/70 bg-gradient-to-b from-background/70 via-background/60 to-background/30 px-4 py-2 text-sm font-medium text-foreground transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {label}
+    </button>
   );
 }
