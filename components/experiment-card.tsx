@@ -30,6 +30,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   const chainId = useChainId();
   const [isClaiming, setIsClaiming] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
+  const [claimedAmount, setClaimedAmount] = useState<number>(0);
 
   // Identify user in PostHog when wallet connects
   useEffect(() => {
@@ -47,18 +48,6 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
     functionName: 'getExperimentInfo',
     args: [BigInt(experiment.experiment_id)],
     chainId: CHAIN.id,
-  });
-
-  // Read the claimable amount for this user (read-only call)
-  const { data: claimableTokens, refetch: refetchClaimable } = useReadContract({
-    address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: CastlabExperimentABI.abi,
-    functionName: 'userClaimBetProfit',
-    args: address ? [BigInt(experiment.experiment_id)] : undefined,
-    chainId: CHAIN.id,
-    query: {
-      enabled: !!address,
-    },
   });
 
   // Claim bet profit transaction hooks
@@ -96,15 +85,27 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   // Check if user has a winning bet (frontend logic instead of relying on contract)
   const hasWinningBet = (bettingOutcome === 0 && userBet0 > 0) || (bettingOutcome === 1 && userBet1 > 0);
 
-  // Get claimable amount from contract (in USD) - kept for display purposes
-  const claimableAmount = claimableTokens ? tokenAmountToUsd(claimableTokens as bigint) : 0;
+  // Calculate claimable amount based on Solidity logic
+  const calculateClaimableAmount = (): number => {
+    if (bettingOutcome === 0) {
+      const userBetAmount = userBet0;
+      if (userBetAmount === 0) return 0;
+      // payout = (userBetAmount * (totalBet0 + totalBet1)) / totalBet0
+      return totalBet0USD > 0 ? (userBetAmount * (totalBet0USD + totalBet1USD)) / totalBet0USD : 0;
+    } else if (bettingOutcome === 1) {
+      const userBetAmount = userBet1;
+      if (userBetAmount === 0) return 0;
+      // payout = (userBetAmount * (totalBet0 + totalBet1)) / totalBet1
+      return totalBet1USD > 0 ? (userBetAmount * (totalBet0USD + totalBet1USD)) / totalBet1USD : 0;
+    }
+    return 0;
+  };
+
+  const claimableAmount = calculateClaimableAmount();
 
   // Handle claim bet profit confirmation
   useEffect(() => {
     if (isClaimBetConfirmed) {
-      // Store the claimed amount before refetching (which will reset claimable to 0)
-      const claimedAmount = claimableAmount;
-
       // Track claim confirmation
       trackTransaction('transaction_claim_confirmed', {
         wallet_address: address,
@@ -122,10 +123,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
       // Add a small delay to ensure blockchain state is updated
       setTimeout(async () => {
         // Refetch contract data to show updated amounts
-        await Promise.all([
-          refetchContractData(),
-          refetchClaimable()
-        ]);
+        await refetchContractData();
       }, 1000);
 
       // Show success toast with the amount claimed
@@ -151,7 +149,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         chain_id: chainId,
         experiment_id: experiment.experiment_id,
         experiment_title: experiment.title,
-        claim_amount_usd: claimableAmount,
+        claim_amount_usd: claimedAmount,
         error_message: hasClaimError.message,
         error_code: hasClaimError.name,
       });
@@ -178,7 +176,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
           chain_id: chainId,
           experiment_id: experiment.experiment_id,
           experiment_title: experiment.title,
-          claim_amount_usd: claimableAmount,
+          claim_amount_usd: claimedAmount,
           error_message: 'Transaction timed out after 15 seconds',
           error_code: 'TIMEOUT',
         });
@@ -207,6 +205,9 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
       // This prevents race conditions where an error is set before isClaiming updates
       resetClaimBet();
 
+      // Store the claimable amount before the transaction (it will be 0 after claiming)
+      const amountToClaim = claimableAmount;
+      setClaimedAmount(amountToClaim);
       setIsClaiming(true);
 
       // Track claim start
@@ -215,7 +216,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         chain_id: chainId,
         experiment_id: experiment.experiment_id,
         experiment_title: experiment.title,
-        claim_amount_usd: claimableAmount,
+        claim_amount_usd: amountToClaim,
       });
 
       // Call userClaimBetProfit function with experiment ID
@@ -236,7 +237,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         chain_id: chainId,
         experiment_id: experiment.experiment_id,
         experiment_title: experiment.title,
-        claim_amount_usd: claimableAmount,
+        claim_amount_usd: claimedAmount,
         error_message: err instanceof Error ? err.message : 'Unknown error',
         error_code: err instanceof Error ? err.name : 'Error',
       });
