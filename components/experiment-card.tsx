@@ -80,6 +80,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   const totalDepositedTokens = experimentInfo ? experimentInfo[2] : BigInt(0);
   const totalBet0Tokens = experimentInfo ? experimentInfo[3] : BigInt(0);
   const totalBet1Tokens = experimentInfo ? experimentInfo[4] : BigInt(0);
+  const bettingOutcome = experimentInfo ? experimentInfo[6] : 255; // 255 means no outcome set yet
   const isOpen = experimentInfo ? experimentInfo[7] : undefined;
 
   const totalDepositedUSD = tokenAmountToUsd(totalDepositedTokens);
@@ -92,9 +93,11 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   const totalBetsUSD = totalBet0USD + totalBet1USD;
   const oddsPercentage = totalBetsUSD > 0 ? Math.round((totalBet0USD / totalBetsUSD) * 100) : 50;
 
-  // Get claimable amount from contract (in USD)
+  // Check if user has a winning bet (frontend logic instead of relying on contract)
+  const hasWinningBet = (bettingOutcome === 0 && userBet0 > 0) || (bettingOutcome === 1 && userBet1 > 0);
+
+  // Get claimable amount from contract (in USD) - kept for display purposes
   const claimableAmount = claimableTokens ? tokenAmountToUsd(claimableTokens as bigint) : 0;
-  const hasClaimableBet = !hasClaimed && claimableAmount > 0;
 
   // Handle claim bet profit confirmation
   useEffect(() => {
@@ -367,7 +370,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
       )}
 
       <CardFooter className="flex flex-col gap-2 pt-0">
-        {hasClaimableBet && (
+        {hasWinningBet && !hasClaimed && (
           <Button
             size="sm"
             onClick={handleClaimBetProfit}
@@ -387,7 +390,9 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
               <span>
                 {isClaiming || isClaimBetPending
                   ? 'Claiming Winnings...'
-                  : `Claim $${claimableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : claimableAmount > 0
+                    ? `Claim $${claimableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : 'Claim Winnings'
                 }
               </span>
               <span className="text-lg leading-none">✶</span>

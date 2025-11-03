@@ -1393,8 +1393,8 @@ export default function AdminPage() {
                           </div>
                           <div className="bg-white p-3 rounded border border-purple-200">
                             <p className="text-purple-700 font-semibold mb-1">Betting Outcome</p>
-                            <p className={`font-mono font-bold ${contractExperimentInfo.bettingOutcome > 0 && contractExperimentInfo.bettingOutcome !== 255 ? 'text-green-600' : 'text-gray-600'}`}>
-                              {contractExperimentInfo.bettingOutcome > 0 && contractExperimentInfo.bettingOutcome !== 255 ? contractExperimentInfo.bettingOutcome : 'Not Set'}
+                            <p className={`font-mono font-bold ${contractExperimentInfo.bettingOutcome !== 255 ? 'text-green-600' : 'text-gray-600'}`}>
+                              {contractExperimentInfo.bettingOutcome !== 255 ? contractExperimentInfo.bettingOutcome : 'Not Set'}
                             </p>
                           </div>
                           <div className="bg-white p-3 rounded border border-purple-200">
