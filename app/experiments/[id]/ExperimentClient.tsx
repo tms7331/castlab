@@ -362,7 +362,7 @@ export default function ExperimentClient() {
         // Sync donation to database for leaderboard
         await syncDonationToDatabase();
         console.log('[Deposit Confirmed] Completed syncDonationToDatabase');
-      }, 1000);
+      }, 2000);
 
       // Don't reset the state automatically - let user dismiss it or cast about it
     }
@@ -494,9 +494,10 @@ export default function ExperimentClient() {
 
         // Sync donation to database for leaderboard
         await syncDonationToDatabase();
-      }, 1000);
 
-      toast.success("Your withdrawal has been completed successfully.");
+        // Show success toast after all data is refreshed
+        toast.success("Your withdrawal has been completed successfully.");
+      }, 2000);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWithdrawConfirmed, resetWithdraw]);
@@ -531,7 +532,7 @@ export default function ExperimentClient() {
       // Refetch balance after minting
       setTimeout(async () => {
         await refetchTokenBalance();
-      }, 1000);
+      }, 2000);
 
       toast.success("Testnet tokens minted successfully!");
     }
