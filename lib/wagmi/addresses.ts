@@ -3,7 +3,7 @@ import { base, baseSepolia } from 'wagmi/chains';
 export type NetworkType = 'baseSepolia' | 'base';
 
 // Hardcode your network selection here
-export const NETWORK: NetworkType = 'baseSepolia';
+export const NETWORK: NetworkType = 'base';
 
 // Export the chain for convenience
 const NETWORK_TO_CHAIN = {
@@ -24,7 +24,7 @@ export const NETWORK_CONFIGS: Record<NetworkType, ContractAddresses> = {
     TOKEN_ADDRESS: '0xB8a61F5d2E61121a1c476CC8C90113d5D24C48dd',
   },
   'base': {
-    CONTRACT_ADDRESS: '0xCB1E1fA42D840Ba0dC59d093fb660aEe5806AB6b',
+    CONTRACT_ADDRESS: '0x180352CAAC77B58c00885Eff3b3947C385979cb9',
     // USDC on base
     TOKEN_ADDRESS: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   },
