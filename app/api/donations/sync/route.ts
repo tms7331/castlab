@@ -107,10 +107,10 @@ export async function POST(req: NextRequest) {
     });
 
     // Validate required fields
-    if (!walletAddress || !experimentId) {
+    if (!walletAddress || experimentId === null || experimentId === undefined) {
       logger.warn('donation_sync_validation_failed', 'Missing required fields', {
         walletAddress: !!walletAddress,
-        experimentId: !!experimentId,
+        experimentId: experimentId !== null && experimentId !== undefined,
       });
       return NextResponse.json(
         { error: 'Missing required fields: walletAddress and experimentId' },
