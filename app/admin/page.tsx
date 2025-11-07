@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { EventInsert, Event } from "@/lib/supabase/types";
+import { EventInsert, Event, Donation } from "@/lib/supabase/types";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, usePublicClient, useReadContract } from 'wagmi';
 import { CHAIN } from '@/lib/wagmi/addresses';
-import { CONTRACT_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/adminConfig';
+import { CONTRACT_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { decodeEventLog } from 'viem';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { trackTransaction, identifyUser } from "@/lib/analytics/events";
+import { supabase } from "@/lib/supabase/client";
 
 export default function AdminPage() {
   const [newExperiment, setNewExperiment] = useState({
@@ -29,7 +30,23 @@ export default function AdminPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [selectedExperiment, setSelectedExperiment] = useState("");
-  const [activeTab, setActiveTab] = useState<"create" | "manage">("create");
+  const [activeTab, setActiveTab] = useState<"create" | "manage" | "donations">("create");
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [isLoadingDonations, setIsLoadingDonations] = useState(false);
+  const [sortColumn, setSortColumn] = useState<"experiment_id" | "username" | "display_name" | "total_funded_usd" | "total_bet_usd" | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [blockchainComparison, setBlockchainComparison] = useState<Array<{
+    experimentId: number;
+    dbTotalFunded: number;
+    dbTotalBet: number;
+    blockchainTotalDeposited: number | null;
+    blockchainTotalBet0: number | null;
+    blockchainTotalBet1: number | null;
+    blockchainTotalBet: number | null;
+    isLoading: boolean;
+    error: string | null;
+  }>>([]);
+  const [isLoadingBlockchain, setIsLoadingBlockchain] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [contractExperimentId, setContractExperimentId] = useState<string | null>(null);
@@ -253,6 +270,201 @@ export default function AdminPage() {
   useEffect(() => {
     fetchExperiments();
   }, []);
+
+  // Fetch donations when donations tab is active
+  useEffect(() => {
+    if (activeTab === "donations") {
+      fetchDonations();
+    }
+  }, [activeTab]);
+
+  const fetchDonations = async () => {
+    setIsLoadingDonations(true);
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('experiment_id, username, display_name, total_funded_usd, total_bet_usd, id');
+
+      if (error) {
+        console.error('Error fetching donations:', error);
+        return;
+      }
+
+      if (data) {
+        setDonations(data as Donation[]);
+      }
+    } catch (error) {
+      console.error('Error fetching donations:', error);
+    } finally {
+      setIsLoadingDonations(false);
+    }
+  };
+
+  const handleSort = (column: "experiment_id" | "username" | "display_name" | "total_funded_usd" | "total_bet_usd") => {
+    if (sortColumn === column) {
+      // Toggle direction if clicking the same column
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Set new column and default to ascending
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortedDonations = (): Donation[] => {
+    if (!sortColumn) {
+      return donations;
+    }
+
+    const sorted = [...donations].sort((a, b) => {
+      let aValue: string | number | null;
+      let bValue: string | number | null;
+
+      switch (sortColumn) {
+        case "experiment_id":
+          aValue = a.experiment_id;
+          bValue = b.experiment_id;
+          break;
+        case "username":
+          aValue = a.username || "";
+          bValue = b.username || "";
+          break;
+        case "display_name":
+          aValue = a.display_name || "";
+          bValue = b.display_name || "";
+          break;
+        case "total_funded_usd":
+          aValue = typeof a.total_funded_usd === 'number' ? a.total_funded_usd : 0;
+          bValue = typeof b.total_funded_usd === 'number' ? b.total_funded_usd : 0;
+          break;
+        case "total_bet_usd":
+          aValue = typeof a.total_bet_usd === 'number' ? a.total_bet_usd : 0;
+          bValue = typeof b.total_bet_usd === 'number' ? b.total_bet_usd : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      // Handle null/undefined values
+      if (aValue === null || aValue === undefined) aValue = "";
+      if (bValue === null || bValue === undefined) bValue = "";
+
+      // Compare values
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      } else {
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+        if (aStr < bStr) return sortDirection === "asc" ? -1 : 1;
+        if (aStr > bStr) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      }
+    });
+
+    return sorted;
+  };
+
+  const fetchBlockchainComparison = useCallback(async () => {
+    if (!publicClient) return;
+
+    setIsLoadingBlockchain(true);
+
+    // Aggregate donations by experiment
+    const aggregated = new Map<number, { totalFunded: number; totalBet: number }>();
+
+    donations.forEach(donation => {
+      const expId = donation.experiment_id;
+      const funded = typeof donation.total_funded_usd === 'number' ? donation.total_funded_usd : 0;
+      const bet = typeof donation.total_bet_usd === 'number' ? donation.total_bet_usd : 0;
+
+      if (aggregated.has(expId)) {
+        const current = aggregated.get(expId)!;
+        aggregated.set(expId, {
+          totalFunded: current.totalFunded + funded,
+          totalBet: current.totalBet + bet
+        });
+      } else {
+        aggregated.set(expId, { totalFunded: funded, totalBet: bet });
+      }
+    });
+
+    const aggregatedArray = Array.from(aggregated.entries()).map(([experimentId, totals]) => ({
+      experimentId,
+      ...totals
+    }));
+
+    // Initialize comparison state
+    const initialComparison = aggregatedArray.map(({ experimentId, totalFunded, totalBet }) => ({
+      experimentId,
+      dbTotalFunded: totalFunded,
+      dbTotalBet: totalBet,
+      blockchainTotalDeposited: null,
+      blockchainTotalBet0: null,
+      blockchainTotalBet1: null,
+      blockchainTotalBet: null,
+      isLoading: true,
+      error: null
+    }));
+
+    setBlockchainComparison(initialComparison);
+
+    // Fetch blockchain data for each experiment
+    const comparisonPromises = aggregatedArray.map(async ({ experimentId, totalFunded, totalBet }) => {
+      try {
+        const result = await publicClient.readContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          abi: CastlabExperimentABI.abi,
+          functionName: 'getExperimentInfo',
+          args: [BigInt(experimentId)],
+        });
+
+        // getExperimentInfo returns: [costMin, costMax, totalDeposited, totalBet0, totalBet1, experimentCreatedAt, bettingOutcome, open]
+        type ExperimentInfo = readonly [bigint, bigint, bigint, bigint, bigint, bigint, number, boolean];
+        const info = result as ExperimentInfo;
+
+        const totalDeposited = tokenAmountToUsd(info[2]);
+        const totalBet0 = tokenAmountToUsd(info[3]);
+        const totalBet1 = tokenAmountToUsd(info[4]);
+        const totalBetAmount = totalBet0 + totalBet1;
+
+        return {
+          experimentId,
+          dbTotalFunded: totalFunded,
+          dbTotalBet: totalBet,
+          blockchainTotalDeposited: totalDeposited,
+          blockchainTotalBet0: totalBet0,
+          blockchainTotalBet1: totalBet1,
+          blockchainTotalBet: totalBetAmount,
+          isLoading: false,
+          error: null
+        };
+      } catch (error) {
+        console.error(`Error fetching blockchain data for experiment ${experimentId}:`, error);
+        return {
+          experimentId,
+          dbTotalFunded: totalFunded,
+          dbTotalBet: totalBet,
+          blockchainTotalDeposited: null,
+          blockchainTotalBet0: null,
+          blockchainTotalBet1: null,
+          blockchainTotalBet: null,
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+    });
+
+    const results = await Promise.all(comparisonPromises);
+    setBlockchainComparison(results);
+    setIsLoadingBlockchain(false);
+  }, [publicClient, donations]);
+
+  // Fetch blockchain data when donations are loaded
+  useEffect(() => {
+    if (activeTab === "donations" && donations.length > 0 && publicClient) {
+      fetchBlockchainComparison();
+    }
+  }, [donations, activeTab, publicClient, fetchBlockchainComparison]);
 
   const fetchExperiments = async () => {
     setIsLoadingExperiments(true);
@@ -932,9 +1144,227 @@ export default function AdminPage() {
           >
             Manage Experiments
           </button>
+          <button
+            onClick={() => setActiveTab("donations")}
+            className={`px-6 py-2 rounded-lg font-medium transition-all ${activeTab === "donations"
+              ? "bg-gradient-to-r from-[#00c9a7] to-[#00a8cc] text-white"
+              : "bg-white text-[#005577] border border-[#00a8cc]/30"
+              }`}
+          >
+            Donations
+          </button>
         </div>
 
-        {activeTab === "create" ? (
+        {activeTab === "donations" ? (
+          /* Donations Table */
+          <div className="experiment-card">
+            <h2 className="text-2xl font-bold text-[#005577] mb-6">Donations</h2>
+            {isLoadingDonations ? (
+              <div className="text-center py-8">
+                <p className="text-[#0a3d4d]">Loading donations...</p>
+              </div>
+            ) : donations.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-[#0a3d4d]">No donations found.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-[#e8f5f7] border-b-2 border-[#00a8cc]">
+                      <th
+                        className="px-4 py-3 text-left text-sm font-semibold text-[#005577] cursor-pointer hover:bg-[#d0e8ec] transition-colors select-none"
+                        onClick={() => handleSort("experiment_id")}
+                      >
+                        <div className="flex items-center gap-2">
+                          Experiment Funded
+                          {sortColumn === "experiment_id" && (
+                            <span className="text-[#00a8cc]">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left text-sm font-semibold text-[#005577] cursor-pointer hover:bg-[#d0e8ec] transition-colors select-none"
+                        onClick={() => handleSort("username")}
+                      >
+                        <div className="flex items-center gap-2">
+                          Username
+                          {sortColumn === "username" && (
+                            <span className="text-[#00a8cc]">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left text-sm font-semibold text-[#005577] cursor-pointer hover:bg-[#d0e8ec] transition-colors select-none"
+                        onClick={() => handleSort("display_name")}
+                      >
+                        <div className="flex items-center gap-2">
+                          Display Name
+                          {sortColumn === "display_name" && (
+                            <span className="text-[#00a8cc]">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-right text-sm font-semibold text-[#005577] cursor-pointer hover:bg-[#d0e8ec] transition-colors select-none"
+                        onClick={() => handleSort("total_funded_usd")}
+                      >
+                        <div className="flex items-center justify-end gap-2">
+                          Total Funded (USD)
+                          {sortColumn === "total_funded_usd" && (
+                            <span className="text-[#00a8cc]">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-right text-sm font-semibold text-[#005577] cursor-pointer hover:bg-[#d0e8ec] transition-colors select-none"
+                        onClick={() => handleSort("total_bet_usd")}
+                      >
+                        <div className="flex items-center justify-end gap-2">
+                          Total Bet (USD)
+                          {sortColumn === "total_bet_usd" && (
+                            <span className="text-[#00a8cc]">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getSortedDonations().map((donation) => (
+                      <tr
+                        key={donation.id || `${donation.experiment_id}-${donation.username || 'unknown'}`}
+                        className="border-b border-[#00a8cc]/20 hover:bg-[#e8f5f7]/50"
+                      >
+                        <td className="px-4 py-3 text-sm text-[#0a3d4d]">{donation.experiment_id}</td>
+                        <td className="px-4 py-3 text-sm text-[#0a3d4d]">{donation.username || "-"}</td>
+                        <td className="px-4 py-3 text-sm text-[#0a3d4d]">{donation.display_name || "-"}</td>
+                        <td className="px-4 py-3 text-sm text-right text-[#0a3d4d] font-medium">
+                          ${typeof donation.total_funded_usd === 'number' ? donation.total_funded_usd.toFixed(2) : '0.00'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right text-[#0a3d4d] font-medium">
+                          ${typeof donation.total_bet_usd === 'number' ? donation.total_bet_usd.toFixed(2) : '0.00'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Blockchain Comparison Table */}
+            {donations.length > 0 && (
+              <div className="mt-8 experiment-card -mx-4 md:-mx-0">
+                <h2 className="text-2xl font-bold text-[#005577] mb-6">Blockchain vs Database Comparison</h2>
+                {isLoadingBlockchain ? (
+                  <div className="text-center py-8">
+                    <p className="text-[#0a3d4d]">Loading blockchain data...</p>
+                  </div>
+                ) : blockchainComparison.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-[#0a3d4d]">No comparison data available.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto -mx-4 px-4">
+                    <table className="w-full border-collapse min-w-full">
+                      <thead>
+                        <tr className="bg-[#e8f5f7] border-b-2 border-[#00a8cc]">
+                          <th className="px-2 py-2 text-left text-xs font-semibold text-[#005577] whitespace-nowrap">Exp ID</th>
+                          <th className="px-2 py-2 text-right text-xs font-semibold text-[#005577] whitespace-nowrap">DB Funded</th>
+                          <th className="px-2 py-2 text-right text-xs font-semibold text-[#005577] whitespace-nowrap">BC Deposited</th>
+                          <th className="px-2 py-2 text-center text-xs font-semibold text-[#005577] whitespace-nowrap">Match</th>
+                          <th className="px-2 py-2 text-right text-xs font-semibold text-[#005577] whitespace-nowrap">DB Bet</th>
+                          <th className="px-2 py-2 text-right text-xs font-semibold text-[#005577] whitespace-nowrap">BC Bet 0</th>
+                          <th className="px-2 py-2 text-right text-xs font-semibold text-[#005577] whitespace-nowrap">BC Bet 1</th>
+                          <th className="px-2 py-2 text-right text-xs font-semibold text-[#005577] whitespace-nowrap">BC Total Bet</th>
+                          <th className="px-2 py-2 text-center text-xs font-semibold text-[#005577] whitespace-nowrap">Match</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {blockchainComparison.map((comparison) => {
+                          const fundedMatch = comparison.blockchainTotalDeposited !== null &&
+                            Math.abs(comparison.dbTotalFunded - comparison.blockchainTotalDeposited) < 0.01;
+                          const betMatch = comparison.blockchainTotalBet !== null &&
+                            Math.abs(comparison.dbTotalBet - comparison.blockchainTotalBet) < 0.01;
+
+                          return (
+                            <tr
+                              key={comparison.experimentId}
+                              className="border-b border-[#00a8cc]/20 hover:bg-[#e8f5f7]/50"
+                            >
+                              <td className="px-2 py-2 text-xs text-[#0a3d4d] font-medium">{comparison.experimentId}</td>
+                              <td className="px-2 py-2 text-xs text-right text-[#0a3d4d] font-medium">
+                                ${comparison.dbTotalFunded.toFixed(2)}
+                              </td>
+                              <td className="px-2 py-2 text-xs text-right text-[#0a3d4d] font-medium">
+                                {comparison.isLoading ? (
+                                  <span className="text-gray-400">Loading...</span>
+                                ) : comparison.error ? (
+                                  <span className="text-red-500 text-xs">{comparison.error}</span>
+                                ) : comparison.blockchainTotalDeposited !== null ? (
+                                  `$${comparison.blockchainTotalDeposited.toFixed(2)}`
+                                ) : (
+                                  "-"
+                                )}
+                              </td>
+                              <td className="px-2 py-2 text-xs text-center">
+                                {comparison.isLoading ? (
+                                  <span className="text-gray-400">-</span>
+                                ) : comparison.error ? (
+                                  <span className="text-red-500">✗</span>
+                                ) : comparison.blockchainTotalDeposited !== null ? (
+                                  <span className={fundedMatch ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                                    {fundedMatch ? "✓" : "✗"}
+                                  </span>
+                                ) : (
+                                  "-"
+                                )}
+                              </td>
+                              <td className="px-2 py-2 text-xs text-right text-[#0a3d4d] font-medium">
+                                ${comparison.dbTotalBet.toFixed(2)}
+                              </td>
+                              <td className="px-2 py-2 text-xs text-right text-[#0a3d4d]">
+                                {comparison.blockchainTotalBet0 !== null ? `$${comparison.blockchainTotalBet0.toFixed(2)}` : "-"}
+                              </td>
+                              <td className="px-2 py-2 text-xs text-right text-[#0a3d4d]">
+                                {comparison.blockchainTotalBet1 !== null ? `$${comparison.blockchainTotalBet1.toFixed(2)}` : "-"}
+                              </td>
+                              <td className="px-2 py-2 text-xs text-right text-[#0a3d4d] font-medium">
+                                {comparison.blockchainTotalBet !== null ? `$${comparison.blockchainTotalBet.toFixed(2)}` : "-"}
+                              </td>
+                              <td className="px-2 py-2 text-xs text-center">
+                                {comparison.isLoading ? (
+                                  <span className="text-gray-400">-</span>
+                                ) : comparison.error ? (
+                                  <span className="text-red-500">✗</span>
+                                ) : comparison.blockchainTotalBet !== null ? (
+                                  <span className={betMatch ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                                    {betMatch ? "✓" : "✗"}
+                                  </span>
+                                ) : (
+                                  "-"
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : activeTab === "create" ? (
           /* Create Experiment Form */
           <div className="experiment-card">
             <h2 className="text-2xl font-bold text-[#005577] mb-6">Create New Experiment</h2>
