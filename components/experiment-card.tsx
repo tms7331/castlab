@@ -161,7 +161,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
       // Show error toast
       toast.error('Claiming winnings failed. Please try again.');
     }
-  }, [claimBetWriteError, claimBetReceiptError, isClaiming, address, chainId, experiment, claimableAmount, resetClaimBet]);
+  }, [claimBetWriteError, claimBetReceiptError, isClaiming, address, chainId, experiment, claimableAmount, claimedAmount, resetClaimBet]);
 
   // Timeout for stuck claim transactions (15 seconds)
   useEffect(() => {
@@ -195,7 +195,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         clearTimeout(timeoutId);
       };
     }
-  }, [isClaiming, address, chainId, experiment, claimableAmount, resetClaimBet]);
+  }, [isClaiming, address, chainId, experiment, claimableAmount, claimedAmount, resetClaimBet]);
 
   const handleClaimBetProfit = async () => {
     if (!address || !experiment) return;
