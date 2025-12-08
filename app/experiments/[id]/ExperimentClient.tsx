@@ -588,8 +588,22 @@ export default function ExperimentClient() {
       // Link to the specific experiment page
       const appUrl = `${getAppUrl()}/experiments/${experiment?.experiment_id}`;
 
+      // Determine the cast text based on whether they bet or just funded
+      const bet0Amount = Number(outcome0BetAmount) || 0;
+      const bet1Amount = Number(outcome1BetAmount) || 0;
+      const hasBet = bet0Amount > 0 || bet1Amount > 0;
+
+      let castText: string;
+      if (hasBet) {
+        // If they bet on both sides, prefer outcome0
+        const betSide = bet0Amount > 0 ? experiment?.outcome_text0 : experiment?.outcome_text1;
+        castText = `"${experiment?.title}" I bet on ${betSide} on CastLab! 🧪🔬`;
+      } else {
+        castText = `I just funded "${experiment?.title}" on CastLab! 🧪🔬`;
+      }
+
       const result = await sdk.actions.composeCast({
-        text: `I just funded "${experiment?.title}" on CastLab! 🧪🔬`,
+        text: castText,
         embeds: [appUrl]
       });
 
