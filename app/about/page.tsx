@@ -5,12 +5,12 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen">
       <section className="relative overflow-hidden">
-        <div className="relative px-4 py-2">
-          <div className="max-w-sm mx-auto text-center space-y-4">
+        <div className="relative px-4 md:px-6 lg:px-8 py-2 md:py-4">
+          <div className="max-w-sm md:max-w-2xl lg:max-w-4xl mx-auto text-center space-y-4 md:space-y-6">
             <NavigationPills />
 
             <div className="space-y-3">
-              <h1 className="text-4xl font-bold text-balance leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
                 About <span className="text-primary">CastLab</span>
               </h1>
             </div>
@@ -18,14 +18,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 pb-8">
-        <div className="max-w-sm mx-auto space-y-4">
-          <Card>
+      <section className="px-4 md:px-6 lg:px-8 pb-8 md:pb-12">
+        <div className="max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto space-y-4 md:space-y-6">
+          <Card className="md:p-2">
             <CardHeader>
-              <CardTitle>Is this real?</CardTitle>
+              <CardTitle className="md:text-xl">Is this real?</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground md:text-base md:leading-relaxed">
                 Yes! The initial batch of experiments will be run by the team at Cosimo Research, an independent scientific research service. They design the protocol, execute the experiment, analyze the data, and share updates along the way. Check out their past work and follow along at{" "}
                 <a
                   href="https://www.cosimoresearch.com/journal"
@@ -39,39 +39,39 @@ export default function AboutPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="md:p-2">
             <CardHeader>
-              <CardTitle>Our Mission</CardTitle>
+              <CardTitle className="md:text-xl">Our Mission</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground md:text-base md:leading-relaxed">
                 Science should be fun. CastLab lets you crowdfund science on the questions you actually care about. We&apos;re here to fuel curiosity one experiment at a time, balancing scientific rigor with playful exploration.
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="md:p-2">
             <CardHeader>
-              <CardTitle>How It Works</CardTitle>
+              <CardTitle className="md:text-xl">How It Works</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 md:space-y-6">
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Browse experiments</h3>
-                <p className="text-muted-foreground text-sm">
+                <h3 className="font-semibold text-foreground mb-2 md:text-lg">Browse experiments</h3>
+                <p className="text-muted-foreground text-sm md:text-base md:leading-relaxed">
                   Scroll through a feed of fun, high-signal questions people want answered. Each of them has been carefully designed by scientists to produce real, trustworthy results.
                 </p>
               </div>
 
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Back what you love</h3>
-                <p className="text-muted-foreground text-sm">
+                <h3 className="font-semibold text-foreground mb-2 md:text-lg">Back what you love</h3>
+                <p className="text-muted-foreground text-sm md:text-base md:leading-relaxed">
                   Fund experiments you care about. Studies launch once they meet their minimum funding goal, but the more support a study gets, the stronger evidence we can gather. So contribute to the ones that you want to see good evidence for! You can withdraw your contribution anytime before a study reaches its goal.
                 </p>
               </div>
 
               <div>
-                <h3 className="font-semibold text-foreground mb-2">Make bets</h3>
-                <p className="text-muted-foreground text-sm">
+                <h3 className="font-semibold text-foreground mb-2 md:text-lg">Make bets</h3>
+                <p className="text-muted-foreground text-sm md:text-base md:leading-relaxed">
                   Think you know how an experiment will turn out? Place a bet on the outcome you think is most likely. Results are determined using parimutuel betting: the total pool of bets is divided among those who guessed correctly, with payouts proportional to their stakes. If the experiment doesn&apos;t get run, you get your money back.
                 </p>
               </div>

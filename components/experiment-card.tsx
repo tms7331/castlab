@@ -262,17 +262,17 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
 
   return (
     <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
-      <CardHeader className="pb-3">
-        <div className="flex items-start gap-3">
+      <CardHeader className="pb-3 md:pb-4">
+        <div className="flex items-start gap-3 md:gap-4">
           {experiment.image_url && (
-            <div className="w-[45%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
+            <div className="w-[45%] md:w-[35%] lg:w-[30%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
               <div className="relative w-full h-full rounded-lg bg-card overflow-hidden">
                 <Image
                   src={experiment.image_url}
                   alt={experiment.title}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 45vw, 200px"
+                  sizes="(max-width: 768px) 45vw, (max-width: 1024px) 35vw, 200px"
                   priority
                 />
               </div>
@@ -280,12 +280,12 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
           )}
           <div className="flex-1 min-w-0">
             <Link href={`/experiments/${experiment.experiment_id}`}>
-              <h3 className="font-semibold text-base text-balance leading-tight text-black hover:text-primary transition-colors cursor-pointer">
+              <h3 className="font-semibold text-base md:text-lg text-balance leading-tight text-black hover:text-primary transition-colors cursor-pointer">
                 {experiment.title}
               </h3>
             </Link>
             {experiment.summary && (
-              <p className="text-xs text-black mt-1 line-clamp-2">
+              <p className="text-xs md:text-sm text-black mt-1 line-clamp-2 md:line-clamp-3">
                 {experiment.summary}
               </p>
             )}
@@ -294,7 +294,7 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
       </CardHeader>
 
       {(!hideRanges || userContribution > 0) && (
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 md:space-y-5">
           {/* Funding Progress - only show if not hiding ranges */}
           {!hideRanges && (
             <div className="space-y-2">
