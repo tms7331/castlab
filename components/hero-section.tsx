@@ -4,8 +4,11 @@ import { NavigationPills } from "@/components/navigation-pills";
 import { Button } from "@/components/ui/button";
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 export function HeroSection() {
+  const { isInMiniApp } = useAuth();
+
   const handleCastExperimentIdea = async () => {
     try {
       const appUrl = getAppUrl();
@@ -33,15 +36,17 @@ export function HeroSection() {
             </h1>
           </div>
 
-          {/* Cast Button */}
-          <div className="pt-2">
-            <Button
-              onClick={handleCastExperimentIdea}
-              className="w-full max-w-xs"
-            >
-              Cast an Experiment Idea
-            </Button>
-          </div>
+          {/* Cast Button - only shown in Farcaster mini app */}
+          {isInMiniApp && (
+            <div className="pt-2">
+              <Button
+                onClick={handleCastExperimentIdea}
+                className="w-full max-w-xs"
+              >
+                Cast an Experiment Idea
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </section>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { Event } from "@/lib/supabase/types";
-import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from 'wagmi';
+import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract, useSwitchChain } from 'wagmi';
 import { CONTRACT_ADDRESS, TOKEN_ADDRESS, usdToTokenAmount, tokenAmountToUsd } from '@/lib/wagmi/config';
 import { CHAIN } from '@/lib/wagmi/addresses';
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
@@ -19,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { trackTransaction, identifyUser } from "@/lib/analytics/events";
+import { useAuth } from '@/app/providers/AuthProvider';
 
 const EXPERIMENTER_FID = 883930;
 const EXPERIMENTER_HANDLE = "@motherlizard";
@@ -58,6 +59,8 @@ export default function ExperimentClient() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+  const { isInMiniApp } = useAuth();
 
   // Identify user in PostHog when wallet connects
   useEffect(() => {
@@ -339,8 +342,10 @@ export default function ExperimentClient() {
       const totalAmount = fundAmount + bet0Amount + bet1Amount;
       toast.success(`Successfully funded $${totalAmount.toFixed(2)}! 🎉`);
 
-      // Haptic feedback for successful deposit
-      sdk.haptics.impactOccurred('medium');
+      // Haptic feedback for successful deposit (only in Farcaster mini app)
+      if (isInMiniApp) {
+        sdk.haptics.impactOccurred('medium');
+      }
       console.log('[Deposit Confirmed] Setting currentStep to "complete"');
       setCurrentStep('complete');
       setFundingAmount("");
@@ -665,10 +670,16 @@ export default function ExperimentClient() {
       return;
     }
 
-    // Check if on the correct chain
+    // Check if on the correct chain - prompt to switch if not
     if (chainId !== CHAIN.id) {
-      toast.error(`Please switch to ${CHAIN.name} network in your wallet`);
-      return;
+      try {
+        toast.info(`Switching to ${CHAIN.name} network...`);
+        switchChain({ chainId: CHAIN.id });
+        return; // Return and let user retry after chain switch
+      } catch (err) {
+        toast.error(`Please switch to ${CHAIN.name} network in your wallet`);
+        return;
+      }
     }
 
     // Clear any previous errors before starting
@@ -908,7 +919,13 @@ export default function ExperimentClient() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => sdk.actions.viewProfile({ fid: EXPERIMENTER_FID })}
+                  onClick={() => {
+                    if (isInMiniApp) {
+                      sdk.actions.viewProfile({ fid: EXPERIMENTER_FID });
+                    } else {
+                      window.open(`https://farcaster.xyz/~/profiles/${EXPERIMENTER_FID}`, '_blank');
+                    }
+                  }}
                 >
                   View profile
                 </Button>
@@ -934,7 +951,11 @@ export default function ExperimentClient() {
                 size="sm"
                 className="text-primary hover:text-primary/80"
                 onClick={() => {
-                  sdk.actions.openUrl(experiment.experiment_url!);
+                  if (isInMiniApp) {
+                    sdk.actions.openUrl(experiment.experiment_url!);
+                  } else {
+                    window.open(experiment.experiment_url!, '_blank');
+                  }
                 }}
               >
                 Read full protocol <ExternalLink className="w-4 h-4 ml-1" />
@@ -1022,13 +1043,15 @@ export default function ExperimentClient() {
                             ✅ Thank you for funding this experiment!
                           </div>
 
-                          <Button
-                            onClick={handleCastAboutDonation}
-                            className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
-                            size="lg"
-                          >
-                            Cast about it! 📢
-                          </Button>
+                          {isInMiniApp && (
+                            <Button
+                              onClick={handleCastAboutDonation}
+                              className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
+                              size="lg"
+                            >
+                              Cast about it! 📢
+                            </Button>
+                          )}
                         </>
                       ) : (
                         <form onSubmit={handleFunding} className="space-y-3">
