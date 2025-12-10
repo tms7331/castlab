@@ -26,6 +26,9 @@ interface ExperimentCardProps {
   hideRanges?: boolean;
 }
 
+// Featured experiment ID (Sativa experiment)
+const FEATURED_EXPERIMENT_ID = 1;
+
 export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0, userBet1 = 0, hideRanges = false }: ExperimentCardProps) {
   const { address } = useAccount();
   const chainId = useChainId();
@@ -33,6 +36,9 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   const [isClaiming, setIsClaiming] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
   const [claimedAmount, setClaimedAmount] = useState<number>(0);
+
+  // Check if this is the featured experiment
+  const isFeatured = experiment.experiment_id === FEATURED_EXPERIMENT_ID;
 
   // Identify user in PostHog when wallet connects
   useEffect(() => {
@@ -261,8 +267,23 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   };
 
   return (
-    <Card className="hover-lift border-border/20 bg-white/5 dark:bg-black/5 backdrop-blur-sm transition-all hover:shadow-lg">
+    <Card className={`hover-lift backdrop-blur-sm transition-all hover:shadow-lg ${
+      isFeatured
+        ? 'border-2 border-primary bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/15 shadow-xl shadow-primary/20'
+        : 'border-border/20 bg-white/5 dark:bg-black/5'
+    }`}>
       <CardHeader className="pb-3 md:pb-4">
+        {/* Featured Badge */}
+        {isFeatured && (
+          <div className="mb-3">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/25">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              Featured Experiment
+            </span>
+          </div>
+        )}
         <div className="flex items-start gap-3 md:gap-4">
           {experiment.image_url && (
             <div className="w-[45%] md:w-[35%] lg:w-[30%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
