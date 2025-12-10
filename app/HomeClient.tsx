@@ -54,18 +54,19 @@ export default function HomeClient() {
   return (
     <div className="min-h-screen">
       <HeroSection />
-      <section className="px-4 pb-8">
-        <div className="max-w-sm mx-auto space-y-4">
+      <section className="px-4 md:px-6 lg:px-8 pb-8">
+        <div className="max-w-sm md:max-w-2xl lg:max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {loading ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8 col-span-full">
               <p className="text-[#0a3d4d]">Loading experiments...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8 col-span-full">
               <p className="text-red-600">{error}</p>
             </div>
           ) : experiments.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8 col-span-full">
               <p className="text-[#0a3d4d]">No experiments available yet.</p>
             </div>
           ) : (
@@ -78,6 +79,7 @@ export default function HomeClient() {
               />
             ))
           )}
+          </div>
         </div>
       </section>
     </div>

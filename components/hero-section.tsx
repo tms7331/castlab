@@ -24,14 +24,14 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="relative px-4 py-2">
-        <div className="max-w-sm mx-auto text-center space-y-4">
+      <div className="relative px-4 md:px-6 lg:px-8 py-2 md:py-4">
+        <div className="max-w-sm md:max-w-2xl lg:max-w-4xl mx-auto text-center space-y-4 md:space-y-6">
           {/* Navigation Pills */}
           <NavigationPills />
 
           {/* Hero Content */}
           <div className="space-y-3">
-            <h1 className="text-4xl font-bold text-balance leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
               Fund and <span className="text-primary">bet</span> on science!
             </h1>
           </div>

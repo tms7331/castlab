@@ -22,17 +22,17 @@ export default function LoginButton() {
     // In Farcaster with full profile
     if (isInMiniApp && user.fid) {
       return (
-        <div className="flex items-center gap-2">
-          <Avatar className="w-8 h-8">
+        <div className="flex items-center gap-2 md:gap-3">
+          <Avatar className="w-8 h-8 md:w-9 md:h-9">
             <AvatarImage
               src={user.pfpUrl || "/scientist-profile.png"}
               alt={user.displayName || user.username || 'Profile'}
             />
-            <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+            <AvatarFallback className="bg-secondary text-secondary-foreground text-xs md:text-sm">
               {(user.displayName || user.username || 'U')[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium text-foreground">
+          <span className="text-sm md:text-base font-medium text-foreground">
             {user.username ? `@${user.username}` : `fid:${user.fid}`}
           </span>
         </div>
@@ -43,19 +43,19 @@ export default function LoginButton() {
     return (
       <ConnectButton.Custom>
         {({ account, chain, openAccountModal, openChainModal }) => (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:gap-3">
             {/* Chain indicator - click to switch */}
             {chain && (
               <button
                 onClick={openChainModal}
-                className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-muted hover:bg-muted/80 transition-colors"
+                className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm rounded-md bg-muted hover:bg-muted/80 transition-colors"
                 title="Switch network"
               >
                 {chain.hasIcon && chain.iconUrl && (
                   <img
                     src={chain.iconUrl}
                     alt={chain.name ?? 'Chain'}
-                    className="w-4 h-4 rounded-full"
+                    className="w-4 h-4 md:w-5 md:h-5 rounded-full"
                   />
                 )}
                 {chain.unsupported && (
@@ -66,15 +66,15 @@ export default function LoginButton() {
             {/* Account button - click to open account modal (disconnect, etc.) */}
             <button
               onClick={openAccountModal}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity"
               title="Account settings"
             >
-              <Avatar className="w-8 h-8">
-                <AvatarFallback className="bg-emerald-600 text-white text-xs">
+              <Avatar className="w-8 h-8 md:w-9 md:h-9">
+                <AvatarFallback className="bg-emerald-600 text-white text-xs md:text-sm">
                   {account?.address?.slice(2, 4).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-sm md:text-base font-medium text-foreground">
                 {account?.displayName || truncateAddress(account?.address || '')}
               </span>
             </button>

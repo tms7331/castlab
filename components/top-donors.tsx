@@ -87,17 +87,17 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
   };
 
   return (
-    <div className="flex gap-2 text-xs">
+    <div className="flex gap-2 md:gap-3 text-xs md:text-sm">
       {topDonor && topDonor.total_funded_usd > 0 && (
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md flex-1">
-          <Avatar className="w-5 h-5">
+        <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-2 bg-muted/50 rounded-md flex-1">
+          <Avatar className="w-5 h-5 md:w-6 md:h-6">
             <AvatarImage src={topDonor.pfp_url || undefined} alt={topDonor.display_name || topDonor.username || ''} />
-            <AvatarFallback className="text-[8px]">
+            <AvatarFallback className="text-[8px] md:text-[10px]">
               {(topDonor.display_name || topDonor.username || '?')[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-muted-foreground">Biggest Donor</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Biggest Donor</p>
             <button
               onClick={() => handleViewProfile(topDonor.fid)}
               className="block max-w-full break-words text-left font-semibold text-primary hover:underline"
@@ -112,15 +112,15 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
       )}
 
       {topBettor && topBettor.total_bet_usd > 0 && (
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md flex-1">
-          <Avatar className="w-5 h-5">
+        <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-2 bg-muted/50 rounded-md flex-1">
+          <Avatar className="w-5 h-5 md:w-6 md:h-6">
             <AvatarImage src={topBettor.pfp_url || undefined} alt={topBettor.display_name || topBettor.username || ''} />
-            <AvatarFallback className="text-[8px]">
+            <AvatarFallback className="text-[8px] md:text-[10px]">
               {(topBettor.display_name || topBettor.username || '?')[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-muted-foreground">Biggest Bettor</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Biggest Bettor</p>
             <button
               onClick={() => handleViewProfile(topBettor.fid)}
               className="block max-w-full break-words text-left font-semibold text-primary hover:underline"

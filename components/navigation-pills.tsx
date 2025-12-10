@@ -51,7 +51,7 @@ const tabs: TabConfig[] = [
 ];
 
 const baseClasses =
-  "relative min-w-[96px] overflow-visible rounded-md px-4 py-2 text-sm font-semibold transition-all duration-150 touch-manipulation active:scale-95 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 after:pointer-events-none after:absolute after:top-[calc(100%+6px)] after:left-1/2 after:h-[6px] after:w-[76%] after:-translate-x-1/2 after:rounded-full after:opacity-0 after:transition-all after:duration-200 after:content-[''] after:bg-transparent after:shadow-none";
+  "relative min-w-[96px] md:min-w-[120px] overflow-visible rounded-md px-4 md:px-5 py-2 md:py-2.5 text-sm md:text-base font-semibold transition-all duration-150 touch-manipulation active:scale-95 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 after:pointer-events-none after:absolute after:top-[calc(100%+6px)] after:left-1/2 after:h-[6px] after:w-[76%] after:-translate-x-1/2 after:rounded-full after:opacity-0 after:transition-all after:duration-200 after:content-[''] after:bg-transparent after:shadow-none";
 
 const inactiveStateClass = "opacity-80";
 
@@ -59,7 +59,7 @@ export function NavigationPills() {
   const pathname = usePathname() ?? "/";
 
   return (
-    <nav className="mb-4 flex flex-wrap justify-center gap-2" aria-label="Primary">
+    <nav className="mb-4 md:mb-6 flex flex-wrap justify-center gap-2 md:gap-3" aria-label="Primary">
       {tabs.map((tab) => {
         const active = tab.isActive(pathname);
         return (
