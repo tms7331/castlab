@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createPublicClient, http } from 'viem';
 import { CHAIN, CONTRACT_ADDRESS } from '@/lib/wagmi/addresses';
-import { tokenAmountToUsd } from '@/lib/wagmi/config';
+import { tokenAmountToUsd } from '@/lib/wagmi/utils';
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { ServerLogger } from '@/lib/utils/server-logger';
 

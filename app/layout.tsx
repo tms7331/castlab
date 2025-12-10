@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { AuthProvider } from "./providers/AuthProvider";
 import { FarcasterProvider } from "./providers/FarcasterProvider";
 import { WagmiProvider } from "@/lib/wagmi/WagmiProvider";
 import { Header } from "@/components/header";
@@ -36,14 +37,16 @@ export default function RootLayout({
         <PostHogProvider>
           <BiologicalBackground />
           <div className="relative z-10 flex min-h-screen flex-col">
-            <FarcasterProvider>
-              <WagmiProvider>
-                <Header />
-                <main className="flex-1">
-                  {children}
-                </main>
-              </WagmiProvider>
-            </FarcasterProvider>
+            <WagmiProvider>
+              <AuthProvider>
+                <FarcasterProvider>
+                  <Header />
+                  <main className="flex-1">
+                    {children}
+                  </main>
+                </FarcasterProvider>
+              </AuthProvider>
+            </WagmiProvider>
             <Analytics />
           </div>
           <Toaster position="bottom-right" />

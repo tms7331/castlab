@@ -1,8 +1,12 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { sdk } from '@farcaster/miniapp-sdk';
+import { ReactNode } from 'react';
+import { useAuth } from './AuthProvider';
 
+/**
+ * @deprecated Use useAuth() from AuthProvider instead.
+ * This is kept for backwards compatibility with existing code.
+ */
 interface User {
   fid: number;
   username?: string;
@@ -17,94 +21,38 @@ interface FarcasterContextType {
   logout: () => void;
 }
 
-const FarcasterContext = createContext<FarcasterContextType | undefined>(undefined);
-
+/**
+ * @deprecated Use AuthProvider instead.
+ * This provider now wraps AuthProvider for backwards compatibility.
+ * Existing code using useFarcaster() will continue to work.
+ */
 export function FarcasterProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        // Get the mini app context
-        const context = await sdk.context;
-        
-        // Check if we have user information
-        if (context?.user) {
-          setUser({
-            fid: context.user.fid,
-            username: context.user.username,
-            displayName: context.user.displayName,
-            pfpUrl: context.user.pfpUrl,
-          });
-        }
-        
-        // Signal that the app is ready - this hides the splash screen
-        await sdk.actions.ready();
-        
-        // Prompt user to add the mini app if they haven't already
-        // This will show the native Farcaster "Add Mini App" dialog
-        try {
-          await sdk.actions.addMiniApp();
-        } catch (error) {
-          // This may fail if already added or in development
-          console.log('Add mini app prompt skipped:', error);
-        }
-      } catch (error) {
-        console.error('Failed to initialize Farcaster SDK:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeApp();
-  }, []);
-
-  const login = async () => {
-    try {
-      setIsLoading(true);
-      // Use Sign in with Farcaster
-      const result = await sdk.actions.signIn({
-        nonce: Math.random().toString(36).substring(7),
-      });
-      
-      if (result) {
-        // The result contains authentication data that needs to be verified on the server
-        console.log('Sign in successful:', result);
-        
-        // After successful sign-in, get the updated context
-        const context = await sdk.context;
-        if (context?.user) {
-          setUser({
-            fid: context.user.fid,
-            username: context.user.username,
-            displayName: context.user.displayName,
-            pfpUrl: context.user.pfpUrl,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Login failed:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = () => {
-    setUser(null);
-  };
-
-  return (
-    <FarcasterContext.Provider value={{ user, isLoading, login, logout }}>
-      {children}
-    </FarcasterContext.Provider>
-  );
+  // Just pass through - the actual auth logic is now in AuthProvider
+  return <>{children}</>;
 }
 
-export function useFarcaster() {
-  const context = useContext(FarcasterContext);
-  if (!context) {
-    throw new Error('useFarcaster must be used within a FarcasterProvider');
-  }
-  return context;
+/**
+ * @deprecated Use useAuth() from AuthProvider instead.
+ * This hook is kept for backwards compatibility.
+ * It adapts the unified auth context to the old Farcaster-specific interface.
+ */
+export function useFarcaster(): FarcasterContextType {
+  const auth = useAuth();
+
+  // Adapt unified user to Farcaster-specific user interface
+  const farcasterUser: User | null = auth.user?.fid
+    ? {
+        fid: auth.user.fid,
+        username: auth.user.username,
+        displayName: auth.user.displayName,
+        pfpUrl: auth.user.pfpUrl,
+      }
+    : null;
+
+  return {
+    user: farcasterUser,
+    isLoading: auth.isLoading,
+    login: auth.login,
+    logout: auth.logout,
+  };
 }

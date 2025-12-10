@@ -16,6 +16,7 @@ import { getAppUrl } from '@/lib/utils/app-url';
 import { TopDonors } from './top-donors';
 import { toast } from "sonner";
 import { trackTransaction, identifyUser } from "@/lib/analytics/events";
+import { useAuth } from '@/app/providers/AuthProvider';
 
 interface ExperimentCardProps {
   experiment: Event;
@@ -28,6 +29,7 @@ interface ExperimentCardProps {
 export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0, userBet1 = 0, hideRanges = false }: ExperimentCardProps) {
   const { address } = useAccount();
   const chainId = useChainId();
+  const { isInMiniApp } = useAuth();
   const [isClaiming, setIsClaiming] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
   const [claimedAmount, setClaimedAmount] = useState<number>(0);
@@ -403,21 +405,23 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         <div className="flex gap-2 w-full">
           <Button
             size="sm"
-            className="flex-1"
+            className={isInMiniApp ? "flex-1" : "w-full"}
             asChild
           >
             <Link href={`/experiments/${experiment.experiment_id}`}>
               View Details
             </Link>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={handleCastAboutThis}
-          >
-            Cast About This
-          </Button>
+          {isInMiniApp && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={handleCastAboutThis}
+            >
+              Cast About This
+            </Button>
+          )}
         </div>
       </CardFooter>
     </Card>

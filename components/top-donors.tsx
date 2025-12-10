@@ -5,6 +5,7 @@ import { Donation } from "@/lib/supabase/types";
 import { supabase } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { sdk } from '@farcaster/miniapp-sdk';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 interface TopDonorsProps {
   experimentId: number;
@@ -14,6 +15,7 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
   const [topDonor, setTopDonor] = useState<Donation | null>(null);
   const [topBettor, setTopBettor] = useState<Donation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { isInMiniApp } = useAuth();
 
   useEffect(() => {
     async function fetchTopDonors() {
@@ -66,7 +68,11 @@ export function TopDonors({ experimentId }: TopDonorsProps) {
   }
 
   const handleViewProfile = (fid: number) => {
-    sdk.actions.viewProfile({ fid });
+    if (isInMiniApp) {
+      sdk.actions.viewProfile({ fid });
+    } else {
+      window.open(`https://farcaster.xyz/~/profiles/${fid}`, '_blank');
+    }
   };
 
   const formatUsdAmount = (value: number) => {

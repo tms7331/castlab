@@ -1,9 +1,45 @@
+'use client';
+
 import { http, createConfig } from 'wagmi';
 import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector';
+import { connectorsForWallets } from '@rainbow-me/rainbowkit';
+import {
+  coinbaseWallet,
+  metaMaskWallet,
+  rainbowWallet,
+  walletConnectWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 import { CHAIN as DEFAULT_CHAIN } from './addresses';
 export { CONTRACT_ADDRESS, TOKEN_ADDRESS } from './addresses';
 
-// Create wagmi config with Farcaster connector
+// Re-export utility functions for backwards compatibility
+// (Import from './utils' directly for server-side usage)
+export { usdToTokenAmount, tokenAmountToUsd } from './utils';
+
+// WalletConnect project ID - required for WalletConnect
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id';
+
+// RainbowKit connectors for standalone web app mode
+const rainbowKitConnectors = connectorsForWallets(
+  [
+    {
+      groupName: 'Popular',
+      wallets: [
+        metaMaskWallet,
+        coinbaseWallet,
+        walletConnectWallet,
+        rainbowWallet,
+      ],
+    },
+  ],
+  {
+    appName: 'CastLab',
+    projectId,
+  }
+);
+
+// Create wagmi config with both Farcaster and RainbowKit connectors
+// The UI will decide which to display based on environment
 export const config = createConfig({
   chains: [DEFAULT_CHAIN],
   transports: {
@@ -11,18 +47,6 @@ export const config = createConfig({
   },
   connectors: [
     farcasterMiniApp(),
+    ...rainbowKitConnectors,
   ],
 });
-
-// For ERC20 tokens: assuming 1 token = 1 USD with 6 decimals (USDC standard)
-export function usdToTokenAmount(usdAmount: number, decimals: number = 6): bigint {
-  // Convert USD to token units (assuming 1:1 peg)
-  const tokenAmount = BigInt(Math.floor(usdAmount * Math.pow(10, decimals)));
-  return tokenAmount;
-}
-
-export function tokenAmountToUsd(tokenAmount: bigint, decimals: number = 6): number {
-  // Convert token units to USD (assuming 1:1 peg)
-  const usdAmount = Number(tokenAmount) / Math.pow(10, decimals);
-  return Math.round(usdAmount * 100) / 100; // Round to 2 decimal places
-}
