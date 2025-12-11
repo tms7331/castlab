@@ -267,20 +267,18 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
   };
 
   return (
-    <Card className={`hover-lift backdrop-blur-sm transition-all hover:shadow-lg ${
+    <Card className={`hover-lift transition-all shadow-[var(--shadow-soft)] ${
       isFeatured
-        ? 'border-2 border-primary bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/15 shadow-xl shadow-primary/20'
-        : 'border-border/20 bg-white/5 dark:bg-black/5'
+        ? 'border-2 border-primary/40 bg-card'
+        : 'border border-border/40 bg-card'
     }`}>
       <CardHeader className="pb-3 md:pb-4">
         {/* Featured Badge */}
         {isFeatured && (
           <div className="mb-3">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/25">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              Featured Experiment
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground shadow-[var(--shadow-soft)]">
+              <span aria-hidden>⭐</span>
+              Featured
             </span>
           </div>
         )}
@@ -301,12 +299,12 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
           )}
           <div className="flex-1 min-w-0">
             <Link href={`/experiments/${experiment.experiment_id}`}>
-              <h3 className="font-semibold text-base md:text-lg text-balance leading-tight text-black hover:text-primary transition-colors cursor-pointer">
+              <h3 className="font-semibold text-base md:text-lg text-balance leading-tight text-foreground hover:text-primary transition-colors cursor-pointer">
                 {experiment.title}
               </h3>
             </Link>
             {experiment.summary && (
-              <p className="text-xs md:text-sm text-black mt-1 line-clamp-2 md:line-clamp-3">
+              <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2 md:line-clamp-3">
                 {experiment.summary}
               </p>
             )}
@@ -322,8 +320,8 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
               {isOpen ? (
                 <>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-black">Progress</span>
-                    <span className="font-medium text-black">
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className="font-medium text-foreground">
                       ${totalDepositedUSD.toLocaleString()} raised of ${fundingGoal.toLocaleString()}
                     </span>
                   </div>
@@ -331,13 +329,13 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
                 </>
               ) : (
                 <div className="text-sm">
-                  <span className="font-semibold text-black">Progress: Fully Funded!</span>
+                  <span className="font-semibold text-foreground">Progress: Fully Funded!</span>
                 </div>
               )}
               <div className="space-y-2 pt-1">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-black">Current odds</span>
-                  <span className="font-medium text-black">{oddsPercentage}%</span>
+                  <span className="text-muted-foreground">Current odds</span>
+                  <span className="font-medium text-foreground">{oddsPercentage}%</span>
                 </div>
                 <input
                   type="range"
@@ -360,13 +358,13 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
           {(userContribution > 0 || userBet0 > 0 || userBet1 > 0) && (
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-black">Your Activity</span>
+                <span className="text-foreground">Your Activity</span>
               </div>
               <div className="p-2 bg-muted/50 rounded-lg">
                 <div className="flex items-center justify-between text-xs">
                   {userContribution > 0 && (
                     <div className="flex items-center gap-1">
-                      <span className="text-black/70">Funded:</span>
+                      <span className="text-foreground/80">Funded:</span>
                       <span className="font-semibold text-secondary">${userContribution}</span>
                     </div>
                   )}
@@ -374,13 +372,13 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
                     <div className="flex items-center gap-3">
                       {userBet0 > 0 && (
                         <div className="flex items-center gap-1">
-                          <span className="text-black/70">{experiment.outcome_text0}:</span>
+                          <span className="text-foreground/80">{experiment.outcome_text0}:</span>
                           <span className="font-semibold text-secondary">${userBet0}</span>
                         </div>
                       )}
                       {userBet1 > 0 && (
                         <div className="flex items-center gap-1">
-                          <span className="text-black/70">{experiment.outcome_text1}:</span>
+                          <span className="text-foreground/80">{experiment.outcome_text1}:</span>
                           <span className="font-semibold text-secondary">${userBet1}</span>
                         </div>
                       )}
@@ -399,27 +397,15 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
             size="sm"
             onClick={handleClaimBetProfit}
             disabled={isClaiming || isClaimBetPending}
-            className="relative w-full overflow-hidden bg-gradient-to-r from-amber-700 via-yellow-500 to-amber-600 text-black font-semibold tracking-wide uppercase shadow-[0_18px_42px_rgba(217,119,6,0.45)] hover:shadow-[0_22px_48px_rgba(217,119,6,0.55)] border border-amber-300/80 transition-transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-amber-500 text-black shadow-[var(--shadow-medium)] hover:bg-amber-600"
           >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.6),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.4),transparent_35%)] opacity-60"
-            />
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-[-40%] w-1/3 bg-gradient-to-r from-transparent via-white/70 to-transparent mix-blend-screen animate-[shimmer_2.6s_linear_infinite]"
-            />
-            <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
-              <span className="text-lg leading-none">✶</span>
-              <span>
-                {isClaiming || isClaimBetPending
-                  ? 'Claiming Winnings...'
-                  : claimableAmount > 0
-                    ? `Claim $${claimableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                    : 'Claim Winnings'
-                }
-              </span>
-              <span className="text-lg leading-none">✶</span>
+            <span className="flex items-center justify-center gap-2 text-sm font-semibold">
+              {isClaiming || isClaimBetPending
+                ? 'Claiming...'
+                : claimableAmount > 0
+                  ? `Claim $${claimableAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : 'Claim Winnings'
+              }
             </span>
           </Button>
         )}

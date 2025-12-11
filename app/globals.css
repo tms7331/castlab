@@ -32,6 +32,16 @@
   --positive-soft: oklch(0.94 0.04 158);
   --positive-border: oklch(0.82 0.07 158);
   --positive-foreground: oklch(0.3 0.06 158);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --shadow-soft: 0 6px 16px rgba(24, 22, 60, 0.08);
+  --shadow-medium: 0 12px 28px rgba(24, 22, 60, 0.12);
   --radius: 0.75rem;
   --sidebar: oklch(0.96 0 0);
   --sidebar-foreground: oklch(0.35 0 0);
@@ -145,115 +155,6 @@
   .hover-lift:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px oklch(0.25 0.15 280 / 0.15);
-  }
-
-  /* Adding specific navigation badge styling to force proper contrast */
-  .nav-badge-primary {
-    background-color: #18065b !important;
-    color: #ffffff !important;
-    border: 1px solid #18065b !important;
-  }
-}
-
-/* ===== PRESERVED LEGACY CLASSES FROM FARSCI ===== */
-/* These classes are actively used in the existing codebase and will be gradually migrated */
-
-/* Navigation Link Styles - Used in header navigation and LoginButton */
-.nav-link {
-  color: #c9f0f7;
-  font-weight: 500;
-  font-size: 0.875rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
-  transition: all 0.3s;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(4px);
-  text-decoration: none;
-  display: inline-block;
-}
-
-.nav-link:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  box-shadow: 0 0 20px rgba(168, 230, 240, 0.3);
-}
-
-@media (min-width: 768px) {
-  .nav-link {
-    font-size: 1rem;
-  }
-}
-
-/* Hero Section - Used on main page and completed experiments page */
-.hero-section {
-  background: linear-gradient(135deg, #00a8cc 0%, #0088bb 25%, #006699 75%, #004466 100%);
-  padding: 3rem 0;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .hero-section {
-    padding: 5rem 0;
-  }
-}
-
-.hero-title {
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: #a8e6f0;
-  margin-bottom: 1rem;
-  filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
-}
-
-@media (min-width: 768px) {
-  .hero-title {
-    font-size: 3.75rem;
-  }
-}
-
-.hero-subtitle {
-  font-size: 1.125rem;
-  color: #c9f0f7;
-  margin-bottom: 2rem;
-  font-weight: 300;
-}
-
-@media (min-width: 768px) {
-  .hero-subtitle {
-    font-size: 1.25rem;
-  }
-}
-
-/* Experiment Card Styles - Used across multiple pages */
-.experiment-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 12px 40px rgba(0, 85, 119, 0.15);
-  transition: all 0.3s;
-  border: 1px solid rgba(0, 168, 204, 0.2);
-  position: relative;
-}
-
-.experiment-card:hover {
-  box-shadow: 0 8px 30px rgba(0, 85, 119, 0.25);
-  transform: translateY(-4px);
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-150%) skewX(-15deg);
-    opacity: 0;
-  }
-  50% {
-    opacity: 0.6;
-  }
-  100% {
-    transform: translateX(250%) skewX(-15deg);
-    opacity: 0;
   }
 }
 

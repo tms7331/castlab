@@ -5,27 +5,27 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold ring-offset-background transition-all duration-150 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-95 active:brightness-95 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 motion-reduce:transition-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold ring-offset-background transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 motion-reduce:transition-none motion-reduce:transform-none",
   {
     variants: {
       variant: {
         default:
-          "bg-gradient-to-r from-primary via-primary/90 to-primary/75 text-primary-foreground shadow-lg shadow-primary/25 active:shadow-md",
+          "bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(24,22,60,0.08)] hover:bg-primary/90",
         destructive:
-          "bg-gradient-to-r from-destructive via-destructive/90 to-destructive/75 text-destructive-foreground shadow-lg shadow-destructive/25 active:shadow-md",
+          "bg-destructive text-destructive-foreground shadow-[0_6px_16px_rgba(214,66,66,0.18)] hover:bg-destructive/90",
         outline:
-          "border border-primary/60 bg-gradient-to-r from-white/70 to-white/40 text-primary active:border-primary active:bg-primary/10 dark:from-white/10 dark:to-white/5 dark:text-primary-foreground",
+          "border border-border bg-transparent text-foreground hover:bg-muted",
         secondary:
-          "bg-gradient-to-r from-secondary via-secondary/90 to-secondary/70 text-secondary-foreground shadow-md shadow-secondary/20 active:shadow-sm",
+          "border border-border bg-card text-foreground shadow-[0_6px_16px_rgba(24,22,60,0.04)] hover:bg-muted",
         ghost:
-          "bg-transparent text-primary active:bg-primary/10 active:text-primary dark:text-primary-foreground",
+          "bg-transparent text-foreground hover:bg-muted",
         link:
-          "text-primary underline-offset-4 active:underline",
+          "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",
         sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
+        lg: "h-11 rounded-lg px-6",
         icon: "h-10 w-10",
       },
     },
