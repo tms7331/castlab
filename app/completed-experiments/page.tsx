@@ -70,8 +70,8 @@ export default function CompletedExperimentsPage() {
             </div>
           ) : experiments.length === 0 ? (
             <div className="col-span-full rounded-lg border border-border bg-card p-10 text-center shadow-[var(--shadow-soft)]">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                <span className="text-2xl" aria-hidden>📦</span>
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(140,121,255,0.28),transparent_60%),linear-gradient(135deg,rgba(24,6,91,0.1),rgba(30,184,171,0.08))] shadow-[var(--shadow-soft)]">
+                <span className="h-2 w-10 rounded-full bg-gradient-to-r from-primary/60 via-primary to-secondary/70" aria-hidden />
               </div>
               <h3 className="text-lg font-semibold text-foreground">No completed experiments yet</h3>
               <p className="text-muted-foreground text-sm">Stay tuned—our first finished runs will show up here.</p>

@@ -26,24 +26,40 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_50%_0%,rgba(140,121,255,0.18),transparent_55%)]" aria-hidden />
-      <div className={cn("relative", LAYOUT.paddingX, "pt-10 md:pt-14 pb-8 md:pb-10")}>
-        <div className={cn("mx-auto text-center space-y-5 md:space-y-7", LAYOUT.maxWidth)}>
+      <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_50%_-5%,rgba(140,121,255,0.16),transparent_55%)]" aria-hidden />
+      <div className="absolute inset-x-0 top-10 h-14 bg-[radial-gradient(60%_120%_at_50%_50%,rgba(242,178,59,0.12),transparent_70%)] blur-lg" aria-hidden />
+      <div className={cn("relative", LAYOUT.paddingX, "pt-12 md:pt-16 pb-10 md:pb-12")}>
+        <div className={cn("mx-auto text-center space-y-6 md:space-y-8", LAYOUT.maxWidth)}>
           <NavigationPills />
 
           <div className="space-y-3">
-            <div className="mx-auto flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
+            <div className="mx-auto flex items-center justify-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              <span className="inline-flex h-1 w-8 rounded-full bg-gradient-to-r from-primary/10 via-primary/50 to-primary/20" aria-hidden />
               Science, funded boldly
-              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-secondary" aria-hidden />
+              <span className="inline-flex h-1 w-8 rounded-full bg-gradient-to-r from-secondary/20 via-secondary/60 to-secondary/20" aria-hidden />
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
-              Back fearless experiments, then cheer on the results.
+              Back fearless experiments. Track every result.
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground text-balance max-w-3xl mx-auto">
-              CastLab is the playful way to fund and bet on science together. Support ideas you love and stay close to every milestone.
+              CastLab makes funding and betting on science feel intentional.
             </p>
-            <div className="mx-auto h-px w-24 bg-gradient-to-r from-transparent via-primary/50 to-transparent" aria-hidden />
+            <div className="mx-auto flex items-center justify-center gap-2 text-primary">
+              <span className="h-px w-10 rounded-full bg-gradient-to-r from-transparent via-primary/60 to-primary"></span>
+              <span className="h-2 w-2 rounded-full bg-primary"></span>
+              <span className="h-px w-10 rounded-full bg-gradient-to-r from-primary to-transparent"></span>
+            </div>
+          </div>
+
+          <div className="mx-auto flex flex-wrap items-center justify-center gap-2 md:gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-card/80 px-4 py-2 text-sm font-medium text-foreground shadow-[var(--shadow-soft)] border border-border/80">
+              <span className="inline-flex h-2 w-2 rounded-full bg-primary" aria-hidden />
+              Live experiments with transparent odds
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-card/80 px-4 py-2 text-sm font-medium text-foreground shadow-[var(--shadow-soft)] border border-border/80">
+              <span className="inline-flex h-2 w-2 rounded-full bg-secondary" aria-hidden />
+              Built for funding, ready for betting
+            </div>
           </div>
 
           {isInMiniApp && (
