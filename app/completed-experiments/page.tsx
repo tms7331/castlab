@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { Event } from "@/lib/supabase/types";
 import { NavigationPills } from "@/components/navigation-pills";
 import { ExperimentCard } from "@/components/experiment-card";
+import { ExperimentCardSkeleton } from "@/components/experiment-card-skeleton";
+import { LAYOUT } from "@/lib/constants/layout";
+import { cn } from "@/lib/utils";
 
 export default function CompletedExperimentsPage() {
   const [experiments, setExperiments] = useState<Event[]>([]);
@@ -35,8 +38,8 @@ export default function CompletedExperimentsPage() {
   return (
     <div className="min-h-screen">
       <section className="relative overflow-hidden">
-        <div className="relative px-4 md:px-6 lg:px-8 py-2 md:py-4">
-          <div className="max-w-sm md:max-w-2xl lg:max-w-4xl mx-auto text-center space-y-4 md:space-y-6">
+        <div className={cn("relative", LAYOUT.paddingX, "pt-10 md:pt-14 pb-8 md:pb-10")}>
+          <div className={cn("mx-auto text-center space-y-4 md:space-y-6", LAYOUT.maxWidth)}>
             <NavigationPills />
 
             <div className="space-y-3">
@@ -44,27 +47,34 @@ export default function CompletedExperimentsPage() {
                 <span className="text-primary">Completed</span> Experiments
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground text-balance">
-                Successfully funded experiments that have been completed
+                The experiments the community funded together—now fully wrapped.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="px-4 md:px-6 lg:px-8 pb-8">
-        <div className="max-w-sm md:max-w-2xl lg:max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+      <section className={cn(LAYOUT.paddingX, LAYOUT.sectionY)}>
+        <div className={cn("mx-auto", LAYOUT.maxWidth)}>
+          <div className={cn("grid grid-cols-1 md:grid-cols-2", LAYOUT.gridGap)}>
           {loading ? (
-            <div className="text-center py-8 col-span-full">
-              <p className="text-muted-foreground">Loading completed experiments...</p>
-            </div>
+            <>
+              <ExperimentCardSkeleton />
+              <ExperimentCardSkeleton />
+              <ExperimentCardSkeleton />
+            </>
           ) : error ? (
-            <div className="text-center py-8 col-span-full">
-              <p className="text-destructive">{error}</p>
+            <div className="col-span-full rounded-lg border border-border bg-card p-8 text-center shadow-[var(--shadow-soft)]">
+              <p className="text-lg font-semibold text-foreground mb-1">Couldn&apos;t load completed experiments.</p>
+              <p className="text-muted-foreground text-sm">{error}</p>
             </div>
           ) : experiments.length === 0 ? (
-            <div className="text-center py-8 col-span-full">
-              <p className="text-muted-foreground">No completed experiments yet.</p>
+            <div className="col-span-full rounded-lg border border-border bg-card p-10 text-center shadow-[var(--shadow-soft)]">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                <span className="text-2xl" aria-hidden>📦</span>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">No completed experiments yet</h3>
+              <p className="text-muted-foreground text-sm">Stay tuned—our first finished runs will show up here.</p>
             </div>
           ) : (
             experiments.map((exp) => (

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { cn } from "@/lib/utils";
+import { LAYOUT } from "@/lib/constants/layout";
 
 export function HeroSection() {
   const { isInMiniApp } = useAuth();
@@ -24,19 +26,26 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="relative px-4 md:px-6 lg:px-8 py-2 md:py-4">
-        <div className="max-w-sm md:max-w-2xl lg:max-w-4xl mx-auto text-center space-y-4 md:space-y-6">
-          {/* Navigation Pills */}
+      <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_50%_0%,rgba(140,121,255,0.18),transparent_55%)]" aria-hidden />
+      <div className={cn("relative", LAYOUT.paddingX, "pt-10 md:pt-14 pb-8 md:pb-10")}>
+        <div className={cn("mx-auto text-center space-y-5 md:space-y-7", LAYOUT.maxWidth)}>
           <NavigationPills />
 
-          {/* Hero Content */}
           <div className="space-y-3">
+            <div className="mx-auto flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
+              Science, funded boldly
+              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-secondary" aria-hidden />
+            </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
-              Fund and <span className="text-primary">bet</span> on science!
+              Back fearless experiments, then cheer on the results.
             </h1>
+            <p className="text-lg md:text-xl text-muted-foreground text-balance max-w-3xl mx-auto">
+              CastLab is the playful way to fund and bet on science together. Support ideas you love and stay close to every milestone.
+            </p>
+            <div className="mx-auto h-px w-24 bg-gradient-to-r from-transparent via-primary/50 to-transparent" aria-hidden />
           </div>
 
-          {/* Cast Button - only shown in Farcaster mini app */}
           {isInMiniApp && (
             <div className="pt-2">
               <Button

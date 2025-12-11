@@ -831,7 +831,7 @@ export default function ExperimentClient() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="text-center">
-          <p className="text-[#0a3d4d]">Loading experiment...</p>
+          <p className="text-muted-foreground">Loading experiment...</p>
         </div>
       </div>
     );
@@ -841,10 +841,10 @@ export default function ExperimentClient() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-[#005577]">
+          <h1 className="text-2xl font-bold text-foreground">
             {error || "Experiment not found"}
           </h1>
-          <Link href="/" className="text-[#00a8cc] hover:underline mt-4 inline-block">
+          <Link href="/" className="text-primary hover:text-primary/80 mt-4 inline-block underline-offset-4 hover:underline">
             Back to experiments
           </Link>
         </div>
@@ -1046,7 +1046,7 @@ export default function ExperimentClient() {
                           {isInMiniApp && (
                             <Button
                               onClick={handleCastAboutDonation}
-                              className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-semibold"
+                              className="w-full"
                               size="lg"
                             >
                               Cast about it! 📢
