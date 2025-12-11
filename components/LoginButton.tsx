@@ -5,6 +5,7 @@ import { truncateAddress } from '@/lib/auth/types';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import Image from 'next/image';
 
 export default function LoginButton() {
   const { user, isLoading, isInMiniApp, login } = useAuth();
@@ -52,9 +53,11 @@ export default function LoginButton() {
                 title="Switch network"
               >
                 {chain.hasIcon && chain.iconUrl && (
-                  <img
+                  <Image
                     src={chain.iconUrl}
                     alt={chain.name ?? 'Chain'}
+                    width={20}
+                    height={20}
                     className="w-4 h-4 md:w-5 md:h-5 rounded-full"
                   />
                 )}

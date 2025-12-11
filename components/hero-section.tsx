@@ -39,7 +39,7 @@ export function HeroSection() {
               <span className="inline-flex h-1 w-8 rounded-full bg-gradient-to-r from-secondary/20 via-secondary/60 to-secondary/20" aria-hidden />
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
-              Back fearless experiments. Track every result.
+              Fund and bet on science!
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground text-balance max-w-3xl mx-auto">
               CastLab makes funding and betting on science feel intentional.
