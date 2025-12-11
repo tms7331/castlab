@@ -156,6 +156,15 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 25px oklch(0.25 0.15 280 / 0.15);
   }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
 }
 
 /* Toast styling aligned with CastLab surface tokens */

@@ -49,27 +49,27 @@ export default function HomeClient() {
         <div className={cn("mx-auto", LAYOUT.maxWidth)}>
           <div className={cn("grid grid-cols-1 md:grid-cols-2", LAYOUT.gridGap)}>
             {loading ? (
-              <>
-                <ExperimentCardSkeleton />
-                <ExperimentCardSkeleton />
-                <ExperimentCardSkeleton />
-                <ExperimentCardSkeleton />
-              </>
-            ) : error ? (
-              <div className="col-span-full rounded-lg border border-border bg-card p-8 text-center shadow-[var(--shadow-soft)]">
-                <p className="text-lg font-semibold text-foreground mb-1">We hit a snag.</p>
-                <p className="text-muted-foreground text-sm">{error}</p>
+            <>
+              <ExperimentCardSkeleton />
+              <ExperimentCardSkeleton />
+              <ExperimentCardSkeleton />
+              <ExperimentCardSkeleton />
+            </>
+          ) : error ? (
+            <div className="col-span-full rounded-lg border border-border bg-card p-8 text-center shadow-[var(--shadow-soft)]">
+              <p className="text-lg font-semibold text-foreground mb-1">We hit a snag.</p>
+              <p className="text-muted-foreground text-sm">{error}</p>
+            </div>
+          ) : experiments.length === 0 ? (
+            <div className="col-span-full rounded-lg border border-border bg-card p-10 text-center shadow-[var(--shadow-soft)]">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(140,121,255,0.28),transparent_60%),linear-gradient(135deg,rgba(24,6,91,0.1),rgba(30,184,171,0.08))] shadow-[var(--shadow-soft)]">
+                <span className="h-2 w-10 rounded-full bg-gradient-to-r from-primary/60 via-primary to-secondary/70" aria-hidden />
               </div>
-            ) : experiments.length === 0 ? (
-              <div className="col-span-full rounded-lg border border-border bg-card p-10 text-center shadow-[var(--shadow-soft)]">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                  <span className="text-2xl" aria-hidden>🧪</span>
-                </div>
-                <h3 className="text-lg font-semibold text-foreground">No experiments yet</h3>
-                <p className="text-muted-foreground text-sm">Check back soon—new science drops land here first.</p>
-              </div>
-            ) : (
-              experiments.map((exp) => (
+              <h3 className="text-lg font-semibold text-foreground">No experiments yet</h3>
+              <p className="text-muted-foreground text-sm">Check back soon—new science drops land here first.</p>
+            </div>
+          ) : (
+            experiments.map((exp) => (
                 <ExperimentCardWithContribution
                   key={exp.experiment_id}
                   experiment={exp}
