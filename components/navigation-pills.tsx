@@ -25,14 +25,16 @@ const tabs: TabConfig[] = [
     label: "Completed",
     href: "/completed-experiments",
     isActive: (pathname) => pathname.startsWith("/completed-experiments"),
-    activeClassName: "bg-secondary text-secondary-foreground border border-secondary/50 shadow-[0_6px_16px_rgba(24,22,60,0.12)]",
+    activeClassName:
+      "bg-[var(--tertiary)] text-card-foreground border border-[color-mix(in_oklch,var(--tertiary)_70%,var(--background)_30%)] shadow-[0_6px_16px_rgba(24,22,60,0.12)]",
     inactiveClassName: "bg-muted text-muted-foreground border border-border/70 hover:bg-muted/80",
   },
   {
     label: "About",
     href: "/about",
     isActive: (pathname) => pathname.startsWith("/about"),
-    activeClassName: "bg-card text-foreground border border-border shadow-[0_6px_16px_rgba(24,22,60,0.12)]",
+    activeClassName:
+      "bg-secondary text-secondary-foreground border border-secondary/70 shadow-[0_6px_16px_rgba(24,22,60,0.12)]",
     inactiveClassName: "bg-muted text-muted-foreground border border-border/70 hover:bg-muted/80",
   },
 ];
