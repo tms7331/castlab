@@ -3,12 +3,7 @@
 import { http, createConfig } from 'wagmi';
 import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector';
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
-import {
-  coinbaseWallet,
-  metaMaskWallet,
-  rainbowWallet,
-  walletConnectWallet,
-} from '@rainbow-me/rainbowkit/wallets';
+import { rainbowWallet } from '@rainbow-me/rainbowkit/wallets';
 import { CHAIN as DEFAULT_CHAIN } from './addresses';
 export { CONTRACT_ADDRESS, TOKEN_ADDRESS } from './addresses';
 
@@ -16,20 +11,15 @@ export { CONTRACT_ADDRESS, TOKEN_ADDRESS } from './addresses';
 // (Import from './utils' directly for server-side usage)
 export { usdToTokenAmount, tokenAmountToUsd } from './utils';
 
-// WalletConnect project ID - required for WalletConnect
+// WalletConnect project ID - required for RainbowKit
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo-project-id';
 
-// RainbowKit connectors for standalone web app mode
+// RainbowKit connector as fallback for non-Farcaster environments
 const rainbowKitConnectors = connectorsForWallets(
   [
     {
-      groupName: 'Popular',
-      wallets: [
-        metaMaskWallet,
-        coinbaseWallet,
-        walletConnectWallet,
-        rainbowWallet,
-      ],
+      groupName: 'Wallets',
+      wallets: [rainbowWallet],
     },
   ],
   {
@@ -38,8 +28,7 @@ const rainbowKitConnectors = connectorsForWallets(
   }
 );
 
-// Create wagmi config with both Farcaster and RainbowKit connectors
-// The UI will decide which to display based on environment
+// Create wagmi config with Farcaster as primary and RainbowKit as fallback
 export const config = createConfig({
   chains: [DEFAULT_CHAIN],
   transports: {

@@ -46,9 +46,6 @@ export default function RootLayout({
               [12, 15],
               [15, 10],
               [10, 15],
-              [15, 10],
-              [10, 15],
-              [15, 10],
             ]}
             className="fixed inset-0 -z-10 [mask-image:radial-gradient(100vw_circle_at_center,white,transparent)] inset-x-0 inset-y-[-30%] h-[200%] skew-y-12 fill-gray-900/8 stroke-gray-900/8 dark:fill-gray-100/8 dark:stroke-gray-100/8"
           />

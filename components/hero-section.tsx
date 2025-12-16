@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { cn } from "@/lib/utils";
-import { LAYOUT } from "@/lib/constants/layout";
 
 export function HeroSection() {
   const { isInMiniApp } = useAuth();

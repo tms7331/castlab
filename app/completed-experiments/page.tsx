@@ -43,7 +43,15 @@ export default function CompletedExperimentsPage() {
             Completed Experiments
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground text-balance">
-            The experiments the community funded together—now fully wrapped.
+            Past experiments from{" "}
+            <a
+              href="https://www.cosimoresearch.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Cosimo Research
+            </a>.
           </p>
         </div>
       </NavigationHero>
