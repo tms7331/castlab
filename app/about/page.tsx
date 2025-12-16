@@ -1,4 +1,4 @@
-import { NavigationPills } from "@/components/navigation-pills";
+import { NavigationHero } from "@/components/navigation-hero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { LAYOUT } from "@/lib/constants/layout";
@@ -6,21 +6,13 @@ import { LAYOUT } from "@/lib/constants/layout";
 export default function AboutPage() {
   return (
     <div className="min-h-screen">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_50%_-5%,rgba(140,121,255,0.16),transparent_55%)]" aria-hidden />
-        <div className="absolute inset-x-0 top-10 h-14 bg-[radial-gradient(60%_120%_at_50%_50%,rgba(242,178,59,0.12),transparent_70%)] blur-lg" aria-hidden />
-        <div className={cn("relative", LAYOUT.paddingX, "pt-12 md:pt-16 pb-10 md:pb-12")}>
-          <div className={cn("mx-auto text-center space-y-5 md:space-y-7", LAYOUT.maxWidth)}>
-            <NavigationPills />
-
-            <div className="space-y-3">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
-                About CastLab
-              </h1>
-            </div>
-          </div>
+      <NavigationHero contentSpacingClass="space-y-5 md:space-y-7">
+        <div className="space-y-3">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
+            About CastLab
+          </h1>
         </div>
-      </section>
+      </NavigationHero>
 
       <section className={cn(LAYOUT.paddingX, "pt-4 md:pt-6 pb-12 md:pb-16")}>
         <div className="max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto space-y-4 md:space-y-6">
