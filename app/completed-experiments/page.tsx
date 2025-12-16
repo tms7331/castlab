@@ -44,7 +44,7 @@ export default function CompletedExperimentsPage() {
 
             <div className="space-y-3">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
-                <span className="text-primary">Completed</span> Experiments
+                Completed Experiments
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground text-balance">
                 The experiments the community funded together—now fully wrapped.
@@ -54,7 +54,7 @@ export default function CompletedExperimentsPage() {
         </div>
       </section>
 
-      <section className={cn(LAYOUT.paddingX, LAYOUT.sectionY)}>
+      <section className={cn(LAYOUT.paddingX, "pt-4 md:pt-6 pb-12 md:pb-16")}>
         <div className={cn("mx-auto", LAYOUT.maxWidth)}>
           <div className={cn("grid grid-cols-1 md:grid-cols-2", LAYOUT.gridGap)}>
           {loading ? (

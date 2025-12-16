@@ -45,7 +45,7 @@ export default function HomeClient() {
   return (
     <div className="min-h-screen">
       <HeroSection />
-      <section className={cn(LAYOUT.paddingX, LAYOUT.sectionY)}>
+      <section className={cn(LAYOUT.paddingX, "pt-6 md:pt-8 pb-12 md:pb-16")}>
         <div className={cn("mx-auto", LAYOUT.maxWidth)}>
           <div className={cn("grid grid-cols-1 md:grid-cols-2", LAYOUT.gridGap)}>
             {loading ? (

@@ -15,14 +15,14 @@ export default function AboutPage() {
 
             <div className="space-y-3">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-balance leading-tight">
-                About <span className="text-primary">CastLab</span>
+                About CastLab
               </h1>
             </div>
           </div>
         </div>
       </section>
 
-      <section className={cn(LAYOUT.paddingX, LAYOUT.sectionY)}>
+      <section className={cn(LAYOUT.paddingX, "pt-4 md:pt-6 pb-12 md:pb-16")}>
         <div className="max-w-sm md:max-w-2xl lg:max-w-3xl mx-auto space-y-4 md:space-y-6">
           <Card className="md:p-2">
             <CardHeader>
