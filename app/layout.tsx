@@ -5,7 +5,7 @@ import { AuthProvider } from "./providers/AuthProvider";
 import { FarcasterProvider } from "./providers/FarcasterProvider";
 import { WagmiProvider } from "@/lib/wagmi/WagmiProvider";
 import { Header } from "@/components/header";
-import { BiologicalBackground } from "@/components/biological-background";
+import { GridPattern } from "@/components/ui/grid-pattern";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import { PostHogProvider } from "@/lib/analytics/PostHogProvider";
@@ -35,7 +35,23 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <PostHogProvider>
-          <BiologicalBackground />
+          <GridPattern
+            squares={[
+              [4, 4],
+              [5, 1],
+              [8, 2],
+              [5, 3],
+              [5, 5],
+              [10, 10],
+              [12, 15],
+              [15, 10],
+              [10, 15],
+              [15, 10],
+              [10, 15],
+              [15, 10],
+            ]}
+            className="fixed inset-0 -z-10 [mask-image:radial-gradient(100vw_circle_at_center,white,transparent)] inset-x-0 inset-y-[-30%] h-[200%] skew-y-12 fill-gray-900/8 stroke-gray-900/8 dark:fill-gray-100/8 dark:stroke-gray-100/8"
+          />
           <div className="relative z-10 flex min-h-screen flex-col">
             <WagmiProvider>
               <AuthProvider>

@@ -26,9 +26,9 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_50%_-5%,rgba(140,121,255,0.16),transparent_55%)]" aria-hidden />
-      <div className="absolute inset-x-0 top-10 h-14 bg-[radial-gradient(60%_120%_at_50%_50%,rgba(242,178,59,0.12),transparent_70%)] blur-lg" aria-hidden />
-      <div className={cn("relative", LAYOUT.paddingX, "pt-12 md:pt-16 pb-10 md:pb-12")}>
+      <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_50%_-5%,rgba(140,121,255,0.08),transparent_55%)] z-0" aria-hidden />
+      <div className="absolute inset-x-0 top-10 h-14 bg-[radial-gradient(60%_120%_at_50%_50%,rgba(242,178,59,0.06),transparent_70%)] blur-lg z-0" aria-hidden />
+      <div className={cn("relative z-10", LAYOUT.paddingX, "pt-12 md:pt-16 pb-10 md:pb-12")}>
         <div className={cn("mx-auto text-center space-y-6 md:space-y-8", LAYOUT.maxWidth)}>
           <NavigationPills />
 
