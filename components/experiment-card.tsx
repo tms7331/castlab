@@ -13,7 +13,6 @@ import { CHAIN } from '@/lib/wagmi/addresses';
 import CastlabExperimentABI from '@/lib/contracts/CastlabExperiment.json';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { getAppUrl } from '@/lib/utils/app-url';
-import { getExperimentImage } from '@/lib/utils/experiment-images';
 import { TopDonors } from './top-donors';
 import { toast } from "sonner";
 import { trackTransaction, identifyUser } from "@/lib/analytics/events";
@@ -285,19 +284,32 @@ export function ExperimentCard({ experiment, userContribution = 0, userBet0 = 0,
         )}
         <div className="flex items-start gap-3 md:gap-4">
           {(() => {
-            const imageUrl = getExperimentImage(experiment.experiment_id, experiment.image_url);
-            return imageUrl && (
+            const videoUrl = experiment.video_url;
+            const imageUrl = experiment.image_url;
+            const hasMedia = videoUrl || imageUrl;
+            return hasMedia && (
               <div className="w-[45%] md:w-[35%] lg:w-[30%] aspect-square rounded-lg bg-gradient-to-br from-primary to-secondary p-0.5 flex-shrink-0">
                 <div className="relative w-full h-full rounded-lg bg-card overflow-hidden">
-                  <Image
-                    src={imageUrl}
-                    alt={experiment.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 45vw, (max-width: 1024px) 35vw, 200px"
-                    priority
-                    unoptimized={imageUrl.endsWith('.gif')}
-                  />
+                  {videoUrl ? (
+                    <video
+                      src={videoUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={experiment.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 45vw, (max-width: 1024px) 35vw, 200px"
+                      priority
+                      unoptimized={imageUrl.endsWith('.gif')}
+                    />
+                  ) : null}
                 </div>
               </div>
             );

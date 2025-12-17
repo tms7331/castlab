@@ -28,6 +28,9 @@ export default function AdminPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
   const [selectedExperiment, setSelectedExperiment] = useState("");
   const [activeTab, setActiveTab] = useState<"create" | "manage" | "donations">("create");
@@ -538,6 +541,60 @@ export default function AdminPage() {
     }
   };
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['video/mp4', 'video/webm'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload a video file (MP4 or WebM)');
+        return;
+      }
+
+      // Validate file size (max 50MB for videos)
+      const maxSize = 50 * 1024 * 1024;
+      if (file.size > maxSize) {
+        alert('File too large. Maximum size is 50MB');
+        return;
+      }
+
+      setVideoFile(file);
+
+      // Create preview URL
+      const url = URL.createObjectURL(file);
+      setVideoPreview(url);
+    }
+  };
+
+  const uploadVideo = async (): Promise<string | null> => {
+    if (!videoFile) return null;
+
+    setIsUploadingVideo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', videoFile);
+
+      const response = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload video');
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error('Video upload failed:', error);
+      alert('Failed to upload video. Please try again.');
+      return null;
+    } finally {
+      setIsUploadingVideo(false);
+    }
+  };
+
   const handleCreateContractExperiment = async () => {
     // Validate inputs
     if (!newExperiment.title || !newExperiment.costMin || !newExperiment.costMax) {
@@ -709,6 +766,19 @@ export default function AdminPage() {
         }
       }
 
+      // Upload video if one is selected
+      let videoUrl = '';
+      if (videoFile) {
+        const uploadedVideoUrl = await uploadVideo();
+        if (uploadedVideoUrl) {
+          videoUrl = uploadedVideoUrl;
+        } else {
+          // Upload failed, stop submission
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Parse funding deadline date
       let dateFundingDeadline: string | null = null;
       if (newExperiment.dateFundingDeadline) {
@@ -725,6 +795,7 @@ export default function AdminPage() {
         title: newExperiment.title,
         summary: newExperiment.summary || null,
         image_url: imageUrl || null,
+        video_url: videoUrl,
         cost_min: newExperiment.costMin ? parseInt(newExperiment.costMin) : null,
         cost_max: newExperiment.costMax ? parseInt(newExperiment.costMax) : null,
         outcome_text0: newExperiment.outcomeText0 || null,
@@ -764,6 +835,12 @@ export default function AdminPage() {
         dateFundingDeadline: ""
       });
       setImageFile(null);
+      setImagePreview(null);
+      setVideoFile(null);
+      if (videoPreview) {
+        URL.revokeObjectURL(videoPreview);
+      }
+      setVideoPreview(null);
       setImagePreview(null);
       setContractExperimentId(null);
 
@@ -1525,6 +1602,67 @@ export default function AdminPage() {
 
               <div>
                 <label className="block text-[#005577] font-semibold mb-2">
+                  Experiment Video (Optional)
+                </label>
+
+                {/* Video Upload */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-[#00a8cc]/30 border-dashed rounded-lg cursor-pointer bg-white/50 hover:bg-[#e8f5f7] transition-colors">
+                      {videoPreview ? (
+                        <div className="relative w-full h-full">
+                          <video
+                            src={videoPreview}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (videoPreview) {
+                                URL.revokeObjectURL(videoPreview);
+                              }
+                              setVideoFile(null);
+                              setVideoPreview(null);
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <svg className="w-10 h-10 mb-3 text-[#00a8cc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          <p className="mb-2 text-sm text-[#0a3d4d]">
+                            <span className="font-semibold">Click to upload video</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-[#0a3d4d]">MP4 or WebM (MAX. 50MB)</p>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="video/mp4,video/webm"
+                        onChange={handleVideoChange}
+                      />
+                    </label>
+                  </div>
+                  <p className="text-xs text-[#0a3d4d]">
+                    If a video is uploaded, it will be shown instead of the image on the experiment card.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[#005577] font-semibold mb-2">
                   Experiment URL
                 </label>
                 <input
@@ -1588,10 +1726,10 @@ export default function AdminPage() {
                   </div>
                   <button
                     type="submit"
-                    disabled={isSubmitting || isUploadingImage}
-                    className={`w-full btn-primary ${(isSubmitting || isUploadingImage) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isSubmitting || isUploadingImage || isUploadingVideo}
+                    className={`w-full btn-primary ${(isSubmitting || isUploadingImage || isUploadingVideo) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Creating Completed Experiment...' : 'Create Completed Experiment'}
+                    {isUploadingImage ? 'Uploading Image...' : isUploadingVideo ? 'Uploading Video...' : isSubmitting ? 'Creating Completed Experiment...' : 'Create Completed Experiment'}
                   </button>
                 </div>
               ) : (
@@ -1619,10 +1757,10 @@ export default function AdminPage() {
 
                     <button
                       type="submit"
-                      disabled={isSubmitting || isUploadingImage || !contractExperimentId}
-                      className={`btn-primary ${(isSubmitting || isUploadingImage || !contractExperimentId) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={isSubmitting || isUploadingImage || isUploadingVideo || !contractExperimentId}
+                      className={`btn-primary ${(isSubmitting || isUploadingImage || isUploadingVideo || !contractExperimentId) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Creating...' : 'Step 2: Save to Database'}
+                      {isUploadingImage ? 'Uploading Image...' : isUploadingVideo ? 'Uploading Video...' : isSubmitting ? 'Creating...' : 'Step 2: Save to Database'}
                     </button>
                   </div>
                 </div>

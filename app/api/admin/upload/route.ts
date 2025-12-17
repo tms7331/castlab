@@ -27,19 +27,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const validVideoTypes = ['video/mp4', 'video/webm'];
+    const validTypes = [...validImageTypes, ...validVideoTypes];
+    const isVideo = validVideoTypes.includes(file.type);
+
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Please upload an image (JPEG, PNG, GIF, or WebP)' },
+        { error: 'Invalid file type. Please upload an image (JPEG, PNG, GIF, WebP) or video (MP4, WebM)' },
         { status: 400 }
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (max 5MB for images, 50MB for videos)
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 5MB' },
+        { error: `File too large. Maximum size is ${isVideo ? '50MB' : '5MB'}` },
         { status: 400 }
       );
     }

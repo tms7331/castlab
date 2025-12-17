@@ -3,6 +3,7 @@ export interface Event {
   title: string;
   summary: string | null;
   image_url: string | null;
+  video_url: string;
   cost_min: number | null;
   cost_max: number | null;
   outcome_text0: string | null;
