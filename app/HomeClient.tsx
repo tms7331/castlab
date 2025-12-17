@@ -88,13 +88,12 @@ export default function HomeClient() {
 function ExperimentCardWithContribution({
   experiment,
   userAddress,
-  onFundingData
 }: {
   experiment: Event;
   userAddress?: string;
 }) {
   // Fetch experiment's total funding
-  const { data: contractData } = useReadContract({
+  useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CastlabExperimentABI.abi,
     functionName: 'getExperimentInfo',

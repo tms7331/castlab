@@ -20,6 +20,7 @@ import { ArrowLeft, ExternalLink, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { trackTransaction, identifyUser } from "@/lib/analytics/events";
 import { useAuth } from '@/app/providers/AuthProvider';
+import { getExperimentImage } from '@/lib/utils/experiment-images';
 
 const EXPERIMENTER_FID = 883930;
 const EXPERIMENTER_HANDLE = "@motherlizard";
@@ -676,7 +677,7 @@ export default function ExperimentClient() {
         toast.info(`Switching to ${CHAIN.name} network...`);
         switchChain({ chainId: CHAIN.id });
         return; // Return and let user retry after chain switch
-      } catch (err) {
+      } catch {
         toast.error(`Please switch to ${CHAIN.name} network in your wallet`);
         return;
       }
@@ -862,19 +863,23 @@ export default function ExperimentClient() {
 
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 md:mb-6 text-center">{experiment.title}</h1>
 
-        {experiment.image_url && (
-          <div className="relative mb-4 md:mb-6 rounded-lg overflow-hidden h-64 md:h-80 lg:h-96">
-            <Image
-              src={experiment.image_url}
-              alt={experiment.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 672px, 896px"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          </div>
-        )}
+        {(() => {
+          const imageUrl = getExperimentImage(experiment.experiment_id, experiment.image_url);
+          return imageUrl && (
+            <div className="relative mb-4 md:mb-6 rounded-lg overflow-hidden h-64 md:h-80 lg:h-96">
+              <Image
+                src={imageUrl}
+                alt={experiment.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 672px, 896px"
+                priority
+                unoptimized={imageUrl.endsWith('.gif')}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            </div>
+          );
+        })()}
 
         {/* Show completion status for completed experiments */}
         {experiment.date_completed && (
